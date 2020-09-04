@@ -8,8 +8,8 @@ codeunit 50000 "Web Service Mgt."
     procedure GetOauthToken()
     var
         TokenURL: Label 'https://login.microsoftonline.com/common/oauth2/';
-        ClientId: Label '1c6495e7-5c93-46f9-9537-dc89bb2053d0';
-        ClientSecret: Label '2bvaZL8RSGL~iL8p_0iaK~N3vuEM1d_c1K';
+        ClientId: Label 'a125243e-de60-41fb-b6f2-1795601fcea9';
+        ClientSecret: Label 'Ct705dZ8-D2P-S0d_~n9n-CtFUkjI68.f7';
         Resource: Label 'https://org3baffe0c.crm4.dynamics.com';
         RequestBody: Label 'grant_type=implicit&client_id=%1&client_secret=%2&resource=%3';
         HttpClient: HttpClient;

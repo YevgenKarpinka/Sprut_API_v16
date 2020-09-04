@@ -1,4 +1,4 @@
-page 50002 "APIV2 - Customer Agreements"
+page 50001 "APIV2 - Customer Agreements"
 {
     APIPublisher = 'tcomtech';
     APIGroup = 'app';
