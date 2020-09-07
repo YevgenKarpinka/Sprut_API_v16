@@ -19,8 +19,11 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                 Image = GetBinContent;
 
                 trigger OnAction()
+                var
+                    TokenType: Text;
+                    AccessToken: Text;
                 begin
-                    WebServiceMgt.GetOauthToken();
+                    WebServiceMgt.GetOauthToken(TokenType, AccessToken);
                 end;
             }
         }
