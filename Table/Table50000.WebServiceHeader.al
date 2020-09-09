@@ -28,7 +28,7 @@ table 50000 "Web Service Header"
             CaptionML = ENU = 'Client Id', RUS = 'Id клиента';
             NotBlank = true;
         }
-        field(5; "Client Secret"; DateTime)
+        field(5; "Client Secret"; Text[50])
         {
             DataClassification = ToBeClassified;
             CaptionML = ENU = 'Client Secret', RUS = 'Secret клиента';

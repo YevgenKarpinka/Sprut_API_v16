@@ -26,6 +26,26 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                     WebServiceMgt.GetOauthToken(TokenType, AccessToken);
                 end;
             }
+            action(GetProducts)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get Products', RUS = 'Get Products';
+                ToolTipML = ENU = 'Get Products.',
+                            RUS = 'Get Products.';
+                Image = GetBinContent;
+
+                trigger OnAction()
+                var
+                    connectorCode: Code[20];
+                    entityType: Text[20];
+                    requestMethod: Code[20];
+                begin
+                    connectorCode := 'CRM';
+                    entityType := 'products';
+                    requestMethod := 'GET';
+                    WebServiceMgt.ConnectToCRM(connectorCode, entityType, requestMethod);
+                end;
+            }
         }
     }
 

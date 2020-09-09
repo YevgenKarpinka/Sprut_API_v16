@@ -3,6 +3,7 @@ table 50001 "Web Service Line"
     DataClassification = ToBeClassified;
     CaptionML = ENU = 'Web Service Line', RUS = 'Строки Web сервиса';
 
+
     fields
     {
 
@@ -24,13 +25,26 @@ table 50001 "Web Service Line"
             CaptionML = ENU = 'Entity', RUS = 'Сущность';
 
         }
-        field(4; "Web API URL"; Text[250])
+
+        field(4; "Request Method"; Text[10])
+        {
+            DataClassification = ToBeClassified;
+            CaptionML = ENU = 'Request Method', RUS = 'Метод запроса';
+
+        }
+        field(5; "Accept Header"; Text[20])
+        {
+            DataClassification = ToBeClassified;
+            CaptionML = ENU = 'Accept Header', RUS = 'Accept заголовка';
+
+        }
+        field(6; "Web API URL"; Text[250])
         {
             DataClassification = ToBeClassified;
             CaptionML = ENU = 'Web API URL', RUS = 'Web API URL';
 
         }
-        field(5; Version; Text[20])
+        field(7; Version; Text[20])
         {
             DataClassification = ToBeClassified;
             CaptionML = ENU = 'Version', RUS = 'Версия';
@@ -39,10 +53,12 @@ table 50001 "Web Service Line"
 
     keys
     {
-        key(PK; "Web Service Code", "Line No.", Entity)
+        key(PK; "Web Service Code", "Line No.")
         {
             Clustered = true;
         }
+        key(SK; Entity)
+        {
+        }
     }
-
 }
