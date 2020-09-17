@@ -29,7 +29,7 @@ codeunit 50000 "Web Service Mgt."
     var
         // {{resource}}/api/data/v{{version}}/{{entityType}}
         webAPI_URL: Label '%1/api/data/v%2/%3';
-        resource: Label 'https://org3baffe0c.api.crm4.dynamics.com';
+        resource: Label 'https://org3baffe0c.crm4.dynamics.com';
         version: Label '9.1';
         Accept: Label 'application/json';
         HttpClient: HttpClient;
@@ -64,22 +64,14 @@ codeunit 50000 "Web Service Mgt."
         //     Error(APIResult);
         //  ******
 
-        RequestMessage.Method := requestMethod;
-        RequestMessage.SetRequestUri(BaseURL);
         RequestMessage.GetHeaders(RequestHeader);
+        RequestHeader.Clear();
 
         RequestHeader.Add('Accept', Accept);
         RequestHeader.Add('Authorization', Authorization);
 
-        // Headers.Add('If-Match', SourceParameters."FSp ETag");
-        // if SourceParameters."FSp RestMethod" = SourceParameters."FSp RestMethod"::POST then begin
-        //     RequestMessage.Content.WriteFrom(Body2Request);
-        //     RequestMessage.Content.GetHeaders(Headers);
-        //     if SourceParameters."FSp ContentType" <> 0 then begin
-        //         Headers.Remove('Content-Type');
-        //         Headers.Add('Content-Type', Format(SourceParameters."FSp ContentType"));
-        //     end;
-        // end;
+        RequestMessage.Method := requestMethod;
+        RequestMessage.SetRequestUri(BaseURL);
 
         HttpClient.Send(RequestMessage, ResponseMessage);
         ResponseMessage.Content.ReadAs(APIResult);
@@ -90,7 +82,7 @@ codeunit 50000 "Web Service Mgt."
         // TokenURL: Text[200]; ClientId: Text[50]; ClientSecret: Text[50]; Resource: Text[150]; RequestBody: Text[150];
         var TokenType: Text; var AccessToken: Text)
     var
-        TokenURL: Label 'https://login.microsoftonline.com/common/oauth2/token';
+        TokenURL: Label 'https://login.microsoftonline.com/da79d6fc-fddb-47ae-bec3-75a8d9e1e1bb/oauth2/token';
         ClientId: Label 'a125243e-de60-41fb-b6f2-1795601fcea9';
         ClientSecret: Label 'A6-595SrEw0DPBT4-_1Uw-l3eL4ETar~-7';
         Resource: Label 'https://org3baffe0c.crm4.dynamics.com';
@@ -134,33 +126,34 @@ codeunit 50000 "Web Service Mgt."
         ResponseMessage.Content().ReadAs(APIResult);
 
         if ResponseMessage.IsSuccessStatusCode() then //begin
-            GetTokenFromResponse(APIResult, TokenType, AccessToken);
-        // end else
-        Error(APIResult);
+            GetTokenFromResponse(APIResult, TokenType, AccessToken)
+        // end
+        else
+            Error(APIResult);
 
         //  Get Products
         // **
-        AccessToken := 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImppYk5ia0ZTU2JteFBZck45Q0ZxUms0SzRndyIsImtpZCI6ImppYk5ia0ZTU2JteFBZck45Q0ZxUms0SzRndyJ9.eyJhdWQiOiJodHRwczovL29yZzNiYWZmZTBjLmNybTQuZHluYW1pY3MuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvZGE3OWQ2ZmMtZmRkYi00N2FlLWJlYzMtNzVhOGQ5ZTFlMWJiLyIsImlhdCI6MTU5OTY1NTMwOCwibmJmIjoxNTk5NjU1MzA4LCJleHAiOjE1OTk2NTkyMDgsImFjciI6IjEiLCJhaW8iOiJBU1FBMi84UUFBQUFWb0N2eDQ1Zk45VWl1YVBIeDhqZS8yR1RBQnYwZ2M3VlBlN2pKYkJSMlEwPSIsImFtciI6WyJwd2QiXSwiYXBwaWQiOiJhMTI1MjQzZS1kZTYwLTQxZmItYjZmMi0xNzk1NjAxZmNlYTkiLCJhcHBpZGFjciI6IjAiLCJmYW1pbHlfbmFtZSI6ItCe0YXRgNCw0L3QvdGL0Lkg0YXQvtC70LTQuNC90LMgU3BydXQiLCJnaXZlbl9uYW1lIjoi0J7RhdGA0LDQvdC90YvQuSDRhdC-0LvQtNC40L3QsyBTcHJ1dCIsImlwYWRkciI6Ijc5LjExMC4xMzAuMjI4IiwibmFtZSI6ItCe0YXRgNCw0L3QvdGL0Lkg0YXQvtC70LTQuNC90LMgU3BydXQiLCJvaWQiOiI5NWVmMzRjZC1jZWQyLTRkMDMtYWQzZS02ZTQxMzUwYTM5OWYiLCJwdWlkIjoiMTAwMzIwMDA5RjUyMTg0MCIsInJoIjoiMC5BQUFBX05aNTJ0djlya2UtdzNXbzJlSGh1ejRrSmFGZzN2dEJ0dklYbFdBZnpxbElBQ0kuIiwic2NwIjoidXNlcl9pbXBlcnNvbmF0aW9uIiwic3ViIjoiTGlkdUNhalE2eERKd1JsRVd2a0FUWVI3T0wwQUJxUWdZWHpVSXRvZ0lpdyIsInRpZCI6ImRhNzlkNmZjLWZkZGItNDdhZS1iZWMzLTc1YThkOWUxZTFiYiIsInVuaXF1ZV9uYW1lIjoiYWRtaW5Ac3BydXQub25taWNyb3NvZnQuY29tIiwidXBuIjoiYWRtaW5Ac3BydXQub25taWNyb3NvZnQuY29tIiwidXRpIjoieE5KQi04anREMC1sQWFGVFhWNDlBQSIsInZlciI6IjEuMCJ9.IsoF--em89ENm_rR6S8x-B6pVL7CSSC0k8KNGEiYYkqy1zj7HhFXFowAttboE6q6eUc--Iy0a9diLlPA7yb8HP2W8bglZ3DkhJyF5NieM5RZqTGOwi0VxEXxmgyrXqX3vjEAC88km2gKYbS100iuOeRoT3SW7zolXdyNub3rNaASP4qxaBt5pV6_E2-zAYeEMxRiNhpzDq9XTBdWoVEfM-W_kEwVeB3kGMRBKxDFCCL_Evv_g6O_zV0hJ_p0bNDUKf0IxqiTHpIkBW1Z9-1k2pQ6feiq6aOPXx5VJJeb_iHVelKz2cK-FRKtRmIjde0n73VWbc5c_7zhyQGJWoBLvw';
-        BaseURL := StrSubstNo(webAPI_URL, resource, version, entityType);
-        Authorization := StrSubstNo('%1 %2', TokenType, AccessToken);
+        // AccessToken := 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImppYk5ia0ZTU2JteFBZck45Q0ZxUms0SzRndyIsImtpZCI6ImppYk5ia0ZTU2JteFBZck45Q0ZxUms0SzRndyJ9.eyJhdWQiOiJodHRwczovL29yZzNiYWZmZTBjLmNybTQuZHluYW1pY3MuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvZGE3OWQ2ZmMtZmRkYi00N2FlLWJlYzMtNzVhOGQ5ZTFlMWJiLyIsImlhdCI6MTU5OTc0OTc2NiwibmJmIjoxNTk5NzQ5NzY2LCJleHAiOjE1OTk3NTM2NjYsImFpbyI6IkUyQmdZT0FzWlg3MVJ6eCt5YVpkaVphUisyNU5CZ0E9IiwiYXBwaWQiOiJhMTI1MjQzZS1kZTYwLTQxZmItYjZmMi0xNzk1NjAxZmNlYTkiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9kYTc5ZDZmYy1mZGRiLTQ3YWUtYmVjMy03NWE4ZDllMWUxYmIvIiwib2lkIjoiMmJiOGU1NjEtY2FlNy00ZmUyLWJkNTUtZjMxZTFkYTIyMjY5IiwicmgiOiIwLkFBQUFfTlo1MnR2OXJrZS13M1dvMmVIaHV6NGtKYUZnM3Z0QnR2SVhsV0FmenFsSUFBQS4iLCJzdWIiOiIyYmI4ZTU2MS1jYWU3LTRmZTItYmQ1NS1mMzFlMWRhMjIyNjkiLCJ0aWQiOiJkYTc5ZDZmYy1mZGRiLTQ3YWUtYmVjMy03NWE4ZDllMWUxYmIiLCJ1dGkiOiIzdlpldENOc0ZFT0NDUHZBRVlaNUFBIiwidmVyIjoiMS4wIn0.B9lYPMMLwiKNEvVPqVkfGTiOyT-lWQ0F0ReuBDWM7-lfKT5i-HFhHgHOeamIWmf8C8ISWvGA99-GWCYyIt1fzSzJqcQPq9LnXwYaoP_YczwaZkTNR32-bvfuub50uhgKq6Ph92YPmQSdA53ZYtlxRLMH_ZQtibhbkgbd8e7S5W7A1pMdrQwl_6-JZLceaoCc-TWNNlMCi_EXsGE5yUl5aJT4izDmehWWwGMYdRA_OtjuGoMRV_PnKcfJzKEtP_pjhj8d6BVMV1OA7PNLzUpeJ7ds-iqvplcZUgmvUM-KnCPTpGJeXVB63xo7uD6lztCSM-FUCWPdMAykeYnTWE-1fg';
+        // BaseURL := StrSubstNo(webAPI_URL, resource, version, entityType);
+        // Authorization := StrSubstNo('%1 %2', TokenType, AccessToken);
         // HttpClient.Clear();
-        RequestMessage.GetHeaders(RequestHeader);
-        RequestHeader.Clear();
-        RequestHeader.Add('Accept', Accept);
-        RequestHeader.Add('Authorization', Authorization);
-        RequestMessage.Method('GET');
-        RequestMessage.SetRequestUri(BaseURL);
-        if not HttpClient.Send(RequestMessage, ResponseMessage) then
-            if ResponseMessage.IsBlockedByEnvironment() then
-                ErrorMessage := StrSubstNo(EnvironmentBlocksErr, RequestMessage.GetRequestUri())
-            else
-                ErrorMessage := StrSubstNo(ConnectionErr, RequestMessage.GetRequestUri());
+        // RequestMessage.GetHeaders(RequestHeader);
+        // RequestHeader.Clear();
+        // RequestHeader.Add('Accept', Accept);
+        // RequestHeader.Add('Authorization', Authorization);
+        // RequestMessage.Method('GET');
+        // HttpClient.SetBaseAddress(BaseURL);
+        // if not HttpClient.Send(RequestMessage, ResponseMessage) then
+        //     if ResponseMessage.IsBlockedByEnvironment() then
+        //         ErrorMessage := StrSubstNo(EnvironmentBlocksErr, RequestMessage.GetRequestUri())
+        //     else
+        //         ErrorMessage := StrSubstNo(ConnectionErr, RequestMessage.GetRequestUri());
 
-        if ErrorMessage <> '' then
-            Error(ErrorMessage);
+        // if ErrorMessage <> '' then
+        //     Error(ErrorMessage);
 
-        ResponseMessage.Content.ReadAs(APIResult);
-        Message(APIResult);
+        // ResponseMessage.Content.ReadAs(APIResult);
+        // Message(APIResult);
     end;
 
     local procedure GetTokenFromResponse(APIResult: Text; var TokenType: Text; var AccessToken: Text)

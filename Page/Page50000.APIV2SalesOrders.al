@@ -6,8 +6,8 @@ page 50000 "APIV2 - Sales Orders"
     Caption = 'salesOrders', Locked = true;
     ChangeTrackingAllowed = true;
     DelayedInsert = true;
-    EntityName = 'salesOrder';
-    EntitySetName = 'salesOrders';
+    EntityName = 'salesOrderSprut';
+    EntitySetName = 'salesOrdersSprut';
     ODataKeyFields = Id;
     PageType = API;
     SourceTable = "Sales Order Entity Buffer";
