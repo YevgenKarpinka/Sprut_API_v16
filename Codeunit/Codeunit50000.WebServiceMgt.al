@@ -6,8 +6,10 @@ codeunit 50000 "Web Service Mgt."
     end;
 
     var
-        EnvironmentBlocksErr: Label 'Environment blocks an outgoing HTTP request to ''%1''.', Comment = '%1 - url, e.g. https://microsoft.com';
-        ConnectionErr: Label 'Connection to the remote service ''%1'' could not be established.', Comment = '%1 - url, e.g. https://microsoft.com';
+        EnvironmentBlocksErr: Label 'Environment blocks an outgoing HTTP request to ''%1''.',
+            Comment = '%1 - url, e.g. https://microsoft.com';
+        ConnectionErr: Label 'Connection to the remote service ''%1'' could not be established.',
+            Comment = '%1 - url, e.g. https://microsoft.com';
 
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]): Boolean
     var
@@ -31,7 +33,9 @@ codeunit 50000 "Web Service Mgt."
         webAPI_URL: Label '%1/api/data/v%2/%3';
         resource: Label 'https://org3baffe0c.crm4.dynamics.com';
         version: Label '9.1';
-        Accept: Label 'application/json';
+        Accept: Label 'Accept';
+        Authorization: Label 'Authorization';
+        AcceptJSON: Label 'application/json';
         HttpClient: HttpClient;
         RequestMessage: HttpRequestMessage;
         ResponseMessage: HttpResponseMessage;
@@ -42,33 +46,16 @@ codeunit 50000 "Web Service Mgt."
         Instr: InStream;
         APIResult: Text;
         BaseURL: Text;
-        Authorization: Text;
+        AuthorizationToken: Text;
     begin
-        // RequestMessage.GetHeaders(RequestHeader);
-        // RequestHeader.Clear();
-
-        // RequestMessage.Method(requestMethod);
         BaseURL := StrSubstNo(webAPI_URL, resource, version, entityType);
-        // RequestMessage.SetRequestUri(BaseURL);
-
-        // RequestHeader.Add('Accept', 'application/json');
-
-        Authorization := StrSubstNo('%1 %2', tokenType, accessToken);
-        // RequestHeader.Add('Authorization', Authorization);
-        // HttpClient.Send(RequestMessage, ResponseMessage);
-        // ResponseMessage.Content().ReadAs(APIResult);
-
-        // if ResponseMessage.IsSuccessStatusCode() then begin
-        //     Message(APIResult);
-        // end else
-        //     Error(APIResult);
-        //  ******
+        AuthorizationToken := StrSubstNo('%1 %2', tokenType, accessToken);
 
         RequestMessage.GetHeaders(RequestHeader);
         RequestHeader.Clear();
 
-        RequestHeader.Add('Accept', Accept);
-        RequestHeader.Add('Authorization', Authorization);
+        RequestHeader.Add(Accept, AcceptJSON);
+        RequestHeader.Add(Authorization, AuthorizationToken);
 
         RequestMessage.Method := requestMethod;
         RequestMessage.SetRequestUri(BaseURL);
@@ -103,17 +90,18 @@ codeunit 50000 "Web Service Mgt."
         BaseURL: Text;
         Authorization: Text;
         ErrorMessage: Text;
-
+        MethodPOST: Label 'POST';
+        ContentType: Label 'Content-Type';
+        ContentTypeFormUrlencoded: Label 'application/x-www-form-urlencoded';
     begin
         Content.GetHeaders(RequestHeader);
         RequestHeader.Clear();
 
         HttpClient.SetBaseAddress(TokenURL);
-        RequestMessage.Method('POST');
+        RequestMessage.Method(MethodPOST);
 
-        RequestHeader.Remove('Content-Type');
-        // RequestHeader.Add('Content-Type', 'application/json');
-        RequestHeader.Add('Content-Type', 'application/x-www-form-urlencoded');
+        RequestHeader.Remove(ContentType);
+        RequestHeader.Add(ContentType, ContentTypeFormUrlencoded);
 
         Clear(TempBlob);
         TempBlob.CreateOutStream(Outstr);
@@ -130,30 +118,6 @@ codeunit 50000 "Web Service Mgt."
         // end
         else
             Error(APIResult);
-
-        //  Get Products
-        // **
-        // AccessToken := 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImppYk5ia0ZTU2JteFBZck45Q0ZxUms0SzRndyIsImtpZCI6ImppYk5ia0ZTU2JteFBZck45Q0ZxUms0SzRndyJ9.eyJhdWQiOiJodHRwczovL29yZzNiYWZmZTBjLmNybTQuZHluYW1pY3MuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvZGE3OWQ2ZmMtZmRkYi00N2FlLWJlYzMtNzVhOGQ5ZTFlMWJiLyIsImlhdCI6MTU5OTc0OTc2NiwibmJmIjoxNTk5NzQ5NzY2LCJleHAiOjE1OTk3NTM2NjYsImFpbyI6IkUyQmdZT0FzWlg3MVJ6eCt5YVpkaVphUisyNU5CZ0E9IiwiYXBwaWQiOiJhMTI1MjQzZS1kZTYwLTQxZmItYjZmMi0xNzk1NjAxZmNlYTkiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9kYTc5ZDZmYy1mZGRiLTQ3YWUtYmVjMy03NWE4ZDllMWUxYmIvIiwib2lkIjoiMmJiOGU1NjEtY2FlNy00ZmUyLWJkNTUtZjMxZTFkYTIyMjY5IiwicmgiOiIwLkFBQUFfTlo1MnR2OXJrZS13M1dvMmVIaHV6NGtKYUZnM3Z0QnR2SVhsV0FmenFsSUFBQS4iLCJzdWIiOiIyYmI4ZTU2MS1jYWU3LTRmZTItYmQ1NS1mMzFlMWRhMjIyNjkiLCJ0aWQiOiJkYTc5ZDZmYy1mZGRiLTQ3YWUtYmVjMy03NWE4ZDllMWUxYmIiLCJ1dGkiOiIzdlpldENOc0ZFT0NDUHZBRVlaNUFBIiwidmVyIjoiMS4wIn0.B9lYPMMLwiKNEvVPqVkfGTiOyT-lWQ0F0ReuBDWM7-lfKT5i-HFhHgHOeamIWmf8C8ISWvGA99-GWCYyIt1fzSzJqcQPq9LnXwYaoP_YczwaZkTNR32-bvfuub50uhgKq6Ph92YPmQSdA53ZYtlxRLMH_ZQtibhbkgbd8e7S5W7A1pMdrQwl_6-JZLceaoCc-TWNNlMCi_EXsGE5yUl5aJT4izDmehWWwGMYdRA_OtjuGoMRV_PnKcfJzKEtP_pjhj8d6BVMV1OA7PNLzUpeJ7ds-iqvplcZUgmvUM-KnCPTpGJeXVB63xo7uD6lztCSM-FUCWPdMAykeYnTWE-1fg';
-        // BaseURL := StrSubstNo(webAPI_URL, resource, version, entityType);
-        // Authorization := StrSubstNo('%1 %2', TokenType, AccessToken);
-        // HttpClient.Clear();
-        // RequestMessage.GetHeaders(RequestHeader);
-        // RequestHeader.Clear();
-        // RequestHeader.Add('Accept', Accept);
-        // RequestHeader.Add('Authorization', Authorization);
-        // RequestMessage.Method('GET');
-        // HttpClient.SetBaseAddress(BaseURL);
-        // if not HttpClient.Send(RequestMessage, ResponseMessage) then
-        //     if ResponseMessage.IsBlockedByEnvironment() then
-        //         ErrorMessage := StrSubstNo(EnvironmentBlocksErr, RequestMessage.GetRequestUri())
-        //     else
-        //         ErrorMessage := StrSubstNo(ConnectionErr, RequestMessage.GetRequestUri());
-
-        // if ErrorMessage <> '' then
-        //     Error(ErrorMessage);
-
-        // ResponseMessage.Content.ReadAs(APIResult);
-        // Message(APIResult);
     end;
 
     local procedure GetTokenFromResponse(APIResult: Text; var TokenType: Text; var AccessToken: Text)

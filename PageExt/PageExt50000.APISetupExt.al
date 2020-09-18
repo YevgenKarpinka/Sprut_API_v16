@@ -36,13 +36,10 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 var
-                    connectorCode: Code[20];
-                    entityType: Text[20];
-                    requestMethod: Code[20];
+                    connectorCode: Label 'CRM';
+                    entityType: Label 'products';
+                    requestMethod: Label 'GET';
                 begin
-                    connectorCode := 'CRM';
-                    entityType := 'products';
-                    requestMethod := 'GET';
                     WebServiceMgt.ConnectToCRM(connectorCode, entityType, requestMethod);
                 end;
             }

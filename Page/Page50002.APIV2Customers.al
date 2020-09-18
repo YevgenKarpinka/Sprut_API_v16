@@ -336,7 +336,7 @@ page 50002 "APIV2 - Customers"
         INSERT(TRUE);
 
         ProcessPostalAddress();
-        RegisterIBAN();
+        RegisterIBAN(); // <<
 
         RecRef.GETTABLE(Rec);
         // GraphMgtGeneralTools.ProcessNewRecordFromAPI(RecRef, TempFieldSet, CURRENTDATETIME());
@@ -360,7 +360,7 @@ page 50002 "APIV2 - Customers"
         Customer.FINDFIRST();
 
         ProcessPostalAddress();
-        RegisterIBAN();
+        RegisterIBAN(); // <<
 
         IF "No." = Customer."No." THEN
             MODIFY(TRUE)
@@ -416,7 +416,7 @@ page 50002 "APIV2 - Customers"
                 "Customer No." := "No.";
                 Code := 'CRM_IBAN_CODE';
                 IBAN := txtIBAN;
-                Insert(true);
+                if Insert(true) then Modify(true);
             end;
         end;
 
