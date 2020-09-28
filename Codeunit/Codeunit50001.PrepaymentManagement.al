@@ -15,10 +15,19 @@ codeunit 50001 "Prepayment Management"
         AdjPrepAmountIncVAT: Decimal;
         Ratio: Decimal;
     begin
-        if (SalesLine."Prepmt. Amt. Inv." < SalesLine."Prepmt. Line Amount")
-            or (SalesLine."Prepmt. Amt. Inv." = 0)
+        GetSRSetup();
+        if not SRSetup."Allow Modifying" then exit;
+
+        if (SalesLine."Prepmt. Amt. Inv." = 0)
             or (SalesHeader."Document Type" <> SalesHeader."Document Type"::Order) then
             exit;
+
+        SalesLine."Prepmt. Line Amount" := SalesLine."Line Amount" * SalesLine."Prepayment %" / 100;
+        SalesLine.Modify();
+        if (SalesLine."Prepmt. Amt. Inv." < SalesLine."Prepmt. Line Amount") then begin
+            UpdatePrepmtAmountCurrLine(SalesHeader, SalesLine);
+            exit;
+        end;
 
         Currency.Initialize(SalesHeader."Currency Code");
 
@@ -26,8 +35,7 @@ codeunit 50001 "Prepayment Management"
             "Prepmt. Line Amount" := ROUND("Line Amount" * "Prepayment %" / 100, Currency."Amount Rounding Precision");
             CurrentAdjPrepAmount := "Prepmt. Amt. Inv." - "Prepmt. Line Amount";
             if "Prepmt. Amount Inv. (LCY)" <> 0 then begin
-                // Ratio := "Prepmt. Amount Inv. (LCY)" / "Prepmt. Amt. Inv.";
-                Ratio := 44.0555; // for update
+                Ratio := "Prepmt. Amount Inv. (LCY)" / "Prepmt. Amt. Inv.";
             end else
                 Ratio := 0;
         end;
@@ -59,13 +67,17 @@ codeunit 50001 "Prepayment Management"
                             SalesLine."Prepmt. VAT Base Amt." := SalesLine."Prepmt. Line Amount";
                             SalesLine."Prepmt. Amount Inv. Incl. VAT" := SalesLine."Prepmt. Amt. Inv.";
 
+                            "Prepmt. Amt. Incl. VAT" := "Prepmt. Line Amount";
+                            "Prepmt. VAT Base Amt." := "Prepmt. Line Amount";
                             "Prepmt. Amount Inv. Incl. VAT" := "Prepmt. Amt. Inv.";
                         end else begin
-                            SalesLine."Prepmt. Amt. Incl. VAT" := Round(SalesLine."Prepmt. Line Amount" * "VAT %", Currency."Amount Rounding Precision");
+                            SalesLine."Prepmt. Amt. Incl. VAT" := Round(SalesLine."Prepmt. Line Amount" + SalesLine."Prepmt. Line Amount" * SalesLine."VAT %" / 100, Currency."Amount Rounding Precision");
                             SalesLine."Prepmt. VAT Base Amt." := SalesLine."Prepmt. Line Amount";
-                            SalesLine."Prepmt. Amount Inv. Incl. VAT" := Round(SalesLine."Prepmt. Amt. Inv." * "VAT %", Currency."Amount Rounding Precision");
+                            SalesLine."Prepmt. Amount Inv. Incl. VAT" := Round(SalesLine."Prepmt. Amt. Inv." + SalesLine."Prepmt. Amt. Inv." * SalesLine."VAT %" / 100, Currency."Amount Rounding Precision");
 
-                            "Prepmt. Amount Inv. Incl. VAT" := Round("Prepmt. Amt. Inv." * "VAT %", Currency."Amount Rounding Precision");
+                            "Prepmt. Amt. Incl. VAT" := Round("Prepmt. Line Amount" + "Prepmt. Line Amount" * "VAT %" / 100, Currency."Amount Rounding Precision");
+                            "Prepmt. VAT Base Amt." := "Prepmt. Line Amount";
+                            "Prepmt. Amount Inv. Incl. VAT" := Round("Prepmt. Amt. Inv." + "Prepmt. Amt. Inv." * "VAT %" / 100, Currency."Amount Rounding Precision");
                         end;
 
                         if Ratio <> 0 then begin
@@ -87,7 +99,30 @@ codeunit 50001 "Prepayment Management"
         end;
     end;
 
+    local procedure UpdatePrepmtAmountCurrLine(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line");
+    begin
+        if SalesHeader."Prices Including VAT" then begin
+            SalesLine."Prepmt. Amt. Incl. VAT" := SalesLine."Prepmt. Line Amount";
+            SalesLine."Prepmt. VAT Base Amt." := SalesLine."Prepmt. Line Amount";
+            // SalesLine."Prepmt. Amount Inv. Incl. VAT" := SalesLine."Prepmt. Amt. Inv.";
+        end else begin
+            // SalesLine."Line Amount" + SalesLine."Prepayment %" / 100
+            SalesLine."Prepmt. Amt. Incl. VAT" := Round(SalesLine."Prepmt. Line Amount" + SalesLine."Prepmt. Line Amount" * SalesLine."VAT %" / 100, Currency."Amount Rounding Precision");
+            SalesLine."Prepmt. VAT Base Amt." := SalesLine."Prepmt. Line Amount";
+            // SalesLine."Prepmt. Amount Inv. Incl. VAT" := Round(SalesLine."Prepmt. Amt. Inv." + SalesLine."Prepmt. Amt. Inv." * SalesLine."VAT %" / 100, Currency."Amount Rounding Precision");
+        end;
+        SalesLine.Modify();
+    end;
+
+    local procedure GetSRSetup()
+    begin
+        IF not SRSetup.Get() then begin
+            SRSetup.Init();
+            SRSetup.Insert();
+        end;
+    end;
+
     var
         Currency: Record Currency;
-
+        SRSetup: Record "Sales & Receivables Setup";
 }
