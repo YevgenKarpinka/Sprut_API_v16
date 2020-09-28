@@ -1,4 +1,4 @@
-tableextension 50012 "Sales Order Entity Buffer Ext." extends "Sales Order Entity Buffer"
+tableextension 50000 "Sales Order Entity Buffer Ext." extends "Sales Order Entity Buffer"
 {
     fields
     {

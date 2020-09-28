@@ -25,9 +25,8 @@ codeunit 50001 "Prepayment Management"
         with SalesLine do begin
             "Prepmt. Line Amount" := ROUND("Line Amount" * "Prepayment %" / 100, Currency."Amount Rounding Precision");
             CurrentAdjPrepAmount := "Prepmt. Amt. Inv." - "Prepmt. Line Amount";
-            // CurrentAdjPrepAmountIncVAT := "Prepmt. Amount Inv. Incl. VAT" - "Prepmt. Amt. Incl. VAT";
             if "Prepmt. Amount Inv. (LCY)" <> 0 then begin
-                Ratio := "Prepmt. Amount Inv. (LCY)" / "Prepmt. Amt. Inv.";
+                // Ratio := "Prepmt. Amount Inv. (LCY)" / "Prepmt. Amt. Inv.";
                 Ratio := 44.0555; // for update
             end else
                 Ratio := 0;
@@ -44,8 +43,6 @@ codeunit 50001 "Prepayment Management"
                 repeat
                     if "Prepmt. Line Amount" > "Prepmt. Amt. Inv." then begin
                         AdjPrepAmount := "Prepmt. Line Amount" - "Prepmt. Amt. Inv.";
-                        // AdjPrepAmountIncVAT := "Prepmt. Amt. Incl. VAT" - "Prepmt. Amount Inv. Incl. VAT";
-
 
                         if CurrentAdjPrepAmount > AdjPrepAmount then begin
                             SalesLine."Prepmt. Amt. Inv." -= AdjPrepAmount;
