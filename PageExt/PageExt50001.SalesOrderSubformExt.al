@@ -5,23 +5,23 @@ pageextension 50001 "Sales Order Subform Ext" extends "Sales Order Subform"
         // Add changes to page layout here
         addafter("Prepayment %")
         {
-            field("Prepmt. Amount Inv. (LCY)"; "Prepmt. Amount Inv. (LCY)")
+            field("Prepmt. Amount Inv. (LCY)"; Rec."Prepmt. Amount Inv. (LCY)")
             {
                 ApplicationArea = All;
             }
-            field("Prepmt. Amount Inv. Incl. VAT"; "Prepmt. Amount Inv. Incl. VAT")
+            field("Prepmt. Amount Inv. Incl. VAT"; Rec."Prepmt. Amount Inv. Incl. VAT")
             {
                 ApplicationArea = All;
             }
-            field("Prepmt. Amt. Incl. VAT"; "Prepmt. Amt. Incl. VAT")
+            field("Prepmt. Amt. Incl. VAT"; Rec."Prepmt. Amt. Incl. VAT")
             {
                 ApplicationArea = All;
             }
-            field("Prepmt. VAT Amount Inv. (LCY)"; "Prepmt. VAT Amount Inv. (LCY)")
+            field("Prepmt. VAT Amount Inv. (LCY)"; Rec."Prepmt. VAT Amount Inv. (LCY)")
             {
                 ApplicationArea = All;
             }
-            field("Prepmt. VAT Base Amt."; "Prepmt. VAT Base Amt.")
+            field("Prepmt. VAT Base Amt."; Rec."Prepmt. VAT Base Amt.")
             {
                 ApplicationArea = All;
             }

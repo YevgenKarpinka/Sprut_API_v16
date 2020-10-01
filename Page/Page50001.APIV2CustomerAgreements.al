@@ -19,23 +19,23 @@ page 50001 "APIV2 - Customer Agreements"
         {
             repeater(Group)
             {
-                field(systemId; SystemId)
+                field(systemId; Rec.SystemId)
                 {
                     ApplicationArea = All;
                     Caption = 'systemId', Locked = true;
                     Editable = false;
                 }
-                field(customerNo; "Customer No.")
+                field(customerNo; Rec."Customer No.")
                 {
                     ApplicationArea = All;
                     Caption = 'customerNo', Locked = true;
                 }
-                field(number; "No.")
+                field(number; Rec."No.")
                 {
                     ApplicationArea = All;
                     Caption = 'number', Locked = true;
                 }
-                field(displayName; Description)
+                field(displayName; Rec.Description)
                 {
                     ApplicationArea = All;
                     Caption = 'displayName', Locked = true;
@@ -43,69 +43,69 @@ page 50001 "APIV2 - Customer Agreements"
 
                     trigger OnValidate()
                     begin
-                        IF Description = '' THEN
+                        IF Rec.Description = '' THEN
                             ERROR(BlankAgreementDescriptionErr);
-                        RegisterFieldSet(FIELDNO(Description));
+                        RegisterFieldSet(Rec.FIELDNO(Description));
                     end;
                 }
-                field(externalAgreementNo; "External Agreement No.")
+                field(externalAgreementNo; Rec."External Agreement No.")
                 {
                     ApplicationArea = All;
                     Caption = 'externalAgreementNo', Locked = true;
 
                     trigger OnValidate()
                     begin
-                        RegisterFieldSet(FIELDNO("External Agreement No."));
+                        RegisterFieldSet(Rec.FIELDNO("External Agreement No."));
                     end;
                 }
-                field(active; Active)
+                field(active; Rec.Active)
                 {
                     ApplicationArea = All;
                     Caption = 'active', Locked = true;
 
                     trigger OnValidate()
                     begin
-                        RegisterFieldSet(FIELDNO(Active));
+                        RegisterFieldSet(Rec.FIELDNO(Active));
                     end;
                 }
-                field(agreementDate; "Agreement Date")
+                field(agreementDate; Rec."Agreement Date")
                 {
                     ApplicationArea = All;
                     Caption = 'agreementDate', Locked = true;
 
                     trigger OnValidate()
                     begin
-                        RegisterFieldSet(FIELDNO("Agreement Date"));
+                        RegisterFieldSet(Rec.FIELDNO("Agreement Date"));
                     end;
                 }
-                field(startingDate; "Starting Date")
+                field(startingDate; Rec."Starting Date")
                 {
                     ApplicationArea = All;
                     Caption = 'startingDate', Locked = true;
 
                     trigger OnValidate()
                     begin
-                        RegisterFieldSet(FIELDNO("Starting Date"));
+                        RegisterFieldSet(Rec.FIELDNO("Starting Date"));
                     end;
                 }
-                field(expireDate; "Expire Date")
+                field(expireDate; Rec."Expire Date")
                 {
                     ApplicationArea = All;
                     Caption = 'expireDate', Locked = true;
 
                     trigger OnValidate()
                     begin
-                        RegisterFieldSet(FIELDNO("Expire Date"));
+                        RegisterFieldSet(Rec.FIELDNO("Expire Date"));
                     end;
                 }
-                field(creditLimitLCY; "Credit Limit (LCY)")
+                field(creditLimitLCY; Rec."Credit Limit (LCY)")
                 {
                     ApplicationArea = All;
                     Caption = 'creditLimitLCY', Locked = true;
 
                     trigger OnValidate()
                     begin
-                        RegisterFieldSet(FIELDNO("Credit Limit (LCY)"));
+                        RegisterFieldSet(Rec.FIELDNO("Credit Limit (LCY)"));
                     end;
                 }
                 field(currencyCode; CurrencyCodeTxt)
@@ -115,45 +115,45 @@ page 50001 "APIV2 - Customer Agreements"
 
                     trigger OnValidate()
                     begin
-                        "Currency Code" :=
+                        Rec."Currency Code" :=
                           GraphMgtGeneralTools.TranslateCurrencyCodeToNAVCurrencyCode(
                             LCYCurrencyCode, COPYSTR(CurrencyCodeTxt, 1, MAXSTRLEN(LCYCurrencyCode)));
 
                         IF Currency.Code <> '' THEN BEGIN
-                            IF Currency.Code <> "Currency Code" THEN
+                            IF Currency.Code <> Rec."Currency Code" THEN
                                 ERROR(CurrencyValuesDontMatchErr);
                             EXIT;
                         END;
 
-                        RegisterFieldSet(FIELDNO("Currency Code"));
+                        RegisterFieldSet(Rec.FIELDNO("Currency Code"));
                     end;
                 }
-                field(blocked; Blocked)
+                field(blocked; Rec.Blocked)
                 {
                     ApplicationArea = All;
                     Caption = 'blocked', Locked = true;
 
                     trigger OnValidate()
                     begin
-                        RegisterFieldSet(FIELDNO(Blocked));
+                        RegisterFieldSet(Rec.FIELDNO(Blocked));
                     end;
                 }
-                field(balance; Balance)
+                field(balance; Rec.Balance)
                 {
                     ApplicationArea = All;
                     Caption = 'balance', Locked = true;
                 }
-                field(netChange; "Net Change")
+                field(netChange; Rec."Net Change")
                 {
                     ApplicationArea = All;
                     Caption = 'netChange', Locked = true;
                 }
-                field(debitAmount; "Debit Amount")
+                field(debitAmount; Rec."Debit Amount")
                 {
                     ApplicationArea = All;
                     Caption = 'debitAmount', Locked = true;
                 }
-                field(creditAmount; "Credit Amount")
+                field(creditAmount; Rec."Credit Amount")
                 {
                     ApplicationArea = All;
                     Caption = 'creditAmount', Locked = true;
@@ -184,21 +184,21 @@ page 50001 "APIV2 - Customer Agreements"
         CustomerAgreement: Record "Customer Agreement";
         RecRef: RecordRef;
     begin
-        IF Description = '' THEN
+        IF Rec.Description = '' THEN
             ERROR(NotProvidedCustomerNameErr);
 
-        CustomerAgreement.SETRANGE("Customer No.", "Customer No.");
-        CustomerAgreement.SETRANGE("No.", "No.");
+        CustomerAgreement.SETRANGE("Customer No.", Rec."Customer No.");
+        CustomerAgreement.SETRANGE("No.", Rec."No.");
         IF NOT CustomerAgreement.ISEMPTY() THEN
-            INSERT();
+            Rec.INSERT();
 
-        INSERT(TRUE);
+        Rec.INSERT(TRUE);
 
         RecRef.GETTABLE(Rec);
         ProcessNewRecordFromAPI(RecRef, TempFieldSet, CURRENTDATETIME());
         RecRef.SETTABLE(Rec);
 
-        MODIFY(TRUE);
+        Rec.MODIFY(TRUE);
         SetCalculatedFields();
         EXIT(FALSE);
     end;
@@ -208,18 +208,18 @@ page 50001 "APIV2 - Customer Agreements"
         CustomerAgreement: Record "Customer Agreement";
         GraphMgtGeneralTools: Codeunit "Graph Mgt - General Tools";
     begin
-        IF xRec.SystemId <> SystemId THEN
+        IF xRec.SystemId <> Rec.SystemId THEN
             GraphMgtGeneralTools.ErrorIdImmutable();
 
-        CustomerAgreement.SETRANGE(SystemId, SystemId);
+        CustomerAgreement.SETRANGE(SystemId, Rec.SystemId);
         CustomerAgreement.FINDFIRST();
 
-        IF ("No." = CustomerAgreement."No.") and ("Customer No." = CustomerAgreement."Customer No.") THEN
-            MODIFY(TRUE)
+        IF (Rec."No." = CustomerAgreement."No.") and (Rec."Customer No." = CustomerAgreement."Customer No.") THEN
+            Rec.MODIFY(TRUE)
         ELSE BEGIN
             CustomerAgreement.TRANSFERFIELDS(Rec, FALSE);
-            CustomerAgreement.RENAME("Customer No.", "No.");
-            TRANSFERFIELDS(CustomerAgreement);
+            CustomerAgreement.RENAME(Rec."Customer No.", Rec."No.");
+            Rec.TRANSFERFIELDS(CustomerAgreement);
         END;
 
         SetCalculatedFields();
@@ -243,13 +243,13 @@ page 50001 "APIV2 - Customer Agreements"
     local procedure SetCalculatedFields()
     var
     begin
-        CurrencyCodeTxt := GraphMgtGeneralTools.TranslateNAVCurrencyCodeToCurrencyCode(LCYCurrencyCode, "Currency Code");
+        CurrencyCodeTxt := GraphMgtGeneralTools.TranslateNAVCurrencyCodeToCurrencyCode(LCYCurrencyCode, Rec."Currency Code");
 
     end;
 
     local procedure ClearCalculatedFields()
     begin
-        CLEAR(SystemId);
+        CLEAR(Rec.SystemId);
         TempFieldSet.DELETEALL();
     end;
 
