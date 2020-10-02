@@ -182,10 +182,19 @@ page 50001 "APIV2 - Customer Agreements"
     trigger OnInsertRecord(BelowxRec: Boolean): Boolean
     var
         CustomerAgreement: Record "Customer Agreement";
+        Cust: Record Customer;
+        NoSeriesMgt: Codeunit NoSeriesManagement;
         RecRef: RecordRef;
     begin
         IF Rec.Description = '' THEN
             ERROR(NotProvidedCustomerNameErr);
+
+        Cust.GET(Rec."Customer No.");
+        Cust.TESTFIELD("Agreement Posting", Cust."Agreement Posting"::Mandatory);
+        IF Rec."No." = '' THEN BEGIN
+            Cust.TESTFIELD("Agreement Nos.");
+            NoSeriesMgt.InitSeries(Cust."Agreement Nos.", xRec."No. Series", WORKDATE, Rec."No.", Rec."No. Series");
+        end;
 
         CustomerAgreement.SETRANGE("Customer No.", Rec."Customer No.");
         CustomerAgreement.SETRANGE("No.", Rec."No.");
