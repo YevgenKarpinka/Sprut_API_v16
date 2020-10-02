@@ -9,7 +9,7 @@ page 50000 "APIV2 - Sales Orders"
     DelayedInsert = true;
     EntityName = 'salesOrderSprut';
     EntitySetName = 'salesOrdersSprut';
-    ODataKeyFields = Id;
+    ODataKeyFields = SystemId;
     PageType = API;
     SourceTable = "Sales Order Entity Buffer";
     Extensible = false;
@@ -20,7 +20,7 @@ page 50000 "APIV2 - Sales Orders"
         {
             repeater(Group)
             {
-                field(id; Rec.Id)
+                field(id; Rec.SystemId)
                 {
                     ApplicationArea = All;
                     Caption = 'id', Locked = true;
