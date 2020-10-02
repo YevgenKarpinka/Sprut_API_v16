@@ -4,7 +4,7 @@ page 50000 "APIV2 - Sales Orders"
     APIPublisher = 'tcomtech';
     APIGroup = 'app';
     APIVersion = 'v1.0';
-    Caption = 'salesOrders', Locked = true;
+    Caption = 'salesOrdersSprut', Locked = true;
     ChangeTrackingAllowed = true;
     DelayedInsert = true;
     EntityName = 'salesOrderSprut';

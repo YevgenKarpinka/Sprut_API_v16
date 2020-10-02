@@ -3,7 +3,7 @@ page 50002 "APIV2 - Customers"
     APIPublisher = 'tcomtech';
     APIGroup = 'app';
     APIVersion = 'v1.0';
-    Caption = 'customers', Locked = true;
+    Caption = 'customersSprut', Locked = true;
     ChangeTrackingAllowed = true;
     DelayedInsert = true;
     EntityName = 'customerSprut';

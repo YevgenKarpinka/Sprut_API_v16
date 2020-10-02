@@ -244,7 +244,6 @@ page 50001 "APIV2 - Customer Agreements"
     var
     begin
         CurrencyCodeTxt := GraphMgtGeneralTools.TranslateNAVCurrencyCodeToCurrencyCode(LCYCurrencyCode, Rec."Currency Code");
-
     end;
 
     local procedure ClearCalculatedFields()
