@@ -8,10 +8,21 @@ codeunit 50001 "Prepayment Management"
     var
         Currency: Record Currency;
         SRSetup: Record "Sales & Receivables Setup";
+        GLSetup: Record "General Ledger Setup";
         CannotUnapplyInReversalErr: TextConst ENU = 'You cannot unapply Cust. Ledger Entry No. %1 because the entry is part of a reversal.',
                                             RUS = 'Нельзя отменить операцию книги клиентов № %1, поскольку эта операция входит в состав сторнирования.';
         NoApplicationEntryErr: TextConst ENU = 'Cust. Ledger Entry No. %1 does not have an application entry.',
                                         RUS = 'У операции книги клиентов № %1 нет операции применения.';
+        MustNotBeBeforeErr: TextConst ENU = 'The Posting Date entered must not be before the Posting Date on the Cust. Ledger Entry.',
+                                    RUS = 'Введенная дата учета не должна предшествовать дате учета операции книги клиентов.';
+        CannotUnapplyExchRateErr: TextConst ENU = 'You cannot unapply the entry with the posting date %1, because the exchange rate for the additional reporting currency has been changed.',
+                                            RUS = 'Нельзя отменить операцию с датой учета %1, поскольку изменился курс дополнительной отчетной валюты.';
+        UnapplyAllPostedAfterThisEntryErr: TextConst ENU = 'Before you can unapply this entry, you must first unapply all application entries in Cust. Ledger Entry No. %1 that were posted after this entry.',
+                                                    RUS = 'Перед отменой этой операции необходимо отменить все операции применения в операции книги клиентов № %1, учтенные после этой операции.';
+        LatestEntryMustBeAnApplicationErr: TextConst ENU = 'The latest Transaction No. must be an application in Cust. Ledger Entry No. %1.',
+                                                    RUS = 'Номер последней транзакции должен соответствовать применению в операции книги клиентов № %1.';
+        NotAllowedPostingDatesErr: TextConst ENU = 'Posting date is not within the range of allowed posting dates.',
+                                            RUS = 'Дата учета вне пределов разрешенного диапазона дат учета.';
         CustEntryApplyPostedEntries: Codeunit "CustEntry-Apply Posted Entries";
         tempDtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry" temporary;
         DtldCustLedgEntry2: Record "Detailed Cust. Ledg. Entry";
@@ -19,6 +30,9 @@ codeunit 50001 "Prepayment Management"
         DocNo: Code[20];
         PostingDate: Date;
         CustLedgEntryNo: Integer;
+        InitialVATTransactionNo: Integer;
+        AllowAmtDiffUnapply: Boolean;
+        AmtDiffManagement: Codeunit PrepmtDiffManagement;
 
     [EventSubscriber(ObjectType::Table, 37, 'OnBeforeUpdatePrepmtAmounts', '', false, false)]
     local procedure UpdatePrepaymentAmounts(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var IsHandled: Boolean)
@@ -222,12 +236,12 @@ codeunit 50001 "Prepayment Management"
         DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
         DateComprReg: Record "Date Compr. Register";
         TempCustLedgerEntry: Record "Cust. Ledger Entry";
-        AdjustExchangeRates: Report "Adjust Exchange Rates";
         GenJnlPostLine: Codeunit "Gen. Jnl.-Post Line";
         GenJnlPostPreview: Codeunit "Gen. Jnl.-Post Preview";
         LastTransactionNo: Integer;
         AddCurrChecked: Boolean;
         MaxPostingDate: Date;
+        AdjustExchangeRates: Report "Adjust Exchange Rates";
     begin
         MaxPostingDate := 0D;
         GLEntry.LOCKTABLE;
@@ -269,37 +283,30 @@ codeunit 50001 "Prepayment Management"
 
         DateComprReg.CheckMaxDateCompressed(MaxPostingDate, 0);
 
-        WITH DtldCustLedgEntry2 DO BEGIN
-            SourceCodeSetup.GET;
-            CustLedgEntry.GET("Cust. Ledger Entry No.");
-            GenJnlLine."Document No." := DocNo;
-            GenJnlLine."Posting Date" := PostingDate;
-            GenJnlLine."Account Type" := GenJnlLine."Account Type"::Customer;
-            GenJnlLine."Account No." := "Customer No.";
-            GenJnlLine.Correction := TRUE;
-            GenJnlLine.CopyCustLedgEntry(CustLedgEntry);
-            GenJnlLine."Source Code" := SourceCodeSetup."Unapplied Sales Entry Appln.";
-            GenJnlLine."Source Currency Code" := "Currency Code";
-            GenJnlLine."System-Created Entry" := TRUE;
-            GenJnlLine."Agreement No." := "Agreement No.";
-            // Window.OPEN(UnapplyingMsg);
+        SourceCodeSetup.GET;
+        CustLedgEntry.GET(DtldCustLedgEntry2."Cust. Ledger Entry No.");
+        GenJnlLine."Document No." := DocNo;
+        GenJnlLine."Posting Date" := PostingDate;
+        GenJnlLine."Account Type" := GenJnlLine."Account Type"::Customer;
+        GenJnlLine."Account No." := DtldCustLedgEntry2."Customer No.";
+        GenJnlLine.Correction := TRUE;
+        GenJnlLine.CopyCustLedgEntry(CustLedgEntry);
+        GenJnlLine."Source Code" := SourceCodeSetup."Unapplied Sales Entry Appln.";
+        GenJnlLine."Source Currency Code" := DtldCustLedgEntry2."Currency Code";
+        GenJnlLine."System-Created Entry" := TRUE;
+        GenJnlLine."Agreement No." := DtldCustLedgEntry2."Agreement No.";
 
-            CollectAffectedLedgerEntries(TempCustLedgerEntry, DtldCustLedgEntry2);
-            GenJnlPostLine.UnapplyCustLedgEntry(GenJnlLine, DtldCustLedgEntry2);
-            AdjustExchangeRates.AdjustExchRateCust(GenJnlLine, TempCustLedgerEntry);
+        CollectAffectedLedgerEntries(TempCustLedgerEntry, DtldCustLedgEntry2);
+        GenJnlPostLine.UnapplyCustLedgEntry(GenJnlLine, DtldCustLedgEntry2);
+        AdjustExchangeRates.AdjustExchRateCust(GenJnlLine, TempCustLedgerEntry);
 
-            IF GLSetup."Enable Russian Accounting" THEN BEGIN
-                AmtDiffManagement.SetInitialVATTransactionNo("Transaction No.");
-                AmtDiffManagement.PrepmtDiffProcessing(TRUE, PreviewMode);
-            END;
-
-            IF PreviewMode THEN
-                GenJnlPostPreview.ThrowError;
-
-            IF CommitChanges AND (NOT AllowAmtDiffUnapply) THEN
-                COMMIT;
-            // Window.CLOSE;
+        IF GLSetup."Enable Russian Accounting" THEN BEGIN
+            AmtDiffManagement.SetInitialVATTransactionNo(DtldCustLedgEntry2."Transaction No.");
+            AmtDiffManagement.PrepmtDiffProcessing(TRUE, false);
         END;
+
+        IF CommitChanges AND (NOT AllowAmtDiffUnapply) THEN
+            COMMIT;
     end;
 
     local procedure CheckPostingDate(PostingDate: Date; VAR MaxPostingDate: Date)
@@ -345,4 +352,79 @@ codeunit 50001 "Prepayment Management"
                 END;
             UNTIL DtldCustLedgEntry.NEXT = 0;
     end;
+
+    local procedure CheckAdditionalCurrency(OldPostingDate: Date; NewPostingDate: Date)
+    var
+        CurrExchRate: Record "Currency Exchange Rate";
+    begin
+        IF OldPostingDate = NewPostingDate THEN
+            EXIT;
+        GLSetup.GET;
+        IF GLSetup."Additional Reporting Currency" <> '' THEN
+            IF CurrExchRate.ExchangeRate(OldPostingDate, GLSetup."Additional Reporting Currency") <>
+               CurrExchRate.ExchangeRate(NewPostingDate, GLSetup."Additional Reporting Currency")
+            THEN
+                ERROR(CannotUnapplyExchRateErr, NewPostingDate);
+    end;
+
+    local procedure FindLastApplTransactionEntry(CustLedgEntryNo: Integer): Integer
+    var
+        DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
+        LastTransactionNo: Integer;
+    begin
+        DtldCustLedgEntry.SETCURRENTKEY("Cust. Ledger Entry No.", "Entry Type");
+        DtldCustLedgEntry.SETRANGE("Cust. Ledger Entry No.", CustLedgEntryNo);
+        DtldCustLedgEntry.SETRANGE("Entry Type", DtldCustLedgEntry."Entry Type"::Application);
+        LastTransactionNo := 0;
+        IF DtldCustLedgEntry.FIND('-') THEN
+            REPEAT
+                IF NOT GLSetup."Enable Russian Accounting" OR
+                   (GLSetup."Enable Russian Accounting" AND (NOT DtldCustLedgEntry."Prepmt. Diff."))
+                THEN
+                    IF (DtldCustLedgEntry."Transaction No." > LastTransactionNo) AND NOT DtldCustLedgEntry.Unapplied THEN
+                        LastTransactionNo := DtldCustLedgEntry."Transaction No.";
+            UNTIL DtldCustLedgEntry.NEXT = 0;
+        EXIT(LastTransactionNo);
+    end;
+
+    local procedure FindLastTransactionNo(CustLedgEntryNo: Integer): Integer
+    var
+        DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
+        LastTransactionNo: Integer;
+    begin
+        DtldCustLedgEntry.SETCURRENTKEY("Cust. Ledger Entry No.", "Entry Type");
+        DtldCustLedgEntry.SETRANGE("Cust. Ledger Entry No.", CustLedgEntryNo);
+        DtldCustLedgEntry.SETRANGE(Unapplied, FALSE);
+        DtldCustLedgEntry.SETFILTER("Entry Type", '<>%1&<>%2', DtldCustLedgEntry."Entry Type"::"Unrealized Loss", DtldCustLedgEntry."Entry Type"::"Unrealized Gain");
+        LastTransactionNo := 0;
+        IF DtldCustLedgEntry.FINDSET THEN
+            REPEAT
+                IF LastTransactionNo < DtldCustLedgEntry."Transaction No." THEN
+                    LastTransactionNo := DtldCustLedgEntry."Transaction No.";
+            UNTIL DtldCustLedgEntry.NEXT = 0;
+        EXIT(LastTransactionNo);
+    end;
+
+    local procedure CollectAffectedLedgerEntries(VAR TempCustLedgerEntry: Record "Cust. Ledger Entry" temporary; DetailedCustLedgEntry2: Record "Detailed Cust. Ledg. Entry")
+    var
+        DetailedCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
+    begin
+        TempCustLedgerEntry.DELETEALL;
+        IF DetailedCustLedgEntry2."Transaction No." = 0 THEN BEGIN
+            DetailedCustLedgEntry.SETCURRENTKEY("Application No.", "Customer No.", "Entry Type");
+            DetailedCustLedgEntry.SETRANGE("Application No.", DetailedCustLedgEntry2."Application No.");
+        END ELSE BEGIN
+            DetailedCustLedgEntry.SETCURRENTKEY("Transaction No.", "Customer No.", "Entry Type");
+            DetailedCustLedgEntry.SETRANGE("Transaction No.", DetailedCustLedgEntry2."Transaction No.");
+        END;
+        DetailedCustLedgEntry.SETRANGE("Customer No.", DetailedCustLedgEntry2."Customer No.");
+        DetailedCustLedgEntry.SETRANGE(Unapplied, FALSE);
+        DetailedCustLedgEntry.SETFILTER("Entry Type", '<>%1', DetailedCustLedgEntry."Entry Type"::"Initial Entry");
+        IF DetailedCustLedgEntry.FINDSET THEN
+            REPEAT
+                TempCustLedgerEntry."Entry No." := DetailedCustLedgEntry."Cust. Ledger Entry No.";
+                IF TempCustLedgerEntry.INSERT THEN;
+            UNTIL DetailedCustLedgEntry.NEXT = 0;
+    end;
+
 }

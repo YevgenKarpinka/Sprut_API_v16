@@ -34,5 +34,6 @@
   ],
   "contextSensitiveHelpUrl": "https://Sprut_API_v16.com/help/",
   "showMyCode": true,
-  "runtime": "5.0"
+  "runtime": "5.0",
+  "target": "OnPrem"
 }
