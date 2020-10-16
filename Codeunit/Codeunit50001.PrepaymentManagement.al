@@ -35,6 +35,12 @@ codeunit 50001 "Prepayment Management"
         AmtDiffManagement: Codeunit PrepmtDiffManagement;
 
     [EventSubscriber(ObjectType::Table, 37, 'OnBeforeUpdatePrepmtAmounts', '', false, false)]
+    /// <summary> 
+    /// Description for UpdatePrepaymentAmounts.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="IsHandled">Parameter of type Boolean.</param>
     local procedure UpdatePrepaymentAmounts(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var IsHandled: Boolean)
     var
         SalesLineUpdate: Record "Sales Line";
@@ -124,6 +130,11 @@ codeunit 50001 "Prepayment Management"
             until (SalesLineUpdate.Next() = 0) or (CurrentAdjPrepAmount = 0);
     end;
 
+    /// <summary> 
+    /// Description for UpdatePrepmtAmountCurrLine.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
     local procedure UpdatePrepmtAmountCurrLine(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line");
     begin
         if SalesHeader."Prices Including VAT" then begin
@@ -139,6 +150,9 @@ codeunit 50001 "Prepayment Management"
         SalesLine.Modify();
     end;
 
+    /// <summary> 
+    /// Description for GetSRSetup.
+    /// </summary>
     local procedure GetSRSetup()
     begin
         IF not SRSetup.Get() then begin
@@ -147,6 +161,12 @@ codeunit 50001 "Prepayment Management"
         end;
     end;
 
+    /// <summary> 
+    /// Description for GetLastPrepaymentInvoiceNo.
+    /// </summary>
+    /// <param name="PrepaymentOrderNo">Parameter of type Code[20].</param>
+    /// <param name="DocumentNo">Parameter of type Code[20].</param>
+    /// <param name="PostingDate">Parameter of type Date.</param>
     procedure GetLastPrepaymentInvoiceNo(PrepaymentOrderNo: Code[20]; var DocumentNo: Code[20]; var PostingDate: Date)
     var
         SalesInvoiceHeader: Record "Sales Invoice Header";
@@ -162,6 +182,12 @@ codeunit 50001 "Prepayment Management"
         PostingDate := 0D;
     end;
 
+    /// <summary> 
+    /// Description for GetLastPrepaymentCreaditMemoNo.
+    /// </summary>
+    /// <param name="PrepaymentOrderNo">Parameter of type Code[20].</param>
+    /// <param name="DocumentNo">Parameter of type Code[20].</param>
+    /// <param name="PostingDate">Parameter of type Date.</param>
     procedure GetLastPrepaymentCreaditMemoNo(PrepaymentOrderNo: Code[20]; var DocumentNo: Code[20]; var PostingDate: Date)
     var
         SalesCreditMemoHeader: Record "Sales Cr.Memo Header";
@@ -177,6 +203,12 @@ codeunit 50001 "Prepayment Management"
         PostingDate := 0D;
     end;
 
+    /// <summary> 
+    /// Description for GetCustomerLedgerEntryNo.
+    /// </summary>
+    /// <param name="DocumentNo">Parameter of type Code[20].</param>
+    /// <param name="PostingDate">Parameter of type Date.</param>
+    /// <returns>Return variable "Integer".</returns>
     procedure GetCustomerLedgerEntryNo(DocumentNo: Code[20]; PostingDate: Date): Integer
     var
         CustLedgerEntry: Record "Cust. Ledger Entry";
@@ -188,6 +220,10 @@ codeunit 50001 "Prepayment Management"
         exit(CustLedgerEntry."Entry No.");
     end;
 
+    /// <summary> 
+    /// Description for UnApplyCustLedgEntry.
+    /// </summary>
+    /// <param name="CustLedgEntryNo">Parameter of type Integer.</param>
     procedure UnApplyCustLedgEntry(CustLedgEntryNo: Integer)
     var
         CustLedgEntry: Record "Cust. Ledger Entry";
@@ -202,6 +238,10 @@ codeunit 50001 "Prepayment Management"
         end;
     end;
 
+    /// <summary> 
+    /// Description for CheckReversal.
+    /// </summary>
+    /// <param name="CustLedgEntryNo">Parameter of type Integer.</param>
     local procedure CheckReversal(CustLedgEntryNo: Integer)
     var
         CustLedgEntry: Record "Cust. Ledger Entry";
@@ -211,6 +251,10 @@ codeunit 50001 "Prepayment Management"
             ERROR(CannotUnapplyInReversalErr, CustLedgEntryNo);
     end;
 
+    /// <summary> 
+    /// Description for UnApplyCustomer.
+    /// </summary>
+    /// <param name="DtldCustLedgEntry">Parameter of type Record "Detailed Cust. Ledg. Entry".</param>
     local procedure UnApplyCustomer(DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry")
     begin
         DtldCustLedgEntry.TESTFIELD("Entry Type", DtldCustLedgEntry."Entry Type"::Application);
@@ -222,11 +266,24 @@ codeunit 50001 "Prepayment Management"
         PostUnApplyCustomer(DtldCustLedgEntry2, DocNo, PostingDate);
     end;
 
+    /// <summary> 
+    /// Description for PostUnApplyCustomer.
+    /// </summary>
+    /// <param name="DtldCustLedgEntry2">Parameter of type Record "Detailed Cust. Ledg. Entry".</param>
+    /// <param name="DocNo">Parameter of type Code[20].</param>
+    /// <param name="PostingDate">Parameter of type Date.</param>
     local procedure PostUnApplyCustomer(DtldCustLedgEntry2: Record "Detailed Cust. Ledg. Entry"; DocNo: Code[20]; PostingDate: Date)
     begin
         PostUnApplyCustomerCommit(DtldCustLedgEntry2, DocNo, PostingDate, TRUE);
     end;
 
+    /// <summary> 
+    /// Description for PostUnApplyCustomerCommit.
+    /// </summary>
+    /// <param name="DtldCustLedgEntry2">Parameter of type Record "Detailed Cust. Ledg. Entry".</param>
+    /// <param name="DocNo">Parameter of type Code[20].</param>
+    /// <param name="PostingDate">Parameter of type Date.</param>
+    /// <param name="CommitChanges">Parameter of type Boolean.</param>
     local procedure PostUnApplyCustomerCommit(DtldCustLedgEntry2: Record "Detailed Cust. Ledg. Entry"; DocNo: Code[20]; PostingDate: Date; CommitChanges: Boolean)
     var
         GLEntry: Record "G/L Entry";
@@ -309,6 +366,11 @@ codeunit 50001 "Prepayment Management"
             COMMIT;
     end;
 
+    /// <summary> 
+    /// Description for CheckPostingDate.
+    /// </summary>
+    /// <param name="PostingDate">Parameter of type Date.</param>
+    /// <param name="VAR MaxPostingDate">Parameter of type Date.</param>
     local procedure CheckPostingDate(PostingDate: Date; VAR MaxPostingDate: Date)
     var
         GenJnlCheckLine: Codeunit "Gen. Jnl.-Check Line";
@@ -320,6 +382,10 @@ codeunit 50001 "Prepayment Management"
             MaxPostingDate := PostingDate;
     end;
 
+    /// <summary> 
+    /// Description for SetDtldCustLedgEntry.
+    /// </summary>
+    /// <param name="EntryNo">Parameter of type Integer.</param>
     local procedure SetDtldCustLedgEntry(EntryNo: Integer)
     begin
         DtldCustLedgEntry2.GET(EntryNo);
@@ -329,6 +395,9 @@ codeunit 50001 "Prepayment Management"
         Cust.GET(DtldCustLedgEntry2."Customer No.");
     end;
 
+    /// <summary> 
+    /// Description for InsertEntries.
+    /// </summary>
     local procedure InsertEntries()
     var
         DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
@@ -353,6 +422,11 @@ codeunit 50001 "Prepayment Management"
             UNTIL DtldCustLedgEntry.NEXT = 0;
     end;
 
+    /// <summary> 
+    /// Description for CheckAdditionalCurrency.
+    /// </summary>
+    /// <param name="OldPostingDate">Parameter of type Date.</param>
+    /// <param name="NewPostingDate">Parameter of type Date.</param>
     local procedure CheckAdditionalCurrency(OldPostingDate: Date; NewPostingDate: Date)
     var
         CurrExchRate: Record "Currency Exchange Rate";
@@ -367,6 +441,11 @@ codeunit 50001 "Prepayment Management"
                 ERROR(CannotUnapplyExchRateErr, NewPostingDate);
     end;
 
+    /// <summary> 
+    /// Description for FindLastApplTransactionEntry.
+    /// </summary>
+    /// <param name="CustLedgEntryNo">Parameter of type Integer.</param>
+    /// <returns>Return variable "Integer".</returns>
     local procedure FindLastApplTransactionEntry(CustLedgEntryNo: Integer): Integer
     var
         DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
@@ -387,6 +466,11 @@ codeunit 50001 "Prepayment Management"
         EXIT(LastTransactionNo);
     end;
 
+    /// <summary> 
+    /// Description for FindLastTransactionNo.
+    /// </summary>
+    /// <param name="CustLedgEntryNo">Parameter of type Integer.</param>
+    /// <returns>Return variable "Integer".</returns>
     local procedure FindLastTransactionNo(CustLedgEntryNo: Integer): Integer
     var
         DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
@@ -405,6 +489,11 @@ codeunit 50001 "Prepayment Management"
         EXIT(LastTransactionNo);
     end;
 
+    /// <summary> 
+    /// Description for CollectAffectedLedgerEntries.
+    /// </summary>
+    /// <param name="VAR TempCustLedgerEntry">Parameter of type Record "Cust. Ledger Entry" temporary.</param>
+    /// <param name="DetailedCustLedgEntry2">Parameter of type Record "Detailed Cust. Ledg. Entry".</param>
     local procedure CollectAffectedLedgerEntries(VAR TempCustLedgerEntry: Record "Cust. Ledger Entry" temporary; DetailedCustLedgEntry2: Record "Detailed Cust. Ledg. Entry")
     var
         DetailedCustLedgEntry: Record "Detailed Cust. Ledg. Entry";

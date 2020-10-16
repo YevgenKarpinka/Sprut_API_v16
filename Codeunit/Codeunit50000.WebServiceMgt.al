@@ -11,6 +11,13 @@ codeunit 50000 "Web Service Mgt."
         ConnectionErr: Label 'Connection to the remote service ''%1'' could not be established.',
             Comment = '%1 - url, e.g. https://microsoft.com';
 
+    /// <summary> 
+    /// Description for ConnectToCRM.
+    /// </summary>
+    /// <param name="connectorCode">Parameter of type Code[20].</param>
+    /// <param name="entityType">Parameter of type Text[20].</param>
+    /// <param name="requestMethod">Parameter of type Code[20].</param>
+    /// <returns>Return variable "Boolean".</returns>
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]): Boolean
     var
         tokenType: Text;
@@ -27,6 +34,13 @@ codeunit 50000 "Web Service Mgt."
         OnAPIProcess(entityType, requestMethod, tokenType, accessToken);
     end;
 
+    /// <summary> 
+    /// Description for OnAPIProcess.
+    /// </summary>
+    /// <param name="entityType">Parameter of type Text[20].</param>
+    /// <param name="requestMethod">Parameter of type Code[20].</param>
+    /// <param name="tokenType">Parameter of type Text.</param>
+    /// <param name="accessToken">Parameter of type Text.</param>
     local procedure OnAPIProcess(entityType: Text[20]; requestMethod: Code[20]; tokenType: Text; accessToken: Text)
     var
         // {{resource}}/api/data/v{{version}}/{{entityType}}
@@ -120,6 +134,12 @@ codeunit 50000 "Web Service Mgt."
             Error(APIResult);
     end;
 
+    /// <summary> 
+    /// Description for GetTokenFromResponse.
+    /// </summary>
+    /// <param name="APIResult">Parameter of type Text.</param>
+    /// <param name="TokenType">Parameter of type Text.</param>
+    /// <param name="AccessToken">Parameter of type Text.</param>
     local procedure GetTokenFromResponse(APIResult: Text; var TokenType: Text; var AccessToken: Text)
     var
         jsonAPI: JsonObject;
@@ -129,18 +149,35 @@ codeunit 50000 "Web Service Mgt."
         AccessToken := GetJSToken(jsonAPI, 'access_token').AsValue().AsText();
     end;
 
+    /// <summary> 
+    /// Description for GetJSToken.
+    /// </summary>
+    /// <param name="_JSONObject">Parameter of type JsonObject.</param>
+    /// <param name="TokenKey">Parameter of type Text.</param>
     local procedure GetJSToken(_JSONObject: JsonObject; TokenKey: Text) _JSONToken: JsonToken
     begin
         if not _JSONObject.Get(TokenKey, _JSONToken) then
             Error('Could not find a token with key %1', TokenKey);
     end;
 
+    /// <summary> 
+    /// Description for SelectJSToken.
+    /// </summary>
+    /// <param name="_JSONObject">Parameter of type JsonObject.</param>
+    /// <param name="Path">Parameter of type Text.</param>
     local procedure SelectJSToken(_JSONObject: JsonObject; Path: Text) _JSONToken: JsonToken
     begin
         if not _JSONObject.SelectToken(Path, _JSONToken) then
             Error('Could not find a token with path %1', Path);
     end;
 
+    /// <summary> 
+    /// Description for InvokeSingleRequest.
+    /// </summary>
+    /// <param name="RequestJson">Parameter of type Text.</param>
+    /// <param name="ResponseJson">Parameter of type Text.</param>
+    /// <param name="HttpError">Parameter of type Text.</param>
+    /// <param name="AccessToken">Parameter of type Text.</param>
     local procedure InvokeSingleRequest(RequestJson: Text; var ResponseJson: Text; var HttpError: Text; AccessToken: Text) Result: Boolean
     var
         RequestJObject: JsonObject;
@@ -189,6 +226,12 @@ codeunit 50000 "Web Service Mgt."
         // end;
     end;
 
+    /// <summary> 
+    /// Description for InvokeHttpJSONRequest.
+    /// </summary>
+    /// <param name="RequestJson">Parameter of type Text.</param>
+    /// <param name="ResponseJson">Parameter of type Text.</param>
+    /// <param name="HttpError">Parameter of type Text.</param>
     local procedure InvokeHttpJSONRequest(RequestJson: Text; var ResponseJson: Text; var HttpError: Text) Result: Boolean
     var
         Client: HttpClient;
@@ -216,6 +259,11 @@ codeunit 50000 "Web Service Mgt."
         exit(ProcessHttpResponseMessage(ResponseMessage, ResponseJson, HttpError));
     end;
 
+    /// <summary> 
+    /// Description for InitHttpRequestContent.
+    /// </summary>
+    /// <param name="RequestMessage">Parameter of type HttpRequestMessage.</param>
+    /// <param name="RequestJson">Parameter of type Text.</param>
     local procedure InitHttpRequestContent(var RequestMessage: HttpRequestMessage; RequestJson: Text)
     var
         ContentHeaders: HttpHeaders;
@@ -237,6 +285,11 @@ codeunit 50000 "Web Service Mgt."
     end;
 
     [NonDebuggable]
+    /// <summary> 
+    /// Description for InitHttpRequestMessage.
+    /// </summary>
+    /// <param name="RequestMessage">Parameter of type HttpRequestMessage.</param>
+    /// <param name="RequestJson">Parameter of type Text.</param>
     local procedure InitHttpRequestMessage(var RequestMessage: HttpRequestMessage; RequestJson: Text)
     var
         RequestHeaders: HttpHeaders;
@@ -269,6 +322,12 @@ codeunit 50000 "Web Service Mgt."
         end;
     end;
 
+    /// <summary> 
+    /// Description for ProcessHttpResponseMessage.
+    /// </summary>
+    /// <param name="ResponseMessage">Parameter of type HttpResponseMessage.</param>
+    /// <param name="ResponseJson">Parameter of type Text.</param>
+    /// <param name="HttpError">Parameter of type Text.</param>
     local procedure ProcessHttpResponseMessage(var ResponseMessage: HttpResponseMessage; var ResponseJson: Text; var HttpError: Text) Result: Boolean
     var
         ResponseJObject: JsonObject;
@@ -302,6 +361,13 @@ codeunit 50000 "Web Service Mgt."
         ResponseJObject.WriteTo(ResponseJson);
     end;
 
+    /// <summary> 
+    /// Description for SetHttpStatus.
+    /// </summary>
+    /// <param name="JObject">Parameter of type JsonObject.</param>
+    /// <param name="StatusCode">Parameter of type Integer.</param>
+    /// <param name="StatusReason">Parameter of type Text.</param>
+    /// <param name="StatusDetails">Parameter of type Text.</param>
     local procedure SetHttpStatus(var JObject: JsonObject; StatusCode: Integer; StatusReason: Text; StatusDetails: Text)
     var
         JObject2: JsonObject;

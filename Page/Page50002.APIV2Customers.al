@@ -401,6 +401,9 @@ page 50002 "APIV2 - Customers"
         BlankCustomerNameErr: Label 'The blank "displayName" is not allowed.', Locked = true;
         PostalAddressSet: Boolean;
 
+    /// <summary> 
+    /// Description for RegisterIBAN.
+    /// </summary>
     local procedure RegisterIBAN()
     var
         CustBankAccount: Record "Customer Bank Account";
@@ -424,6 +427,9 @@ page 50002 "APIV2 - Customers"
         end;
     end;
 
+    /// <summary> 
+    /// Description for SetCalculatedFields.
+    /// </summary>
     local procedure SetCalculatedFields()
     var
         TaxAreaBuffer: Record "Tax Area Buffer";
@@ -434,6 +440,9 @@ page 50002 "APIV2 - Customers"
         TaxAreaDisplayName := TaxAreaBuffer.GetTaxAreaDisplayName(Rec."Tax Area ID");
     end;
 
+    /// <summary> 
+    /// Description for ClearCalculatedFields.
+    /// </summary>
     local procedure ClearCalculatedFields()
     begin
         CLEAR(Rec.SystemId);
@@ -443,6 +452,10 @@ page 50002 "APIV2 - Customers"
         TempFieldSet.DELETEALL();
     end;
 
+    /// <summary> 
+    /// Description for RegisterFieldSet.
+    /// </summary>
+    /// <param name="FieldNo">Parameter of type Integer.</param>
     local procedure RegisterFieldSet(FieldNo: Integer)
     begin
         IF TempFieldSet.GET(DATABASE::Customer, FieldNo) THEN
@@ -454,6 +467,9 @@ page 50002 "APIV2 - Customers"
         TempFieldSet.INSERT(TRUE);
     end;
 
+    /// <summary> 
+    /// Description for ProcessPostalAddress.
+    /// </summary>
     local procedure ProcessPostalAddress()
     var
         GraphMgtCustomer: Codeunit "Graph Mgt - Customer";
@@ -483,6 +499,12 @@ page 50002 "APIV2 - Customers"
     end;
 
     // >>
+    /// <summary> 
+    /// Description for ProcessNewRecordFromAPI.
+    /// </summary>
+    /// <param name="InsertedRecordRef">Parameter of type RecordRef.</param>
+    /// <param name="TempFieldSet">Parameter of type Record "Field".</param>
+    /// <param name="ModifiedDateTime">Parameter of type DateTime.</param>
     local procedure ProcessNewRecordFromAPI(var InsertedRecordRef: RecordRef; var TempFieldSet: Record "Field"; ModifiedDateTime: DateTime)
     var
         ConfigTemplateHeader: Record "Config. Template Header";
@@ -501,6 +523,12 @@ page 50002 "APIV2 - Customers"
         IntegrationManagement.InsertUpdateIntegrationRecord(InsertedRecordRef, ModifiedDateTime);
     end;
 
+    /// <summary> 
+    /// Description for FindTemplateBasedOnRecordFields.
+    /// </summary>
+    /// <param name="RecordVariant">Parameter of type Variant.</param>
+    /// <param name="ConfigTemplateHeader">Parameter of type Record "Config. Template Header".</param>
+    /// <returns>Return variable "Boolean".</returns>
     local procedure FindTemplateBasedOnRecordFields(RecordVariant: Variant; var ConfigTemplateHeader: Record "Config. Template Header"): Boolean
     var
         ConfigTmplSelectionRules: Record "Config. Tmpl. Selection Rules";

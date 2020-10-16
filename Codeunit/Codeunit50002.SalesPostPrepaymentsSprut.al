@@ -41,6 +41,10 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SuppressCommit: Boolean;
         PreviewMode: Boolean;
 
+    /// <summary> 
+    /// Description for PostPrepaymentInvoiceSprut.
+    /// </summary>
+    /// <param name="SalesHeader2">Parameter of type Record "Sales Header".</param>
     procedure PostPrepaymentInvoiceSprut(var SalesHeader2: Record "Sales Header")
     var
         SalesHeader: Record "Sales Header";
@@ -57,6 +61,10 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesHeader2 := SalesHeader;
     end;
 
+    /// <summary> 
+    /// Description for PostPrepaymentCreditMemoSprut.
+    /// </summary>
+    /// <param name="SalesHeader2">Parameter of type Record "Sales Header".</param>
     procedure PostPrepaymentCreditMemoSprut(var SalesHeader2: Record "Sales Header")
     var
         SalesHeader: Record "Sales Header";
@@ -73,11 +81,19 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesHeader2 := SalesHeader;
     end;
 
+    /// <summary> 
+    /// Description for SetDocumentType.
+    /// </summary>
+    /// <param name="DocumentType">Parameter of type Enum "Sales Document Type".</param>
     procedure SetDocumentType(DocumentType: Enum "Sales Document Type")
     begin
         PrepmtDocumentType := DocumentType;
     end;
 
+    /// <summary> 
+    /// Description for Execute.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
     local procedure Execute(var SalesHeader: Record "Sales Header")
     begin
         case PrepmtDocumentType of
@@ -88,6 +104,10 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
+    /// <summary> 
+    /// Description for Invoice.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
     procedure Invoice(var SalesHeader: Record "Sales Header")
     var
         Handled: Boolean;
@@ -97,6 +117,10 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             Code(SalesHeader, 0);
     end;
 
+    /// <summary> 
+    /// Description for CreditMemo.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
     procedure CreditMemo(var SalesHeader: Record "Sales Header")
     var
         Handled: Boolean;
@@ -106,6 +130,11 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             Code(SalesHeader, 1);
     end;
 
+    /// <summary> 
+    /// Description for Code.
+    /// </summary>
+    /// <param name="SalesHeader2">Parameter of type Record "Sales Header".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
     local procedure "Code"(var SalesHeader2: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo")
     var
         SourceCodeSetup: Record "Source Code Setup";
@@ -298,6 +327,11 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterPostPrepayments(SalesHeader2, DocumentType, SuppressCommit, SalesInvHeader, SalesCrMemoHeader);
     end;
 
+    /// <summary> 
+    /// Description for CheckPrepmtDoc.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
     procedure CheckPrepmtDoc(SalesHeader: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo")
     var
         Cust: Record Customer;
@@ -326,6 +360,14 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterCheckPrepmtDoc(SalesHeader, DocumentType, SuppressCommit);
     end;
 
+    /// <summary> 
+    /// Description for UpdateDocNos.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <param name="DocNo">Parameter of type Code[20].</param>
+    /// <param name="NoSeriesCode">Parameter of type Code[20].</param>
+    /// <param name="ModifyHeader">Parameter of type Boolean.</param>
     local procedure UpdateDocNos(var SalesHeader: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo"; var DocNo: Code[20]; var NoSeriesCode: Code[20]; var ModifyHeader: Boolean)
     var
         NoSeriesMgt: Codeunit NoSeriesManagement;
@@ -362,6 +404,11 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
+    /// <summary> 
+    /// Description for CheckOpenPrepaymentLines.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="DocumentType">Parameter of type Option.</param>
     procedure CheckOpenPrepaymentLines(SalesHeader: Record "Sales Header"; DocumentType: Option) Found: Boolean
     var
         SalesLine: Record "Sales Line";
@@ -379,6 +426,13 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         exit(Found);
     end;
 
+    /// <summary> 
+    /// Description for RoundAmounts.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="PrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBufLCY">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
     local procedure RoundAmounts(SalesHeader: Record "Sales Header"; var PrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; var TotalPrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; var TotalPrepmtInvLineBufLCY: Record "Prepayment Inv. Line Buffer")
     var
         VAT: Boolean;
@@ -403,6 +457,13 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterRoundAmounts(SalesHeader, PrepmtInvLineBuf, TotalPrepmtInvLineBuf, TotalPrepmtInvLineBufLCY);
     end;
 
+    /// <summary> 
+    /// Description for AmountToLCY.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="TotalAmt">Parameter of type Decimal.</param>
+    /// <param name="PrevTotalAmt">Parameter of type Decimal.</param>
+    /// <returns>Return variable "Decimal".</returns>
     local procedure AmountToLCY(SalesHeader: Record "Sales Header"; TotalAmt: Decimal; PrevTotalAmt: Decimal): Decimal
     var
         CurrExchRate: Record "Currency Exchange Rate";
@@ -414,6 +475,14 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
           PrevTotalAmt);
     end;
 
+    /// <summary> 
+    /// Description for BuildInvLineBuffer.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="DocumentType">Parameter of type Option.</param>
+    /// <param name="TempPrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer" temporary.</param>
+    /// <param name="UpdateLines">Parameter of type Boolean.</param>
     local procedure BuildInvLineBuffer(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; DocumentType: Option; var TempPrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer" temporary; UpdateLines: Boolean)
     var
         PrepmtInvLineBuf2: Record "Prepayment Inv. Line Buffer";
@@ -450,11 +519,25 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterBuildInvLineBuffer(TempPrepmtInvLineBuf);
     end;
 
+    /// <summary> 
+    /// Description for BuildInvLineBuffer.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
+    /// <param name="PrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
     procedure BuildInvLineBuffer(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; DocumentType: Option Invoice,"Credit Memo",Statistic; var PrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer")
     begin
         BuildInvLineBuffer(SalesHeader, SalesLine, DocumentType, PrepmtInvLineBuf, false);
     end;
 
+    /// <summary> 
+    /// Description for AdjustInvLineBuffers.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="PrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
     local procedure AdjustInvLineBuffers(SalesHeader: Record "Sales Header"; var PrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; var TotalPrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; DocumentType: Option Invoice,"Credit Memo")
     var
         VATAdjustment: array[2] of Decimal;
@@ -470,6 +553,13 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             end;
     end;
 
+    /// <summary> 
+    /// Description for CalcPrepmtAmtInvLCYInLines.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="PrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <param name="VATAdjustment">Parameter of type array[2] of Decimal.</param>
     local procedure CalcPrepmtAmtInvLCYInLines(SalesHeader: Record "Sales Header"; var PrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; DocumentType: Option Invoice,"Credit Memo"; var VATAdjustment: array[2] of Decimal)
     var
         SalesLine: Record "Sales Line";
@@ -516,6 +606,12 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         TempGlobalPrepmtInvLineBuf.DeleteAll();
     end;
 
+    /// <summary> 
+    /// Description for CalcRoundedAmount.
+    /// </summary>
+    /// <param name="LineAmount">Parameter of type Decimal.</param>
+    /// <param name="Ratio">Parameter of type Decimal.</param>
+    /// <param name="Reminder">Parameter of type Decimal.</param>
     local procedure CalcRoundedAmount(LineAmount: Decimal; Ratio: Decimal; var Reminder: Decimal) RoundedAmount: Decimal
     var
         Amount: Decimal;
@@ -525,6 +621,10 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         Reminder := Amount - RoundedAmount;
     end;
 
+    /// <summary> 
+    /// Description for ReverseDecArray.
+    /// </summary>
+    /// <param name="DecArray">Parameter of type array[2] of Decimal.</param>
     local procedure ReverseDecArray(var DecArray: array[2] of Decimal)
     var
         Idx: Integer;
@@ -533,6 +633,12 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             DecArray[Idx] := -DecArray[Idx];
     end;
 
+    /// <summary> 
+    /// Description for InsertCorrInvLineBuffer.
+    /// </summary>
+    /// <param name="PrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="VATBaseAdjustment">Parameter of type Decimal.</param>
     local procedure InsertCorrInvLineBuffer(var PrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; SalesHeader: Record "Sales Header"; VATBaseAdjustment: Decimal)
     var
         NewPrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer";
@@ -561,6 +667,12 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         PrepmtInvLineBuf := SavedPrepmtInvLineBuf;
     end;
 
+    /// <summary> 
+    /// Description for GetPrepmtAccNo.
+    /// </summary>
+    /// <param name="GenBusPostingGroup">Parameter of type Code[20].</param>
+    /// <param name="GenProdPostingGroup">Parameter of type Code[20].</param>
+    /// <returns>Return variable "Code[20]".</returns>
     local procedure GetPrepmtAccNo(GenBusPostingGroup: Code[20]; GenProdPostingGroup: Code[20]): Code[20]
     begin
         if (GenBusPostingGroup <> GenPostingSetup."Gen. Bus. Posting Group") or
@@ -570,6 +682,12 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         exit(GenPostingSetup.GetSalesPrepmtAccount);
     end;
 
+    /// <summary> 
+    /// Description for GetCorrBalAccNo.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="PositiveAmount">Parameter of type Boolean.</param>
+    /// <returns>Return variable "Code[20]".</returns>
     procedure GetCorrBalAccNo(SalesHeader: Record "Sales Header"; PositiveAmount: Boolean): Code[20]
     var
         BalAccNo: Code[20];
@@ -581,6 +699,11 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         exit(BalAccNo);
     end;
 
+    /// <summary> 
+    /// Description for GetInvRoundingAccNo.
+    /// </summary>
+    /// <param name="CustomerPostingGroup">Parameter of type Code[20].</param>
+    /// <returns>Return variable "Code[20]".</returns>
     procedure GetInvRoundingAccNo(CustomerPostingGroup: Code[20]): Code[20]
     var
         CustPostingGr: Record "Customer Posting Group";
@@ -591,6 +714,12 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         exit(CustPostingGr."Invoice Rounding Account");
     end;
 
+    /// <summary> 
+    /// Description for GetGainLossGLAcc.
+    /// </summary>
+    /// <param name="CurrencyCode">Parameter of type Code[10].</param>
+    /// <param name="PositiveAmount">Parameter of type Boolean.</param>
+    /// <returns>Return variable "Code[20]".</returns>
     local procedure GetGainLossGLAcc(CurrencyCode: Code[10]; PositiveAmount: Boolean): Code[20]
     var
         Currency: Record Currency;
@@ -601,6 +730,11 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         exit(Currency.GetRealizedLossesAccount);
     end;
 
+    /// <summary> 
+    /// Description for GetCurrencyAmountRoundingPrecision.
+    /// </summary>
+    /// <param name="CurrencyCode">Parameter of type Code[10].</param>
+    /// <returns>Return variable "Decimal".</returns>
     local procedure GetCurrencyAmountRoundingPrecision(CurrencyCode: Code[10]): Decimal
     var
         Currency: Record Currency;
@@ -610,6 +744,12 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         exit(Currency."Amount Rounding Precision");
     end;
 
+    /// <summary> 
+    /// Description for FillInvLineBuffer.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="PrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
     procedure FillInvLineBuffer(SalesHeader: Record "Sales Header"; SalesLine: Record "Sales Line"; var PrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer")
     begin
         PrepmtInvLineBuf.Init;
@@ -635,6 +775,14 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterFillInvLineBuffer(PrepmtInvLineBuf, SalesLine);
     end;
 
+    /// <summary> 
+    /// Description for InsertInvoiceRounding.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="PrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="PrevLineNo">Parameter of type Integer.</param>
+    /// <returns>Return variable "Boolean".</returns>
     local procedure InsertInvoiceRounding(SalesHeader: Record "Sales Header"; var PrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; TotalPrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; PrevLineNo: Integer): Boolean
     var
         SalesLine: Record "Sales Line";
@@ -662,6 +810,13 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
+    /// <summary> 
+    /// Description for InitInvoiceRoundingLine.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="TotalAmount">Parameter of type Decimal.</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <returns>Return variable "Boolean".</returns>
     local procedure InitInvoiceRoundingLine(SalesHeader: Record "Sales Header"; TotalAmount: Decimal; var SalesLine: Record "Sales Line"): Boolean
     var
         Currency: Record Currency;
@@ -702,6 +857,12 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         exit(true);
     end;
 
+    /// <summary> 
+    /// Description for CopyHeaderCommentLines.
+    /// </summary>
+    /// <param name="FromNumber">Parameter of type Code[20].</param>
+    /// <param name="ToDocType">Parameter of type Integer.</param>
+    /// <param name="ToNumber">Parameter of type Code[20].</param>
     local procedure CopyHeaderCommentLines(FromNumber: Code[20]; ToDocType: Integer; ToNumber: Code[20])
     var
         SalesCommentLine: Record "Sales Comment Line";
@@ -717,6 +878,14 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
+    /// <summary> 
+    /// Description for CopyLineCommentLines.
+    /// </summary>
+    /// <param name="FromNumber">Parameter of type Code[20].</param>
+    /// <param name="ToDocType">Parameter of type Integer.</param>
+    /// <param name="ToNumber">Parameter of type Code[20].</param>
+    /// <param name="FromLineNo">Parameter of type Integer.</param>
+    /// <param name="ToLineNo">Parameter of type Integer.</param>
     local procedure CopyLineCommentLines(FromNumber: Code[20]; ToDocType: Integer; ToNumber: Code[20]; FromLineNo: Integer; ToLineNo: Integer)
     var
         SalesCommentLine: Record "Sales Comment Line";
@@ -732,6 +901,15 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
+    /// <summary> 
+    /// Description for InsertExtendedText.
+    /// </summary>
+    /// <param name="TabNo">Parameter of type Integer.</param>
+    /// <param name="DocNo">Parameter of type Code[20].</param>
+    /// <param name="GLAccNo">Parameter of type Code[20].</param>
+    /// <param name="DocDate">Parameter of type Date.</param>
+    /// <param name="LanguageCode">Parameter of type Code[10].</param>
+    /// <param name="PrevLineNo">Parameter of type Integer.</param>
     local procedure InsertExtendedText(TabNo: Integer; DocNo: Code[20]; GLAccNo: Code[20]; DocDate: Date; LanguageCode: Code[10]; var PrevLineNo: Integer)
     var
         TempExtTextLine: Record "Extended Text Line" temporary;
@@ -768,6 +946,13 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
+    /// <summary> 
+    /// Description for UpdateVATOnLines.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="VATAmountLine">Parameter of type Record "VAT Amount Line".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
     procedure UpdateVATOnLines(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var VATAmountLine: Record "VAT Amount Line"; DocumentType: Option Invoice,"Credit Memo",Statistic)
     var
         TempVATAmountLineRemainder: Record "VAT Amount Line" temporary;
@@ -878,6 +1063,13 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterUpdateVATOnLines(SalesHeader, SalesLine, VATAmountLine, DocumentType);
     end;
 
+    /// <summary> 
+    /// Description for CalcVATAmountLines.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="VATAmountLine">Parameter of type Record "VAT Amount Line".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
     procedure CalcVATAmountLines(var SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var VATAmountLine: Record "VAT Amount Line"; DocumentType: Option Invoice,"Credit Memo",Statistic)
     var
         Currency: Record Currency;
@@ -923,6 +1115,15 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterCalcVATAmountLines(SalesHeader, SalesLine, VATAmountLine, DocumentType);
     end;
 
+    /// <summary> 
+    /// Description for SumPrepmt.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="VATAmountLine">Parameter of type Record "VAT Amount Line".</param>
+    /// <param name="TotalAmount">Parameter of type Decimal.</param>
+    /// <param name="TotalVATAmount">Parameter of type Decimal.</param>
+    /// <param name="VATAmountText">Parameter of type Text[30].</param>
     procedure SumPrepmt(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var VATAmountLine: Record "VAT Amount Line"; var TotalAmount: Decimal; var TotalVATAmount: Decimal; var VATAmountText: Text[30])
     var
         TempPrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer" temporary;
@@ -951,6 +1152,12 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             VATAmountText := StrSubstNo(Text015, PrevVATPct);
     end;
 
+    /// <summary> 
+    /// Description for GetSalesLines.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
+    /// <param name="ToSalesLine">Parameter of type Record "Sales Line".</param>
     procedure GetSalesLines(SalesHeader: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo",Statistic; var ToSalesLine: Record "Sales Line")
     var
         SalesSetup: Record "Sales & Receivables Setup";
@@ -995,6 +1202,12 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
+    /// <summary> 
+    /// Description for ApplyFilter.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
     local procedure ApplyFilter(SalesHeader: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo",Statistic; var SalesLine: Record "Sales Line")
     begin
         SalesLine.Reset;
@@ -1009,6 +1222,12 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterApplyFilter(SalesLine, SalesHeader, DocumentType);
     end;
 
+    /// <summary> 
+    /// Description for PrepmtAmount.
+    /// </summary>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
+    /// <returns>Return variable "Decimal".</returns>
     procedure PrepmtAmount(SalesLine: Record "Sales Line"; DocumentType: Option Invoice,"Credit Memo",Statistic): Decimal
     begin
         case DocumentType of
@@ -1021,6 +1240,18 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
+    /// <summary> 
+    /// Description for PostPrepmtInvLineBuffer.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <param name="PostingDescription">Parameter of type Text[100].</param>
+    /// <param name="DocType">Parameter of type Enum "Gen. Journal Document Type".</param>
+    /// <param name="DocNo">Parameter of type Code[20].</param>
+    /// <param name="ExtDocNo">Parameter of type Text[35].</param>
+    /// <param name="SrcCode">Parameter of type Code[10].</param>
+    /// <param name="PostingNoSeriesCode">Parameter of type Code[20].</param>
     local procedure PostPrepmtInvLineBuffer(SalesHeader: Record "Sales Header"; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; DocumentType: Option Invoice,"Credit Memo"; PostingDescription: Text[100]; DocType: Enum "Gen. Journal Document Type"; DocNo: Code[20]; ExtDocNo: Text[35]; SrcCode: Code[10]; PostingNoSeriesCode: Code[20])
     var
         GenJnlLine: Record "Gen. Journal Line";
@@ -1044,6 +1275,20 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterPostPrepmtInvLineBuffer(GenJnlLine, PrepmtInvLineBuffer, SuppressCommit, GenJnlPostLine);
     end;
 
+    /// <summary> 
+    /// Description for PostCustomerEntry.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="TotalPrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBufferLCY">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <param name="PostingDescription">Parameter of type Text[100].</param>
+    /// <param name="DocType">Parameter of type Enum "Gen. Journal Document Type".</param>
+    /// <param name="DocNo">Parameter of type Code[20].</param>
+    /// <param name="ExtDocNo">Parameter of type Text[35].</param>
+    /// <param name="SrcCode">Parameter of type Code[10].</param>
+    /// <param name="PostingNoSeriesCode">Parameter of type Code[20].</param>
+    /// <param name="CalcPmtDisc">Parameter of type Boolean.</param>
     local procedure PostCustomerEntry(SalesHeader: Record "Sales Header"; TotalPrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; TotalPrepmtInvLineBufferLCY: Record "Prepayment Inv. Line Buffer"; DocumentType: Option Invoice,"Credit Memo"; PostingDescription: Text[100]; DocType: Enum "Gen. Journal Document Type"; DocNo: Code[20]; ExtDocNo: Text[35]; SrcCode: Code[10]; PostingNoSeriesCode: Code[20]; CalcPmtDisc: Boolean)
     var
         GenJnlLine: Record "Gen. Journal Line";
@@ -1070,6 +1315,20 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterPostCustomerEntry(GenJnlLine, TotalPrepmtInvLineBuffer, TotalPrepmtInvLineBufferLCY, SuppressCommit);
     end;
 
+    /// <summary> 
+    /// Description for PostBalancingEntry.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="TotalPrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBufferLCY">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="CustLedgEntry">Parameter of type Record "Cust. Ledger Entry".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <param name="PostingDescription">Parameter of type Text[100].</param>
+    /// <param name="DocType">Parameter of type Enum "Gen. Journal Document Type".</param>
+    /// <param name="DocNo">Parameter of type Code[20].</param>
+    /// <param name="ExtDocNo">Parameter of type Text[35].</param>
+    /// <param name="SrcCode">Parameter of type Code[10].</param>
+    /// <param name="PostingNoSeriesCode">Parameter of type Code[20].</param>
     local procedure PostBalancingEntry(SalesHeader: Record "Sales Header"; TotalPrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; TotalPrepmtInvLineBufferLCY: Record "Prepayment Inv. Line Buffer"; CustLedgEntry: Record "Cust. Ledger Entry"; DocumentType: Option Invoice,"Credit Memo"; PostingDescription: Text[100]; DocType: Enum "Gen. Journal Document Type"; DocNo: Code[20]; ExtDocNo: Text[35]; SrcCode: Code[10]; PostingNoSeriesCode: Code[20])
     var
         GenJnlLine: Record "Gen. Journal Line";
@@ -1110,11 +1369,20 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterPostBalancingEntry(GenJnlLine, CustLedgEntry, TotalPrepmtInvLineBuffer, TotalPrepmtInvLineBufferLCY, SuppressCommit);
     end;
 
+    /// <summary> 
+    /// Description for RunGenJnlPostLine.
+    /// </summary>
+    /// <param name="GenJnlLine">Parameter of type Record "Gen. Journal Line".</param>
     local procedure RunGenJnlPostLine(var GenJnlLine: Record "Gen. Journal Line")
     begin
         GenJnlPostLine.RunWithCheck(GenJnlLine);
     end;
 
+    /// <summary> 
+    /// Description for UpdatePrepmtAmountOnSaleslines.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="NewTotalPrepmtAmount">Parameter of type Decimal.</param>
     procedure UpdatePrepmtAmountOnSaleslines(SalesHeader: Record "Sales Header"; NewTotalPrepmtAmount: Decimal)
     var
         Currency: Record Currency;
@@ -1159,6 +1427,10 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             until SalesLine.Next = 0;
     end;
 
+    /// <summary> 
+    /// Description for CreateDimensions.
+    /// </summary>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
     local procedure CreateDimensions(var SalesLine: Record "Sales Line")
     var
         SourceCodeSetup: Record "Source Code Setup";
@@ -1181,6 +1453,11 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             SalesLine."Shortcut Dimension 1 Code", SalesLine."Shortcut Dimension 2 Code", SalesLine."Dimension Set ID", DATABASE::Customer);
     end;
 
+    /// <summary> 
+    /// Description for PrepmtDocTypeToDocType.
+    /// </summary>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <returns>Return variable "Integer".</returns>
     local procedure PrepmtDocTypeToDocType(DocumentType: Option Invoice,"Credit Memo"): Integer
     begin
         case DocumentType of
@@ -1192,6 +1469,11 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         exit(2);
     end;
 
+    /// <summary> 
+    /// Description for GetSalesLinesToDeduct.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLines">Parameter of type Record "Sales Line".</param>
     procedure GetSalesLinesToDeduct(SalesHeader: Record "Sales Header"; var SalesLines: Record "Sales Line")
     var
         SalesLine: Record "Sales Line";
@@ -1206,6 +1488,12 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             until SalesLine.Next = 0;
     end;
 
+    /// <summary> 
+    /// Description for PrepmtVATDiffAmount.
+    /// </summary>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
+    /// <returns>Return variable "Decimal".</returns>
     local procedure PrepmtVATDiffAmount(SalesLine: Record "Sales Line"; DocumentType: Option Invoice,"Credit Memo",Statistic): Decimal
     begin
         case DocumentType of
@@ -1218,6 +1506,13 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
+    /// <summary> 
+    /// Description for UpdateSalesDocument.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <param name="GenJnlLineDocNo">Parameter of type Code[20].</param>
     local procedure UpdateSalesDocument(var SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; DocumentType: Option Invoice,"Credit Memo"; GenJnlLineDocNo: Code[20])
     begin
         SalesLine.Reset();
@@ -1263,6 +1558,11 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
+    /// <summary> 
+    /// Description for UpdatePostedSalesDocument.
+    /// </summary>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <param name="DocumentNo">Parameter of type Code[20].</param>
     local procedure UpdatePostedSalesDocument(DocumentType: Option Invoice,"Credit Memo"; DocumentNo: Code[20])
     var
         CustLedgerEntry: Record "Cust. Ledger Entry";
@@ -1293,6 +1593,15 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterUpdatePostedSalesDocument(DocumentType, DocumentNo, SuppressCommit);
     end;
 
+    /// <summary> 
+    /// Description for InsertSalesInvHeader.
+    /// </summary>
+    /// <param name="SalesInvHeader">Parameter of type Record "Sales Invoice Header".</param>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="PostingDescription">Parameter of type Text[100].</param>
+    /// <param name="GenJnlLineDocNo">Parameter of type Code[20].</param>
+    /// <param name="SrcCode">Parameter of type Code[10].</param>
+    /// <param name="PostingNoSeriesCode">Parameter of type Code[20].</param>
     local procedure InsertSalesInvHeader(var SalesInvHeader: Record "Sales Invoice Header"; SalesHeader: Record "Sales Header"; PostingDescription: Text[100]; GenJnlLineDocNo: Code[20]; SrcCode: Code[10]; PostingNoSeriesCode: Code[20])
     begin
         SalesInvHeader.Init();
@@ -1316,6 +1625,13 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterSalesInvHeaderInsert(SalesInvHeader, SalesHeader, SuppressCommit);
     end;
 
+    /// <summary> 
+    /// Description for InsertSalesInvLine.
+    /// </summary>
+    /// <param name="SalesInvHeader">Parameter of type Record "Sales Invoice Header".</param>
+    /// <param name="LineNo">Parameter of type Integer.</param>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
     local procedure InsertSalesInvLine(SalesInvHeader: Record "Sales Invoice Header"; LineNo: Integer; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; SalesHeader: Record "Sales Header")
     var
         SalesInvLine: Record "Sales Invoice Line";
@@ -1358,6 +1674,16 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterSalesInvLineInsert(SalesInvLine, SalesInvHeader, PrepmtInvLineBuffer, SuppressCommit);
     end;
 
+    /// <summary> 
+    /// Description for InsertSalesCrMemoHeader.
+    /// </summary>
+    /// <param name="SalesCrMemoHeader">Parameter of type Record "Sales Cr.Memo Header".</param>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="PostingDescription">Parameter of type Text[100].</param>
+    /// <param name="GenJnlLineDocNo">Parameter of type Code[20].</param>
+    /// <param name="SrcCode">Parameter of type Code[10].</param>
+    /// <param name="PostingNoSeriesCode">Parameter of type Code[20].</param>
+    /// <param name="CalcPmtDiscOnCrMemos">Parameter of type Boolean.</param>
     local procedure InsertSalesCrMemoHeader(var SalesCrMemoHeader: Record "Sales Cr.Memo Header"; SalesHeader: Record "Sales Header"; PostingDescription: Text[100]; GenJnlLineDocNo: Code[20]; SrcCode: Code[10]; PostingNoSeriesCode: Code[20]; CalcPmtDiscOnCrMemos: Boolean)
     begin
         SalesCrMemoHeader.Init();
@@ -1386,6 +1712,13 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterSalesCrMemoHeaderInsert(SalesCrMemoHeader, SalesHeader, SuppressCommit);
     end;
 
+    /// <summary> 
+    /// Description for InsertSalesCrMemoLine.
+    /// </summary>
+    /// <param name="SalesCrMemoHeader">Parameter of type Record "Sales Cr.Memo Header".</param>
+    /// <param name="LineNo">Parameter of type Integer.</param>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
     local procedure InsertSalesCrMemoLine(SalesCrMemoHeader: Record "Sales Cr.Memo Header"; LineNo: Integer; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; SalesHeader: Record "Sales Header")
     var
         SalesCrMemoLine: Record "Sales Cr.Memo Line";
@@ -1428,6 +1761,11 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         OnAfterSalesCrMemoLineInsert(SalesCrMemoLine, SalesCrMemoHeader, PrepmtInvLineBuffer, SuppressCommit);
     end;
 
+    /// <summary> 
+    /// Description for GetCalcPmtDiscOnCrMemos.
+    /// </summary>
+    /// <param name="PrepmtPmtTermsCode">Parameter of type Code[10].</param>
+    /// <returns>Return variable "Boolean".</returns>
     local procedure GetCalcPmtDiscOnCrMemos(PrepmtPmtTermsCode: Code[10]): Boolean
     var
         PaymentTerms: Record "Payment Terms";
@@ -1438,183 +1776,404 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         exit(PaymentTerms."Calc. Pmt. Disc. on Cr. Memos");
     end;
 
+    /// <summary> 
+    /// Description for GetPreviewMode.
+    /// </summary>
+    /// <returns>Return variable "Boolean".</returns>
     procedure GetPreviewMode(): Boolean
     begin
         exit(PreviewMode);
     end;
 
+    /// <summary> 
+    /// Description for GetSuppressCommit.
+    /// </summary>
+    /// <returns>Return variable "Boolean".</returns>
     procedure GetSuppressCommit(): Boolean
     begin
         exit(SuppressCommit);
     end;
 
+    /// <summary> 
+    /// Description for SetSuppressCommit.
+    /// </summary>
+    /// <param name="NewSuppressCommit">Parameter of type Boolean.</param>
     procedure SetSuppressCommit(NewSuppressCommit: Boolean)
     begin
         SuppressCommit := NewSuppressCommit;
     end;
 
     [Scope('OnPrem')]
+    /// <summary> 
+    /// Description for SetPreviewMode.
+    /// </summary>
+    /// <param name="NewPreviewMode">Parameter of type Boolean.</param>
     procedure SetPreviewMode(NewPreviewMode: Boolean)
     begin
         PreviewMode := NewPreviewMode;
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterApplyFilter.
+    /// </summary>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="DocumentType">Parameter of type Option.</param>
     local procedure OnAfterApplyFilter(var SalesLine: Record "Sales Line"; SalesHeader: Record "Sales Header"; DocumentType: Option)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterBuildInvLineBuffer.
+    /// </summary>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
     local procedure OnAfterBuildInvLineBuffer(var PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer")
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterCalcVATAmountLines.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="VATAmountLine">Parameter of type Record "VAT Amount Line".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
     local procedure OnAfterCalcVATAmountLines(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var VATAmountLine: Record "VAT Amount Line"; DocumentType: Option Invoice,"Credit Memo",Statistic)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterCheckPrepmtDoc.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnAfterCheckPrepmtDoc(SalesHeader: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterCreateLinesOnBeforeGLPosting.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesInvHeader">Parameter of type Record "Sales Invoice Header".</param>
+    /// <param name="SalesCrMemoHeader">Parameter of type Record "Sales Cr.Memo Header".</param>
+    /// <param name="TempPrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer" temporary.</param>
+    /// <param name="DocumentType">Parameter of type Option.</param>
+    /// <param name="LastLineNo">Parameter of type Integer.</param>
     local procedure OnAfterCreateLinesOnBeforeGLPosting(var SalesHeader: Record "Sales Header"; SalesInvHeader: Record "Sales Invoice Header"; SalesCrMemoHeader: Record "Sales Cr.Memo Header"; var TempPrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer" temporary; DocumentType: Option; var LastLineNo: Integer)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterFillInvLineBuffer.
+    /// </summary>
+    /// <param name="PrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
     local procedure OnAfterFillInvLineBuffer(var PrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; SalesLine: Record "Sales Line")
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterInsertInvoiceRounding.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="PrevLineNo">Parameter of type Integer.</param>
     local procedure OnAfterInsertInvoiceRounding(SalesHeader: Record "Sales Header"; var PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; var TotalPrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; var PrevLineNo: Integer)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterPostPrepayments.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
+    /// <param name="SalesInvoiceHeader">Parameter of type Record "Sales Invoice Header".</param>
+    /// <param name="SalesCrMemoHeader">Parameter of type Record "Sales Cr.Memo Header".</param>
     local procedure OnAfterPostPrepayments(var SalesHeader: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo"; CommitIsSuppressed: Boolean; var SalesInvoiceHeader: Record "Sales Invoice Header"; var SalesCrMemoHeader: Record "Sales Cr.Memo Header")
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterPostPrepaymentsOnBeforeThrowPreviewModeError.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesInvHeader">Parameter of type Record "Sales Invoice Header".</param>
+    /// <param name="SalesCrMemoHeader">Parameter of type Record "Sales Cr.Memo Header".</param>
+    /// <param name="GenJnlPostLine">Parameter of type Codeunit "Gen. Jnl.-Post Line".</param>
     local procedure OnAfterPostPrepaymentsOnBeforeThrowPreviewModeError(var SalesHeader: Record "Sales Header"; var SalesInvHeader: Record "Sales Invoice Header"; var SalesCrMemoHeader: Record "Sales Cr.Memo Header"; var GenJnlPostLine: Codeunit "Gen. Jnl.-Post Line")
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterPostBalancingEntry.
+    /// </summary>
+    /// <param name="GenJnlLine">Parameter of type Record "Gen. Journal Line".</param>
+    /// <param name="CustLedgEntry">Parameter of type Record "Cust. Ledger Entry".</param>
+    /// <param name="TotalPrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBufferLCY">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnAfterPostBalancingEntry(var GenJnlLine: Record "Gen. Journal Line"; CustLedgEntry: Record "Cust. Ledger Entry"; TotalPrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; TotalPrepmtInvLineBufferLCY: Record "Prepayment Inv. Line Buffer"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterPostCustomerEntry.
+    /// </summary>
+    /// <param name="GenJnlLine">Parameter of type Record "Gen. Journal Line".</param>
+    /// <param name="TotalPrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBufferLCY">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnAfterPostCustomerEntry(var GenJnlLine: Record "Gen. Journal Line"; TotalPrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; TotalPrepmtInvLineBufferLCY: Record "Prepayment Inv. Line Buffer"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterPostPrepmtInvLineBuffer.
+    /// </summary>
+    /// <param name="GenJnlLine">Parameter of type Record "Gen. Journal Line".</param>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
+    /// <param name="GenJnlPostLine">Parameter of type Codeunit "Gen. Jnl.-Post Line".</param>
     local procedure OnAfterPostPrepmtInvLineBuffer(var GenJnlLine: Record "Gen. Journal Line"; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; CommitIsSuppressed: Boolean; var GenJnlPostLine: Codeunit "Gen. Jnl.-Post Line")
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterRoundAmounts.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBufLCY">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
     local procedure OnAfterRoundAmounts(SalesHeader: Record "Sales Header"; var PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; var TotalPrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; var TotalPrepmtInvLineBufLCY: Record "Prepayment Inv. Line Buffer")
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterSalesInvHeaderInsert.
+    /// </summary>
+    /// <param name="SalesInvoiceHeader">Parameter of type Record "Sales Invoice Header".</param>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnAfterSalesInvHeaderInsert(var SalesInvoiceHeader: Record "Sales Invoice Header"; SalesHeader: Record "Sales Header"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterSalesInvLineInsert.
+    /// </summary>
+    /// <param name="SalesInvLine">Parameter of type Record "Sales Invoice Line".</param>
+    /// <param name="SalesInvHeader">Parameter of type Record "Sales Invoice Header".</param>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnAfterSalesInvLineInsert(var SalesInvLine: Record "Sales Invoice Line"; SalesInvHeader: Record "Sales Invoice Header"; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterSalesCrMemoHeaderInsert.
+    /// </summary>
+    /// <param name="SalesCrMemoHeader">Parameter of type Record "Sales Cr.Memo Header".</param>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnAfterSalesCrMemoHeaderInsert(var SalesCrMemoHeader: Record "Sales Cr.Memo Header"; SalesHeader: Record "Sales Header"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterSalesCrMemoLineInsert.
+    /// </summary>
+    /// <param name="SalesCrMemoLine">Parameter of type Record "Sales Cr.Memo Line".</param>
+    /// <param name="SalesCrMemoHeader">Parameter of type Record "Sales Cr.Memo Header".</param>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnAfterSalesCrMemoLineInsert(var SalesCrMemoLine: Record "Sales Cr.Memo Line"; SalesCrMemoHeader: Record "Sales Cr.Memo Header"; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterUpdatePostedSalesDocument.
+    /// </summary>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <param name="DocumentNo">Parameter of type Code[20].</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnAfterUpdatePostedSalesDocument(DocumentType: Option Invoice,"Credit Memo"; DocumentNo: Code[20]; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnAfterUpdateVATOnLines.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
+    /// <param name="VATAmountLine">Parameter of type Record "VAT Amount Line".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
     local procedure OnAfterUpdateVATOnLines(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var VATAmountLine: Record "VAT Amount Line"; DocumentType: Option Invoice,"Credit Memo",Statistic)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnBeforeInvoice.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="Handled">Parameter of type Boolean.</param>
     local procedure OnBeforeInvoice(var SalesHeader: Record "Sales Header"; var Handled: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnBeforeCreditMemo.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="Handled">Parameter of type Boolean.</param>
     local procedure OnBeforeCreditMemo(var SalesHeader: Record "Sales Header"; var Handled: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnBeforeFillInvLineBuffer.
+    /// </summary>
+    /// <param name="PrepaymentInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
     local procedure OnBeforeFillInvLineBuffer(var PrepaymentInvLineBuffer: Record "Prepayment Inv. Line Buffer"; SalesHeader: Record "Sales Header"; SalesLine: Record "Sales Line")
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnBeforePostPrepayments.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnBeforePostPrepayments(var SalesHeader: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnBeforeSalesInvHeaderInsert.
+    /// </summary>
+    /// <param name="SalesInvHeader">Parameter of type Record "Sales Invoice Header".</param>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnBeforeSalesInvHeaderInsert(var SalesInvHeader: Record "Sales Invoice Header"; SalesHeader: Record "Sales Header"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnBeforeSalesInvLineInsert.
+    /// </summary>
+    /// <param name="SalesInvLine">Parameter of type Record "Sales Invoice Line".</param>
+    /// <param name="SalesInvHeader">Parameter of type Record "Sales Invoice Header".</param>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnBeforeSalesInvLineInsert(var SalesInvLine: Record "Sales Invoice Line"; SalesInvHeader: Record "Sales Invoice Header"; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnBeforeSalesCrMemoHeaderInsert.
+    /// </summary>
+    /// <param name="SalesCrMemoHeader">Parameter of type Record "Sales Cr.Memo Header".</param>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnBeforeSalesCrMemoHeaderInsert(var SalesCrMemoHeader: Record "Sales Cr.Memo Header"; SalesHeader: Record "Sales Header"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnBeforeSalesCrMemoLineInsert.
+    /// </summary>
+    /// <param name="SalesCrMemoLine">Parameter of type Record "Sales Cr.Memo Line".</param>
+    /// <param name="SalesCrMemoHeader">Parameter of type Record "Sales Cr.Memo Header".</param>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnBeforeSalesCrMemoLineInsert(var SalesCrMemoLine: Record "Sales Cr.Memo Line"; SalesCrMemoHeader: Record "Sales Cr.Memo Header"; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnBeforePostBalancingEntry.
+    /// </summary>
+    /// <param name="GenJnlLine">Parameter of type Record "Gen. Journal Line".</param>
+    /// <param name="CustLedgEntry">Parameter of type Record "Cust. Ledger Entry".</param>
+    /// <param name="TotalPrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBufferLCY">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnBeforePostBalancingEntry(var GenJnlLine: Record "Gen. Journal Line"; CustLedgEntry: Record "Cust. Ledger Entry"; TotalPrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; TotalPrepmtInvLineBufferLCY: Record "Prepayment Inv. Line Buffer"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnBeforePostCustomerEntry.
+    /// </summary>
+    /// <param name="GenJnlLine">Parameter of type Record "Gen. Journal Line".</param>
+    /// <param name="TotalPrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="TotalPrepmtInvLineBufferLCY">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnBeforePostCustomerEntry(var GenJnlLine: Record "Gen. Journal Line"; TotalPrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; TotalPrepmtInvLineBufferLCY: Record "Prepayment Inv. Line Buffer"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnBeforePostPrepmtInvLineBuffer.
+    /// </summary>
+    /// <param name="GenJnlLine">Parameter of type Record "Gen. Journal Line".</param>
+    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
+    /// <param name="CommitIsSuppressed">Parameter of type Boolean.</param>
     local procedure OnBeforePostPrepmtInvLineBuffer(var GenJnlLine: Record "Gen. Journal Line"; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; CommitIsSuppressed: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnUpdateVATOnLinesOnAfterGetRemainder.
+    /// </summary>
+    /// <param name="VATAmountLineRemainder">Parameter of type Record "VAT Amount Line".</param>
+    /// <param name="RemainderExists">Parameter of type Boolean.</param>
     local procedure OnUpdateVATOnLinesOnAfterGetRemainder(var VATAmountLineRemainder: Record "VAT Amount Line"; var RemainderExists: Boolean)
     begin
     end;
 
     [IntegrationEvent(false, false)]
+    /// <summary> 
+    /// Description for OnUpdateVATOnLinesOnAfterVATAmountLineGet.
+    /// </summary>
+    /// <param name="VATAmountLine">Parameter of type Record "VAT Amount Line".</param>
     local procedure OnUpdateVATOnLinesOnAfterVATAmountLineGet(var VATAmountLine: Record "VAT Amount Line")
     begin
     end;

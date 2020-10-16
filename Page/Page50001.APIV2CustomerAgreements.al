@@ -249,18 +249,28 @@ page 50001 "APIV2 - Customer Agreements"
         NotProvidedCustomerNameErr: Label 'A "displayName" must be provided.', Locked = true;
         BlankAgreementDescriptionErr: Label 'The blank "displayName" is not allowed.', Locked = true;
 
+    /// <summary> 
+    /// Description for SetCalculatedFields.
+    /// </summary>
     local procedure SetCalculatedFields()
     var
     begin
         CurrencyCodeTxt := GraphMgtGeneralTools.TranslateNAVCurrencyCodeToCurrencyCode(LCYCurrencyCode, Rec."Currency Code");
     end;
 
+    /// <summary> 
+    /// Description for ClearCalculatedFields.
+    /// </summary>
     local procedure ClearCalculatedFields()
     begin
         CLEAR(Rec.SystemId);
         TempFieldSet.DELETEALL();
     end;
 
+    /// <summary> 
+    /// Description for RegisterFieldSet.
+    /// </summary>
+    /// <param name="FieldNo">Parameter of type Integer.</param>
     local procedure RegisterFieldSet(FieldNo: Integer)
     begin
         IF TempFieldSet.GET(DATABASE::"Customer Agreement", FieldNo) THEN
@@ -272,6 +282,12 @@ page 50001 "APIV2 - Customer Agreements"
         TempFieldSet.INSERT(TRUE);
     end;
 
+    /// <summary> 
+    /// Description for ProcessNewRecordFromAPI.
+    /// </summary>
+    /// <param name="InsertedRecordRef">Parameter of type RecordRef.</param>
+    /// <param name="TempFieldSet">Parameter of type Record "Field".</param>
+    /// <param name="ModifiedDateTime">Parameter of type DateTime.</param>
     local procedure ProcessNewRecordFromAPI(var InsertedRecordRef: RecordRef; var TempFieldSet: Record "Field"; ModifiedDateTime: DateTime)
     var
         ConfigTemplateHeader: Record "Config. Template Header";
@@ -288,6 +304,12 @@ page 50001 "APIV2 - Customer Agreements"
         IntegrationManagement.InsertUpdateIntegrationRecord(InsertedRecordRef, ModifiedDateTime);
     end;
 
+    /// <summary> 
+    /// Description for FindTemplateBasedOnRecordFields.
+    /// </summary>
+    /// <param name="RecordVariant">Parameter of type Variant.</param>
+    /// <param name="ConfigTemplateHeader">Parameter of type Record "Config. Template Header".</param>
+    /// <returns>Return variable "Boolean".</returns>
     local procedure FindTemplateBasedOnRecordFields(RecordVariant: Variant; var ConfigTemplateHeader: Record "Config. Template Header"): Boolean
     var
         ConfigTmplSelectionRules: Record "Config. Tmpl. Selection Rules";

@@ -601,6 +601,9 @@ page 50000 "APIV2 - Sales Orders"
         DocumentDateVar: Date;
         HasWritePermission: Boolean;
 
+    /// <summary> 
+    /// Description for SetCalculatedFields.
+    /// </summary>
     local procedure SetCalculatedFields()
     var
         GraphMgtSalesOrder: Codeunit "Graph Mgt - Sales Order";
@@ -612,6 +615,9 @@ page 50000 "APIV2 - Sales Orders"
         PartialShipping := (Rec."Shipping Advice" = Rec."Shipping Advice"::Partial);
     end;
 
+    /// <summary> 
+    /// Description for ClearCalculatedFields.
+    /// </summary>
     local procedure ClearCalculatedFields()
     begin
         CLEAR(SellingPostalAddressJSONText);
@@ -624,6 +630,10 @@ page 50000 "APIV2 - Sales Orders"
         TempFieldBuffer.DELETEALL();
     end;
 
+    /// <summary> 
+    /// Description for RegisterFieldSet.
+    /// </summary>
+    /// <param name="FieldNo">Parameter of type Integer.</param>
     local procedure RegisterFieldSet(FieldNo: Integer)
     var
         LastOrderNo: Integer;
@@ -639,6 +649,9 @@ page 50000 "APIV2 - Sales Orders"
         TempFieldBuffer.INSERT();
     end;
 
+    /// <summary> 
+    /// Description for CheckSellToCustomerSpecified.
+    /// </summary>
     local procedure CheckSellToCustomerSpecified()
     begin
         IF (Rec."Sell-to Customer No." = '') AND
@@ -647,6 +660,9 @@ page 50000 "APIV2 - Sales Orders"
             ERROR(SellToCustomerNotProvidedErr);
     end;
 
+    /// <summary> 
+    /// Description for ProcessSellingPostalAddressOnInsert.
+    /// </summary>
     local procedure ProcessSellingPostalAddressOnInsert()
     var
         GraphMgtSalesOrder: Codeunit "Graph Mgt - Sales Order";
@@ -664,6 +680,9 @@ page 50000 "APIV2 - Sales Orders"
         RegisterFieldSet(Rec.FIELDNO("Sell-to County"));
     end;
 
+    /// <summary> 
+    /// Description for ProcessSellingPostalAddressOnModify.
+    /// </summary>
     local procedure ProcessSellingPostalAddressOnModify()
     var
         GraphMgtSalesOrder: Codeunit "Graph Mgt - Sales Order";
@@ -692,6 +711,9 @@ page 50000 "APIV2 - Sales Orders"
             RegisterFieldSet(Rec.FIELDNO("Sell-to County"));
     end;
 
+    /// <summary> 
+    /// Description for ProcessShippingPostalAddressOnInsert.
+    /// </summary>
     local procedure ProcessShippingPostalAddressOnInsert()
     var
         GraphMgtSalesOrder: Codeunit "Graph Mgt - Sales Order";
@@ -711,6 +733,9 @@ page 50000 "APIV2 - Sales Orders"
         RegisterFieldSet(Rec.FIELDNO("Ship-to Code"));
     end;
 
+    /// <summary> 
+    /// Description for ProcessShippingPostalAddressOnModify.
+    /// </summary>
     local procedure ProcessShippingPostalAddressOnModify()
     var
         GraphMgtSalesOrder: Codeunit "Graph Mgt - Sales Order";
@@ -757,6 +782,9 @@ page 50000 "APIV2 - Sales Orders"
         end;
     end;
 
+    /// <summary> 
+    /// Description for ProcessPartialShipping.
+    /// </summary>
     local procedure ProcessPartialShipping()
     begin
         IF PartialShipping THEN
@@ -767,6 +795,10 @@ page 50000 "APIV2 - Sales Orders"
         RegisterFieldSet(Rec.FIELDNO("Shipping Advice"));
     end;
 
+    /// <summary> 
+    /// Description for UpdateSellToCustomerFromSellToGraphContactId.
+    /// </summary>
+    /// <param name="Customer">Parameter of type Record Customer.</param>
     local procedure UpdateSellToCustomerFromSellToGraphContactId(var Customer: Record Customer)
     var
         O365SalesInvoiceMgmt: Codeunit "O365 Sales Invoice Mgmt";
@@ -790,6 +822,9 @@ page 50000 "APIV2 - Sales Orders"
         O365SalesInvoiceMgmt.EnforceCustomerTemplateIntegrity(Customer);
     end;
 
+    /// <summary> 
+    /// Description for CheckPermissions.
+    /// </summary>
     local procedure CheckPermissions()
     var
         SalesHeader: Record "Sales Header";
@@ -801,6 +836,9 @@ page 50000 "APIV2 - Sales Orders"
         HasWritePermission := SalesHeader.WRITEPERMISSION();
     end;
 
+    /// <summary> 
+    /// Description for UpdateDiscount.
+    /// </summary>
     local procedure UpdateDiscount()
     var
         SalesHeader: Record "Sales Header";
@@ -815,6 +853,9 @@ page 50000 "APIV2 - Sales Orders"
         SalesCalcDiscountByType.ApplyInvDiscBasedOnAmt(InvoiceDiscountAmount, SalesHeader);
     end;
 
+    /// <summary> 
+    /// Description for SetDates.
+    /// </summary>
     local procedure SetDates()
     var
         GraphMgtSalesOrderBuffer: Codeunit "Graph Mgt - Sales Order Buffer";
@@ -834,6 +875,10 @@ page 50000 "APIV2 - Sales Orders"
         Rec.FIND();
     end;
 
+    /// <summary> 
+    /// Description for GetOrder.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
     local procedure GetOrder(var SalesHeader: Record "Sales Header")
     begin
         SalesHeader.SetRange(SystemId, Rec.Id);
@@ -841,6 +886,11 @@ page 50000 "APIV2 - Sales Orders"
             ERROR(CannotFindOrderErr);
     end;
 
+    /// <summary> 
+    /// Description for PostWithShipAndInvoice.
+    /// </summary>
+    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
+    /// <param name="SalesInvoiceHeader">Parameter of type Record "Sales Invoice Header".</param>
     local procedure PostWithShipAndInvoice(var SalesHeader: Record "Sales Header"; var SalesInvoiceHeader: Record "Sales Invoice Header")
     var
         DummyO365SalesDocument: Record "O365 Sales Document";
@@ -863,6 +913,12 @@ page 50000 "APIV2 - Sales Orders"
         SalesInvoiceHeader.FindFirst();
     end;
 
+    /// <summary> 
+    /// Description for SetActionResponse.
+    /// </summary>
+    /// <param name="ActionContext">Parameter of type WebServiceActionContext.</param>
+    /// <param name="PageId">Parameter of type Integer.</param>
+    /// <param name="DocumentId">Parameter of type Guid.</param>
     local procedure SetActionResponse(var ActionContext: WebServiceActionContext; PageId: Integer; DocumentId: Guid)
     var
     begin
