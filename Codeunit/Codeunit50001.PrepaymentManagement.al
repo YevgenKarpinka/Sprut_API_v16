@@ -342,6 +342,7 @@ codeunit 50001 "Prepayment Management"
 
         SourceCodeSetup.GET;
         CustLedgEntry.GET(DtldCustLedgEntry2."Cust. Ledger Entry No.");
+        MarkUnApplyPayment(CustLedgEntry);
         GenJnlLine."Document No." := DocNo;
         GenJnlLine."Posting Date" := PostingDate;
         GenJnlLine."Account Type" := GenJnlLine."Account Type"::Customer;
@@ -514,6 +515,21 @@ codeunit 50001 "Prepayment Management"
                 TempCustLedgerEntry."Entry No." := DetailedCustLedgEntry."Cust. Ledger Entry No.";
                 IF TempCustLedgerEntry.INSERT THEN;
             UNTIL DetailedCustLedgEntry.NEXT = 0;
+    end;
+
+    /// <summary> 
+    /// Description for MarkUnApplyPayment.
+    /// </summary>
+    /// <param name="CustLedgEntry">Parameter of type Record "Cust. Ledger Entry".</param>
+    local procedure MarkUnApplyPayment(CustLedgEntry: Record "Cust. Ledger Entry")
+    var
+        locCustLedgEntry: Record "Cust. Ledger Entry";
+    begin
+        if (CustLedgEntry."Document Type" in [CustLedgEntry."Document Type"::Payment, CustLedgEntry."Document Type"::Refund]) then
+            if locCustLedgEntry.Get(CustLedgEntry."Entry No.") then begin
+                locCustLedgEntry.Validate("Applies-to ID", UserId);
+                locCustLedgEntry.Modify();
+            end;
     end;
 
 }

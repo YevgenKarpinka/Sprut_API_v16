@@ -54,6 +54,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                 begin
                     PrepaymentMgt.GetLastPrepaymentInvoiceNo(Rec."No.", DocumentNo, PostingDate);
                     PrepaymentMgt.UnApplyCustLedgEntry(PrepaymentMgt.GetCustomerLedgerEntryNo(DocumentNo, PostingDate));
+
                 end;
             }
         }
