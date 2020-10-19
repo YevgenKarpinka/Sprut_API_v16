@@ -637,6 +637,7 @@ page 50000 "APIV2 - Sales Orders"
     local procedure RegisterFieldSet(FieldNo: Integer)
     var
         LastOrderNo: Integer;
+        salesHeader: Record "Sales Header";
     begin
         LastOrderNo := 1;
         IF TempFieldBuffer.FINDLAST() THEN
@@ -645,7 +646,13 @@ page 50000 "APIV2 - Sales Orders"
         CLEAR(TempFieldBuffer);
         TempFieldBuffer.Order := LastOrderNo;
         TempFieldBuffer."Table ID" := DATABASE::"Sales Invoice Entity Aggregate";
-        TempFieldBuffer."Field ID" := FieldNo;
+        case FieldNo of
+            50000:
+                TempFieldBuffer."Field ID" := salesHeader.FieldNo("Agreement No.");
+            else
+                TempFieldBuffer."Field ID" := FieldNo;
+        end;
+
         TempFieldBuffer.INSERT();
     end;
 

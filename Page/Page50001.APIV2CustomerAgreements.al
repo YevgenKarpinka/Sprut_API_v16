@@ -279,6 +279,7 @@ page 50001 "APIV2 - Customer Agreements"
         TempFieldSet.INIT();
         TempFieldSet.TableNo := DATABASE::"Customer Agreement";
         TempFieldSet.VALIDATE("No.", FieldNo);
+
         TempFieldSet.INSERT(TRUE);
     end;
 
