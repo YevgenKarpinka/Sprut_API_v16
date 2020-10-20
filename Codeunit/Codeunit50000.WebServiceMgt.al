@@ -378,4 +378,34 @@ codeunit 50000 "Web Service Mgt."
             JObject2.Add('details', StatusDetails);
         JObject.Add('Status', JObject2);
     end;
+
+    procedure jsonItems(): JsonArray
+    var
+        locItems: Record Item;
+        JSObjectLine: JsonObject;
+        JSObjectArray: JsonArray;
+        salesTypeCode: Label '799810002';
+        defaultUoMScheduleId: Label '422fde89-3e76-45f2-b9e6-9d59c8bbc311';
+        defaultUoMId: Label 'd91f3b4e-f4cc-4063-8f7a-8d365d5922ff';
+        quantityDecimal: Integer;
+    begin
+        quantitydecimal := 2;
+
+        if locItems.FindSet(false, false) then
+            repeat
+                Clear(JSObjectLine);
+
+                JSObjectLine.Add('tct_salestypecode', salesTypeCode);
+                JSObjectLine.Add('ProductNumber', locItems."No.");
+                JSObjectLine.Add('name', locItems.Description);
+                JSObjectLine.Add('defaultuomscheduleid', defaultUoMScheduleId);
+                JSObjectLine.Add('defaultuomid', defaultUoMId);
+                JSObjectLine.Add('quantityDecimal', quantityDecimal);
+                JSObjectLine.Add('tct_bc_product_number', locItems."No.");
+                JSObjectLine.Add('tct_bc_UoMId', locItems."Sales Unit of Measure");
+
+                JSObjectArray.Add(JSObjectLine);
+            until locItems.Next() = 0;
+        exit(JSObjectArray);
+    end;
 }

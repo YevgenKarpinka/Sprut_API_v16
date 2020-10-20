@@ -8,7 +8,7 @@ page 50003 "APIV2 - Sales Invoice"
     DelayedInsert = true;
     EntityName = 'salesInvoice';
     EntitySetName = 'salesInvoices';
-    ODataKeyFields = systemId;
+    ODataKeyFields = "Document Type", "No.";
     PageType = API;
     SourceTable = "Sales Header";
     Extensible = false;
@@ -19,16 +19,16 @@ page 50003 "APIV2 - Sales Invoice"
         {
             repeater(Group)
             {
-                field(systemId; Rec.SystemId)
+                field(type; Rec."Document Type")
                 {
                     ApplicationArea = All;
-                    Caption = 'systemId', Locked = true;
+                    Caption = 'type', Locked = true;
                     Editable = false;
                 }
                 field(number; Rec."No.")
                 {
                     ApplicationArea = All;
-                    Caption = 'systemId', Locked = true;
+                    Caption = 'number', Locked = true;
                     Editable = false;
                 }
                 // >>
@@ -93,17 +93,17 @@ page 50003 "APIV2 - Sales Invoice"
         IF (Rec."No." = SalesHeader."No.") THEN begin
             Rec.MODIFY(TRUE);
 
-            if (PrepaymentAmount <> 0) and (Rec."Prepayment %" <> 0) then begin
-                // Check Prepayment amount
-                CheckedPrepaymentAmount(Rec."No.", PrepaymentAmount, AdjAmount);
-                if AdjAmount <> 0 then
-                    // Update Prepayment amount if delta not aqual 0
-                    UpdatePrepaymentAmount(AdjAmount);
-                // Release Sales order
-                ReleaseSalesDoc.PerformManualRelease(Rec);
-                // Create prepayment invoice
-                SalesPostPrepaymentsSprut.PostPrepaymentInvoiceSprut(Rec);
-            end;
+            // if (PrepaymentAmount <> 0) and (Rec."Prepayment %" <> 0) then begin
+            //     // Check Prepayment amount
+            //     CheckedPrepaymentAmount(Rec."No.", PrepaymentAmount, AdjAmount);
+            //     if AdjAmount <> 0 then
+            //         // Update Prepayment amount if delta not aqual 0
+            //         UpdatePrepaymentAmount(AdjAmount);
+            //     // Release Sales order
+            //     ReleaseSalesDoc.PerformManualRelease(Rec);
+            //     // Create prepayment invoice
+            //     SalesPostPrepaymentsSprut.PostPrepaymentInvoiceSprut(Rec);
+            // end;
         end;
     end;
 
