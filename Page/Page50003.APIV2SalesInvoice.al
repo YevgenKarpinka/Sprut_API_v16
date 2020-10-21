@@ -31,7 +31,25 @@ page 50003 "APIV2 - Sales Invoice"
                     Caption = 'number', Locked = true;
                     Editable = false;
                 }
-                // >>
+                field(postedInvoiceNo; postedInvoiceNo)
+                {
+                    ApplicationArea = All;
+                    Caption = 'postedInvoiceNo', Locked = true;
+                    Editable = false;
+                }
+                field(invoiceId; invoiceId)
+                {
+                    ApplicationArea = All;
+                    Caption = 'invoiceId', Locked = true;
+                    ShowMandatory = true;
+
+                    trigger OnValidate()
+                    begin
+                        IF invoiceId = '' THEN
+                            ERROR(BlankInvoiceIdErr);
+                        // RegisterFieldSet(Rec.FIELDNO("Prepayment %"));
+                    end;
+                }
                 field(prepaymentPercent; Rec."Prepayment %")
                 {
                     ApplicationArea = All;
@@ -42,7 +60,7 @@ page 50003 "APIV2 - Sales Invoice"
                     begin
                         IF Rec."Prepayment %" = 0 THEN
                             ERROR(BlankPrepaymentPercentErr);
-                        RegisterFieldSet(Rec.FIELDNO("Prepayment %"));
+                        // RegisterFieldSet(Rec.FIELDNO("Prepayment %"));
                     end;
                 }
                 field(prepaymentAmount; PrepaymentAmount)
@@ -57,7 +75,6 @@ page 50003 "APIV2 - Sales Invoice"
                             ERROR(BlankPrepaymentAmountErr);
                     end;
                 }
-                // <<
             }
         }
     }
@@ -79,53 +96,86 @@ page 50003 "APIV2 - Sales Invoice"
 
     trigger OnModifyRecord(): Boolean
     var
-
+        SalesHeader: Record "Sales Header";
         GraphMgtGeneralTools: Codeunit "Graph Mgt - General Tools";
-        ReleaseSalesDoc: Codeunit "Release Sales Document";
-        SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
     begin
         IF xRec.SystemId <> Rec.SystemId THEN
             GraphMgtGeneralTools.ErrorIdImmutable();
 
-        SalesHeader.SetRange(SystemId, Rec.SystemId);
-        SalesHeader.FindFirst();
+        if SalesHeader.Get(Rec."Document Type", Rec."No.") then begin
+            Rec.Modify(true);
 
-        IF (Rec."No." = SalesHeader."No.") THEN begin
-            Rec.MODIFY(TRUE);
-
-            // if (PrepaymentAmount <> 0) and (Rec."Prepayment %" <> 0) then begin
-            //     // Check Prepayment amount
-            //     CheckedPrepaymentAmount(Rec."No.", PrepaymentAmount, AdjAmount);
-            //     if AdjAmount <> 0 then
-            //         // Update Prepayment amount if delta not aqual 0
-            //         UpdatePrepaymentAmount(AdjAmount);
-            //     // Release Sales order
-            //     ReleaseSalesDoc.PerformManualRelease(Rec);
-            //     // Create prepayment invoice
-            //     SalesPostPrepaymentsSprut.PostPrepaymentInvoiceSprut(Rec);
-            // end;
+            if (PrepaymentAmount <> 0)
+            and (Rec."Prepayment %" <> 0)
+            and (invoiceId <> '') then
+                CreatePrepaymentInvoice(Rec."No.");
         end;
     end;
 
     trigger OnNewRecord(BelowxRec: Boolean)
     begin
-        ClearCalculatedFields();
+        // ClearCalculatedFields();
     end;
 
     var
-        SalesHeader: Record "Sales Header";
+
         TempFieldSet: Record Field temporary;
+        invoiceId: Text[50];
         PrepaymentAmount: Decimal;
         AdjAmount: Decimal;
+        postedInvoiceNo: Code[20];
+        ReleaseSalesDoc: Codeunit "Release Sales Document";
+        SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
         BlankPrepaymentPercentErr: Label 'The blank "prepaymentPercent" is not allowed.', Locked = true;
         BlankPrepaymentAmountErr: Label 'The blank "prepaymentAmount" is not allowed.', Locked = true;
+        BlankInvoiceIdErr: Label 'The blank "invoiceId" is not allowed.', Locked = true;
 
-    /// <summary> 
-    /// Description for CheckedPrepaymentAmount.
-    /// </summary>
-    /// <param name="SalesOrderNo">Parameter of type Code[20].</param>
-    /// <param name="PrepaymentAmount">Parameter of type Decimal.</param>
-    /// <param name="AdjAmount">Parameter of type Decimal.</param>
+    local procedure CreatePrepaymentInvoice(SalesOrderNo: Code[20])
+    var
+        SalesHeader: Record "Sales Header";
+
+    begin
+        // update "External Document No." to invoiceId
+        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
+        SalesHeader."External Document No." := invoiceId;
+        SalesHeader.Modify();
+
+        // Check Prepayment amount
+        CheckedPrepaymentAmount(Rec."No.", PrepaymentAmount, AdjAmount);
+        if AdjAmount <> 0 then
+            // Update Prepayment amount if delta not aqual 0
+            UpdatePrepaymentAmount(Rec."No.", AdjAmount);
+        // Release Sales order
+        ReleaseSalesDoc.PerformManualRelease(Rec);
+        // Create prepayment invoice
+        SalesPostPrepaymentsSprut.PostPrepaymentInvoiceSprut(Rec);
+    end;
+
+    local procedure UpdatePrepaymentAmount(SalesOrderNo: Code[20]; AdjAmount: Decimal)
+    var
+        locSalesLine: Record "Sales Line";
+    begin
+        ReopenOrder(SalesOrderNo);
+
+        locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
+        locSalesLine.SetRange("Document No.", SalesOrderNo);
+        locSalesLine.FindFirst();
+
+        locSalesLine.Validate("Prepayment Amount", locSalesLine."Prepayment Amount" + AdjAmount);
+        locSalesLine.Modify(true);
+    end;
+
+    local procedure ReopenOrder(SalesOrderNo: Code[20])
+    var
+        locSalesHeader: Record "Sales Header";
+    begin
+        locSalesHeader.Get(locSalesHeader."Document Type"::Order, SalesOrderNo);
+        if locSalesHeader.Status <> locSalesHeader.Status::Open then begin
+            locSalesHeader.Status := locSalesHeader.Status::Open;
+            locSalesHeader.Modify();
+        end;
+    end;
+
     local procedure CheckedPrepaymentAmount(SalesOrderNo: Code[20]; PrepaymentAmount: Decimal; var AdjAmount: Decimal)
     var
         locSalesLine: Record "Sales Line";

@@ -24,6 +24,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                     AccessToken: Text;
                 begin
                     WebServiceMgt.GetOauthToken(TokenType, AccessToken);
+                    Message(TokenTypeAccessToken, TokenType, AccessToken);
                 end;
             }
             action(GetProducts)
@@ -48,4 +49,6 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
     var
         WebServiceMgt: Codeunit "Web Service Mgt.";
+
+        TokenTypeAccessToken: Label 'Token Type: %1\\AccessToken:\\%2';
 }
