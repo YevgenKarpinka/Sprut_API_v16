@@ -402,7 +402,7 @@ codeunit 50000 "Web Service Mgt."
                 JSObjectLine.Add('defaultuomid@odata.bind', defaultUoMId);
                 JSObjectLine.Add('quantitydecimal', quantityDecimal);
                 JSObjectLine.Add('tct_bc_product_number', locItems."No.");
-                JSObjectLine.Add('tct_bc_UoMId', locItems."Sales Unit of Measure");
+                JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
 
                 JSObjectArray.Add(JSObjectLine);
             until locItems.Next() = 0;
