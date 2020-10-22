@@ -137,7 +137,7 @@ page 50003 "APIV2 - Sales Invoice"
     begin
         // update "External Document No." to invoiceId
         SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
-        SalesHeader."External Document No." := invoiceId;
+        SalesHeader."CRM Invoice No." := invoiceId;
         SalesHeader.Modify();
 
         // Check Prepayment amount

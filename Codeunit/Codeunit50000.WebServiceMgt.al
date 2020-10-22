@@ -18,20 +18,23 @@ codeunit 50000 "Web Service Mgt."
     /// <param name="entityType">Parameter of type Text[20].</param>
     /// <param name="requestMethod">Parameter of type Code[20].</param>
     /// <returns>Return variable "Boolean".</returns>
-    procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]): Boolean
+    procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]; var Body: Text): Boolean
     var
         tokenType: Text;
         accessToken: Text;
+        APIResult: Text;
         webServiceHeader: Record "Web Service Header";
         webServiceLine: Record "Web Service Line";
     begin
-        // with webServiceHeader do begin
-        //     if not Get(connectorCode) then exit(false);
-        GetOauthToken(
-             // "Token URL", "Client Id", "Client Secret", Resource, "Request Body",
-             tokenType, accessToken);
-        // end;
-        OnAPIProcess(entityType, requestMethod, tokenType, accessToken);
+        if not GetOauthToken(tokenType, accessToken, APIResult) then begin
+            Body := APIResult;
+            exit(false);
+        end;
+        if not OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then begin
+            Body := APIResult;
+            exit(false);
+        end;
+        exit(true);
     end;
 
     /// <summary> 
@@ -41,15 +44,17 @@ codeunit 50000 "Web Service Mgt."
     /// <param name="requestMethod">Parameter of type Code[20].</param>
     /// <param name="tokenType">Parameter of type Text.</param>
     /// <param name="accessToken">Parameter of type Text.</param>
-    local procedure OnAPIProcess(entityType: Text[20]; requestMethod: Code[20]; tokenType: Text; accessToken: Text)
+    local procedure OnAPIProcess(entityType: Text[20]; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
     var
         // {{resource}}/api/data/v{{version}}/{{entityType}}
         webAPI_URL: Label '%1/api/data/v%2/%3';
         resource: Label 'https://org3baffe0c.crm4.dynamics.com';
         version: Label '9.1';
         Accept: Label 'Accept';
+        Prefer: Label 'Prefer';
         Authorization: Label 'Authorization';
-        AcceptJSON: Label 'application/json';
+        AcceptValue: Label 'application/json';
+        PreferValue: Label 'return=representation';
         HttpClient: HttpClient;
         RequestMessage: HttpRequestMessage;
         ResponseMessage: HttpResponseMessage;
@@ -57,7 +62,6 @@ codeunit 50000 "Web Service Mgt."
         Content: HttpContent;
         TempBlob: Codeunit "Temp Blob";
         Outstr: OutStream;
-        Instr: InStream;
         APIResult: Text;
         BaseURL: Text;
         AuthorizationToken: Text;
@@ -65,23 +69,32 @@ codeunit 50000 "Web Service Mgt."
         BaseURL := StrSubstNo(webAPI_URL, resource, version, entityType);
         AuthorizationToken := StrSubstNo('%1 %2', tokenType, accessToken);
 
+        Content.GetHeaders(RequestHeader);
         RequestMessage.GetHeaders(RequestHeader);
         RequestHeader.Clear();
 
-        RequestHeader.Add(Accept, AcceptJSON);
+        RequestHeader.Add(Accept, AcceptValue);
+        RequestHeader.Add(Prefer, PreferValue);
         RequestHeader.Add(Authorization, AuthorizationToken);
 
         RequestMessage.Method := requestMethod;
         RequestMessage.SetRequestUri(BaseURL);
 
+        case requestMethod of
+            'POST':
+                begin
+                    Content.WriteFrom(Body);
+                    RequestMessage.Content(Content);
+                end;
+        end;
+
         HttpClient.Send(RequestMessage, ResponseMessage);
         ResponseMessage.Content.ReadAs(APIResult);
-        Message(APIResult);
+        Body := APIResult;
+        exit(ResponseMessage.IsSuccessStatusCode);
     end;
 
-    procedure GetOauthToken(
-        // TokenURL: Text[200]; ClientId: Text[50]; ClientSecret: Text[50]; Resource: Text[150]; RequestBody: Text[150];
-        var TokenType: Text; var AccessToken: Text)
+    procedure GetOauthToken(var TokenType: Text; var AccessToken: Text; var APIResult: Text): Boolean
     var
         TokenURL: Label 'https://login.microsoftonline.com/da79d6fc-fddb-47ae-bec3-75a8d9e1e1bb/oauth2/token';
         ClientId: Label 'a125243e-de60-41fb-b6f2-1795601fcea9';
@@ -96,7 +109,6 @@ codeunit 50000 "Web Service Mgt."
         TempBlob: Codeunit "Temp Blob";
         Outstr: OutStream;
         Instr: InStream;
-        APIResult: Text;
         entityType: Label 'products';
         webAPI_URL: Label '%1/api/data/v%2/%3';
         version: Label '9.1';
@@ -127,11 +139,11 @@ codeunit 50000 "Web Service Mgt."
         HttpClient.Send(RequestMessage, ResponseMessage);
         ResponseMessage.Content().ReadAs(APIResult);
 
-        if ResponseMessage.IsSuccessStatusCode() then //begin
-            GetTokenFromResponse(APIResult, TokenType, AccessToken)
-        // end
-        else
-            Error(APIResult);
+        if ResponseMessage.IsSuccessStatusCode() then begin
+            GetTokenFromResponse(APIResult, TokenType, AccessToken);
+            exit(true);
+        end;
+        exit(false);
     end;
 
     /// <summary> 
@@ -379,33 +391,49 @@ codeunit 50000 "Web Service Mgt."
         JObject.Add('Status', JObject2);
     end;
 
-    procedure jsonItems(ItemNo: Code[20]): JsonArray
+    procedure jsonItems(ItemNo: Code[20]): JsonObject
     var
         locItems: Record Item;
         JSObjectLine: JsonObject;
-        JSObjectArray: JsonArray;
         salesTypeCode: Label '799810002';
         defaultUoMScheduleId: Label '/uomschedules(422fde89-3e76-45f2-b9e6-9d59c8bbc311)';
         defaultUoMId: Label '/uoms(d91f3b4e-f4cc-4063-8f7a-8d365d5922ff)';
         quantityDecimal: Integer;
     begin
         quantitydecimal := 2;
+        if locItems.Get(ItemNo) then begin
+            JSObjectLine.Add('tct_salestypecode', salesTypeCode);
+            JSObjectLine.Add('productnumber', locItems."No.");
+            JSObjectLine.Add('name', locItems.Description);
+            JSObjectLine.Add('defaultuomscheduleid@odata.bind', defaultUoMScheduleId);
+            JSObjectLine.Add('defaultuomid@odata.bind', defaultUoMId);
+            JSObjectLine.Add('quantitydecimal', quantityDecimal);
+            JSObjectLine.Add('tct_bc_product_number', locItems."No.");
+            JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
+        end;
+        exit(JSObjectLine);
+    end;
 
-        if locItems.FindSet(false, false) then
-            repeat
-                Clear(JSObjectLine);
+    procedure AddCRMproductIdToItem(_jsonText: Text)
+    var
+        locItem: Record Item;
+        _SA: Record "Shipping Agent";
+        JSObject: JsonObject;
+        ItemsJSArray: JsonArray;
+        ItemToken: JsonToken;
+        Counter: Integer;
+        ItemNo: Text[20];
+        CRMproductId: Text[30];
+    begin
+        ItemsJSArray.ReadFrom(_jsonText);
 
-                JSObjectLine.Add('tct_salestypecode', salesTypeCode);
-                JSObjectLine.Add('productnumber', locItems."No.");
-                JSObjectLine.Add('name', locItems.Description);
-                JSObjectLine.Add('defaultuomscheduleid@odata.bind', defaultUoMScheduleId);
-                JSObjectLine.Add('defaultuomid@odata.bind', defaultUoMId);
-                JSObjectLine.Add('quantitydecimal', quantityDecimal);
-                JSObjectLine.Add('tct_bc_product_number', locItems."No.");
-                JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
-
-                JSObjectArray.Add(JSObjectLine);
-            until locItems.Next() = 0;
-        exit(JSObjectArray);
+        foreach ItemToken in ItemsJSArray do begin
+            ItemNo := GetJSToken(ItemToken.AsObject(), 'tct_bc_product_number').AsValue().AsText();
+            CRMproductId := CopyStr(GetJSToken(ItemToken.AsObject(), 'productid').AsValue().AsText(), 1, MaxStrLen(locItem."CRM Item Id"));
+            if locItem.Get(ItemNo) then begin
+                locItem."CRM Item Id" := CRMproductId;
+                locItem.Modify();
+            end;
+        end;
     end;
 }

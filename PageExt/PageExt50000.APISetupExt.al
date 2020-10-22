@@ -22,9 +22,12 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                 var
                     TokenType: Text;
                     AccessToken: Text;
+                    APIResult: Text;
                 begin
-                    WebServiceMgt.GetOauthToken(TokenType, AccessToken);
-                    Message(TokenTypeAccessToken, TokenType, AccessToken);
+                    if WebServiceMgt.GetOauthToken(TokenType, AccessToken, APIResult) then
+                        Message(TokenTypeAccessToken, TokenType, AccessToken)
+                    else
+                        Message(APIResult);
                 end;
             }
             action(GetProducts)
@@ -40,8 +43,9 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                     connectorCode: Label 'CRM';
                     entityType: Label 'products';
                     requestMethod: Label 'GET';
+                    requestBody: Text;
                 begin
-                    WebServiceMgt.ConnectToCRM(connectorCode, entityType, requestMethod);
+                    WebServiceMgt.ConnectToCRM(connectorCode, entityType, requestMethod, requestBody);
                 end;
             }
         }
