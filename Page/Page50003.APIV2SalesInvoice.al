@@ -35,7 +35,7 @@ page 50003 "APIV2 - Sales Invoice"
                 {
                     ApplicationArea = All;
                     Caption = 'postedInvoiceNo', Locked = true;
-                    Editable = false;
+                    ShowMandatory = true;
                 }
                 field(invoiceId; invoiceId)
                 {
@@ -47,10 +47,9 @@ page 50003 "APIV2 - Sales Invoice"
                     begin
                         IF invoiceId = '' THEN
                             ERROR(BlankInvoiceIdErr);
-                        // RegisterFieldSet(Rec.FIELDNO("Prepayment %"));
                     end;
                 }
-                field(prepaymentPercent; Rec."Prepayment %")
+                field(prepaymentPercent; prepaymentPercent)
                 {
                     ApplicationArea = All;
                     Caption = 'prepaymentPercent', Locked = true;
@@ -58,9 +57,9 @@ page 50003 "APIV2 - Sales Invoice"
 
                     trigger OnValidate()
                     begin
-                        IF Rec."Prepayment %" = 0 THEN
-                            ERROR(BlankPrepaymentPercentErr);
-                        // RegisterFieldSet(Rec.FIELDNO("Prepayment %"));
+                        GetSalesOrder();
+                        if prepaymentPercent <= SalesHeader."Prepayment %" then
+                            Error(PrepaymentPercentCannotBeLessOrEqualErr, SalesHeader."Prepayment %");
                     end;
                 }
                 field(prepaymentAmount; PrepaymentAmount)
@@ -89,38 +88,33 @@ page 50003 "APIV2 - Sales Invoice"
     end;
 
     trigger OnInsertRecord(BelowxRec: Boolean): Boolean
-    var
     begin
 
     end;
 
     trigger OnModifyRecord(): Boolean
-    var
-        SalesHeader: Record "Sales Header";
-        GraphMgtGeneralTools: Codeunit "Graph Mgt - General Tools";
     begin
-        IF xRec.SystemId <> Rec.SystemId THEN
-            GraphMgtGeneralTools.ErrorIdImmutable();
-
         if SalesHeader.Get(Rec."Document Type", Rec."No.") then begin
-            Rec.Modify(true);
 
             if (PrepaymentAmount <> 0)
-            and (Rec."Prepayment %" <> 0)
+            and (prepaymentPercent <> 0)
             and (invoiceId <> '') then
-                CreatePrepaymentInvoice(Rec."No.");
+                // CreatePrepaymentInvoice(SalesHeader."No.");
+
+                // while testing CRM
+                postedInvoiceNo := 'TEST_INVOICE_NO';
         end;
     end;
 
     trigger OnNewRecord(BelowxRec: Boolean)
     begin
-        // ClearCalculatedFields();
+
     end;
 
     var
-
-        TempFieldSet: Record Field temporary;
+        SalesHeader: Record "Sales Header";
         invoiceId: Text[50];
+        prepaymentPercent: Decimal;
         PrepaymentAmount: Decimal;
         AdjAmount: Decimal;
         postedInvoiceNo: Code[20];
@@ -129,26 +123,33 @@ page 50003 "APIV2 - Sales Invoice"
         BlankPrepaymentPercentErr: Label 'The blank "prepaymentPercent" is not allowed.', Locked = true;
         BlankPrepaymentAmountErr: Label 'The blank "prepaymentAmount" is not allowed.', Locked = true;
         BlankInvoiceIdErr: Label 'The blank "invoiceId" is not allowed.', Locked = true;
+        PrepaymentPercentCannotBeLessOrEqualErr: Label 'The "prepaymentPercent" cannot be less or equal %1.', Locked = true;
+        AmountAdjustmentCannotBeMoreErr: Label 'The the amount adjustment cannot be more %1.', Locked = true;
 
     local procedure CreatePrepaymentInvoice(SalesOrderNo: Code[20])
-    var
-        SalesHeader: Record "Sales Header";
-
     begin
-        // update "External Document No." to invoiceId
-        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
+        // update "External Document No." and "Prepayment %" to invoiceId
+        GetSalesOrder();
         SalesHeader."CRM Invoice No." := invoiceId;
+        SalesHeader.Validate("Prepayment %", prepaymentPercent);
         SalesHeader.Modify();
 
         // Check Prepayment amount
-        CheckedPrepaymentAmount(Rec."No.", PrepaymentAmount, AdjAmount);
+        CheckedPrepaymentAmount(SalesHeader."No.", PrepaymentAmount, AdjAmount);
+        if ABS(AdjAmount) > 1 then
+            Error(AmountAdjustmentCannotBeMoreErr, 1);
+
         if AdjAmount <> 0 then
             // Update Prepayment amount if delta not aqual 0
-            UpdatePrepaymentAmount(Rec."No.", AdjAmount);
+            UpdatePrepaymentAmount(SalesHeader."No.", AdjAmount);
         // Release Sales order
-        ReleaseSalesDoc.PerformManualRelease(Rec);
+        ReleaseSalesDoc.PerformManualRelease(SalesHeader);
         // Create prepayment invoice
-        SalesPostPrepaymentsSprut.PostPrepaymentInvoiceSprut(Rec);
+        SalesPostPrepaymentsSprut.PostPrepaymentInvoiceSprut(SalesHeader);
+
+
+        // comment while tested from CRM
+        // postedInvoiceNo := SalesHeader."Last Prepayment No."; 
     end;
 
     local procedure UpdatePrepaymentAmount(SalesOrderNo: Code[20]; AdjAmount: Decimal)
@@ -166,13 +167,11 @@ page 50003 "APIV2 - Sales Invoice"
     end;
 
     local procedure ReopenOrder(SalesOrderNo: Code[20])
-    var
-        locSalesHeader: Record "Sales Header";
     begin
-        locSalesHeader.Get(locSalesHeader."Document Type"::Order, SalesOrderNo);
-        if locSalesHeader.Status <> locSalesHeader.Status::Open then begin
-            locSalesHeader.Status := locSalesHeader.Status::Open;
-            locSalesHeader.Modify();
+        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
+        if SalesHeader.Status <> SalesHeader.Status::Open then begin
+            SalesHeader.Status := SalesHeader.Status::Open;
+            SalesHeader.Modify();
         end;
     end;
 
@@ -186,27 +185,10 @@ page 50003 "APIV2 - Sales Invoice"
         AdjAmount := locSalesLine."Prepayment Amount" - PrepaymentAmount;
     end;
 
-    /// <summary> 
-    /// Description for ClearCalculatedFields.
-    /// </summary>
-    local procedure ClearCalculatedFields()
+    local procedure GetSalesOrder()
     begin
-        CLEAR(Rec.SystemId);
-        TempFieldSet.DELETEALL();
-    end;
-
-    /// <summary> 
-    /// Description for RegisterFieldSet.
-    /// </summary>
-    /// <param name="FieldNo">Parameter of type Integer.</param>
-    local procedure RegisterFieldSet(FieldNo: Integer)
-    begin
-        IF TempFieldSet.GET(DATABASE::"Sales Header", FieldNo) THEN
-            EXIT;
-
-        TempFieldSet.Init();
-        TempFieldSet.TableNo := DATABASE::"Sales Header";
-        TempFieldSet.Validate("No.", FieldNo);
-        TempFieldSet.Insert(true);
+        if (SalesHeader."Document Type" <> SalesHeader."Document Type"::Order)
+        and (SalesHeader."No." <> Rec."No.") then
+            SalesHeader.Get(SalesHeader."Document Type"::Order, Rec."No.");
     end;
 }
