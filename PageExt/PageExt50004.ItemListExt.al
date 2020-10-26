@@ -10,7 +10,7 @@ pageextension 50004 "Item List Ext." extends "Item List"
         // Add changes to page actions here
         addfirst(PeriodicActivities)
         {
-            group(eCommerce)
+            group(groupCRM)
             {
                 CaptionML = ENU = 'CRM', RUS = 'CRM';
                 Image = SuggestCustomerPayments;
@@ -61,9 +61,9 @@ pageextension 50004 "Item List Ext." extends "Item List"
                                             _jsonErrorItemList.Add(_jsonItem);
                                             _jsonItem.ReadFrom(_jsonText);
                                             _jsonErrorItemList.Add(_jsonItem);
-                                        end;
-                                        // add CRM product ID to Item
-                                        WebServiceMgt.AddCRMproductIdToItem(_jsonText);
+                                        end else
+                                            // add CRM product ID to Item
+                                            WebServiceMgt.AddCRMproductIdToItem(_jsonText);
                                         Clear(_jsonItemList);
                                     end;
                                 end;

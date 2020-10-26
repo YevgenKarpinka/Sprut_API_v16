@@ -30,10 +30,8 @@ codeunit 50000 "Web Service Mgt."
             Body := APIResult;
             exit(false);
         end;
-        if not OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then begin
-            Body := APIResult;
+        if not OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then
             exit(false);
-        end;
         exit(true);
     end;
 
@@ -55,13 +53,17 @@ codeunit 50000 "Web Service Mgt."
         Authorization: Label 'Authorization';
         AcceptValue: Label 'application/json';
         PreferValue: Label 'return=representation';
-        HttpClient: HttpClient;
+        ContentType: Label 'Content-Type';
+        ContentTypeValue: Label 'application/json';
+        Client: HttpClient;
         RequestMessage: HttpRequestMessage;
         ResponseMessage: HttpResponseMessage;
         RequestHeader: HttpHeaders;
+        RequestHeaderAuth: HttpHeaders;
         Content: HttpContent;
         TempBlob: Codeunit "Temp Blob";
         Outstr: OutStream;
+        Instr: InStream;
         APIResult: Text;
         BaseURL: Text;
         AuthorizationToken: Text;
@@ -69,28 +71,39 @@ codeunit 50000 "Web Service Mgt."
         BaseURL := StrSubstNo(webAPI_URL, resource, version, entityType);
         AuthorizationToken := StrSubstNo('%1 %2', tokenType, accessToken);
 
-        Content.GetHeaders(RequestHeader);
-        RequestMessage.GetHeaders(RequestHeader);
-        RequestHeader.Clear();
+        // Content.GetHeaders(RequestHeader);
+        // RequestMessage.GetHeaders(RequestHeader);
+        // RequestHeader.Clear();
 
-        RequestHeader.Add(Accept, AcceptValue);
-        RequestHeader.Add(Prefer, PreferValue);
-        RequestHeader.Add(Authorization, AuthorizationToken);
+        // RequestHeader.Add(Accept, AcceptValue);
+        // RequestHeader.Add(ContentType, ContentTypeValue);
+        // RequestHeader.Add(Prefer, PreferValue);
+        // RequestHeader.Add(Authorization, AuthorizationToken);
 
+        // RequestMessage.Method := requestMethod;
+        // RequestMessage.SetRequestUri(BaseURL);
+
+        // RequestMessage.Content.WriteFrom(Body);
+
+        // Client.Send(RequestMessage, ResponseMessage);
+
+        // >>
         RequestMessage.Method := requestMethod;
         RequestMessage.SetRequestUri(BaseURL);
+        RequestMessage.GetHeaders(RequestHeader);
+        RequestHeader.Add('Accept', AcceptValue);
+        //         Autorization := StrSubstNo('Basic %1',
+        //                     Base64Convert.ToBase64(StrSubstNo('%1:%2', SourceParameters."FSp UserName", SourceParameters."FSp Password")));
+        RequestHeader.Add('Authorization', AuthorizationToken);
+        RequestMessage.Content.WriteFrom(Body);
+        RequestMessage.Content.GetHeaders(RequestHeader);
+        RequestHeader.Remove('Content-Type');
+        RequestHeader.Add('Content-Type', ContentTypeValue);
+        // <<
 
-        case requestMethod of
-            'POST':
-                begin
-                    Content.WriteFrom(Body);
-                    RequestMessage.Content(Content);
-                end;
-        end;
-
-        HttpClient.Send(RequestMessage, ResponseMessage);
-        ResponseMessage.Content.ReadAs(APIResult);
-        Body := APIResult;
+        Client.Send(RequestMessage, ResponseMessage);
+        ResponseMessage.Content.ReadAs(Body);
+        // Body := APIResult;
         exit(ResponseMessage.IsSuccessStatusCode);
     end;
 
