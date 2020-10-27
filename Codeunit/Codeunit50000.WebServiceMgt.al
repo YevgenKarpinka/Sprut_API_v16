@@ -30,6 +30,14 @@ codeunit 50000 "Web Service Mgt."
             Body := APIResult;
             exit(false);
         end;
+
+        if not OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then
+            exit(false);
+        exit(true);
+    end;
+
+    procedure CreateProductInCRM(entityType: Text; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
+    begin
         if not OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then
             exit(false);
         exit(true);
@@ -42,7 +50,7 @@ codeunit 50000 "Web Service Mgt."
     /// <param name="requestMethod">Parameter of type Code[20].</param>
     /// <param name="tokenType">Parameter of type Text.</param>
     /// <param name="accessToken">Parameter of type Text.</param>
-    local procedure OnAPIProcess(entityType: Text[20]; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
+    local procedure OnAPIProcess(entityType: Text; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
     var
         // {{resource}}/api/data/v{{version}}/{{entityType}}
         webAPI_URL: Label '%1/api/data/v%2/%3';
@@ -59,51 +67,29 @@ codeunit 50000 "Web Service Mgt."
         RequestMessage: HttpRequestMessage;
         ResponseMessage: HttpResponseMessage;
         RequestHeader: HttpHeaders;
-        RequestHeaderAuth: HttpHeaders;
-        Content: HttpContent;
-        TempBlob: Codeunit "Temp Blob";
-        Outstr: OutStream;
-        Instr: InStream;
-        APIResult: Text;
         BaseURL: Text;
         AuthorizationToken: Text;
     begin
         BaseURL := StrSubstNo(webAPI_URL, resource, version, entityType);
         AuthorizationToken := StrSubstNo('%1 %2', tokenType, accessToken);
 
-        // Content.GetHeaders(RequestHeader);
-        // RequestMessage.GetHeaders(RequestHeader);
-        // RequestHeader.Clear();
-
-        // RequestHeader.Add(Accept, AcceptValue);
-        // RequestHeader.Add(ContentType, ContentTypeValue);
-        // RequestHeader.Add(Prefer, PreferValue);
-        // RequestHeader.Add(Authorization, AuthorizationToken);
-
-        // RequestMessage.Method := requestMethod;
-        // RequestMessage.SetRequestUri(BaseURL);
-
-        // RequestMessage.Content.WriteFrom(Body);
-
-        // Client.Send(RequestMessage, ResponseMessage);
-
-        // >>
         RequestMessage.Method := requestMethod;
         RequestMessage.SetRequestUri(BaseURL);
         RequestMessage.GetHeaders(RequestHeader);
-        RequestHeader.Add('Accept', AcceptValue);
-        //         Autorization := StrSubstNo('Basic %1',
-        //                     Base64Convert.ToBase64(StrSubstNo('%1:%2', SourceParameters."FSp UserName", SourceParameters."FSp Password")));
-        RequestHeader.Add('Authorization', AuthorizationToken);
-        RequestMessage.Content.WriteFrom(Body);
-        RequestMessage.Content.GetHeaders(RequestHeader);
-        RequestHeader.Remove('Content-Type');
-        RequestHeader.Add('Content-Type', ContentTypeValue);
-        // <<
+        RequestHeader.Add(Authorization, AuthorizationToken);
+        case requestMethod of
+            'POST', 'PATCH':
+                begin
+                    RequestMessage.Content.WriteFrom(Body);
+                    RequestMessage.Content.GetHeaders(RequestHeader);
+                    RequestHeader.Remove(ContentType);
+                    RequestHeader.Add(ContentType, ContentTypeValue);
+                    RequestHeader.Add(Prefer, PreferValue);
+                end;
+        end;
 
         Client.Send(RequestMessage, ResponseMessage);
         ResponseMessage.Content.ReadAs(Body);
-        // Body := APIResult;
         exit(ResponseMessage.IsSuccessStatusCode);
     end;
 
@@ -215,10 +201,6 @@ codeunit 50000 "Web Service Mgt."
         version: Label '9.1';
         BaseURL: Text;
     begin
-        // with OAuth20Setup do begin
-        //     TestField("Service URL");
-        //     TestField("Access Token");
-
         if RequestJObject.ReadFrom(RequestJson) then;
 
         BaseURL := StrSubstNo(webAPI_URL, Resource, version, entityType);
@@ -230,25 +212,7 @@ codeunit 50000 "Web Service Mgt."
             RequestJObject.Add('Header', HeaderJObject);
         RequestJObject.WriteTo(RequestJson);
 
-        // if "Latest Datetime" = 0DT then
-        //     "Daily Count" := 0
-        // else
-        //     if "Latest Datetime" < CreateDateTime(Today(), 0T) then
-        //         "Daily Count" := 0;
-        // if ("Daily Limit" <= 0) or ("Daily Count" < "Daily Limit") or ("Latest Datetime" = 0DT) then begin
         Result := InvokeHttpJSONRequest(RequestJson, ResponseJson, HttpError);
-        //     "Latest Datetime" := CurrentDateTime();
-        //     "Daily Count" += 1;
-        // end else begin
-        //     Result := false;
-        //     HttpError := LimitExceededTxt;
-        //     SendTraceTag('00009YL', ActivityLogContextTxt, Verbosity::Normal, LimitExceededTxt, DataClassification::SystemMetadata);
-        // end;
-        // RequestJObject.Get('Method', JToken);
-        // LogActivity(
-        //     OAuth20Setup, Result, StrSubstNo(InvokeRequestTxt, JToken.AsValue().AsText()),
-        //     HttpError, RequestJson, ResponseJson, false);
-        // end;
     end;
 
     /// <summary> 
@@ -404,7 +368,7 @@ codeunit 50000 "Web Service Mgt."
         JObject.Add('Status', JObject2);
     end;
 
-    procedure jsonItems(ItemNo: Code[20]): JsonObject
+    procedure jsonItemsToPost(ItemNo: Code[20]): JsonObject
     var
         locItems: Record Item;
         JSObjectLine: JsonObject;
@@ -427,20 +391,39 @@ codeunit 50000 "Web Service Mgt."
         exit(JSObjectLine);
     end;
 
-    procedure AddCRMproductIdToItem(_jsonText: Text)
+    procedure jsonItemsToPatch(ItemNo: Code[20]): JsonObject
+    var
+        locItems: Record Item;
+        JSObjectLine: JsonObject;
+        salesTypeCode: Label '799810002';
+        defaultUoMScheduleId: Label '/uomschedules(422fde89-3e76-45f2-b9e6-9d59c8bbc311)';
+        defaultUoMId: Label '/uoms(d91f3b4e-f4cc-4063-8f7a-8d365d5922ff)';
+        quantityDecimal: Integer;
+    begin
+        quantitydecimal := 2;
+        if locItems.Get(ItemNo) then begin
+            JSObjectLine.Add('tct_salestypecode', salesTypeCode);
+            // JSObjectLine.Add('productnumber', locItems."No.");
+            JSObjectLine.Add('name', locItems.Description);
+            JSObjectLine.Add('defaultuomscheduleid@odata.bind', defaultUoMScheduleId);
+            JSObjectLine.Add('defaultuomid@odata.bind', defaultUoMId);
+            JSObjectLine.Add('quantitydecimal', quantityDecimal);
+            JSObjectLine.Add('tct_bc_product_number', locItems."No.");
+            JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
+        end;
+        exit(JSObjectLine);
+    end;
+
+    procedure AddCRMproductIdToItem(jsonText: Text)
     var
         locItem: Record Item;
-        _SA: Record "Shipping Agent";
-        JSObject: JsonObject;
-        ItemsJSArray: JsonArray;
         ItemToken: JsonToken;
-        Counter: Integer;
+        ItemToken2: JsonToken;
         ItemNo: Text[20];
-        CRMproductId: Text[30];
+        CRMproductId: Text[50];
     begin
-        ItemsJSArray.ReadFrom(_jsonText);
-
-        foreach ItemToken in ItemsJSArray do begin
+        ItemToken.ReadFrom(jsonText);
+        if ItemToken.AsObject().Get('tct_bc_product_number', ItemToken2) then begin
             ItemNo := GetJSToken(ItemToken.AsObject(), 'tct_bc_product_number').AsValue().AsText();
             CRMproductId := CopyStr(GetJSToken(ItemToken.AsObject(), 'productid').AsValue().AsText(), 1, MaxStrLen(locItem."CRM Item Id"));
             if locItem.Get(ItemNo) then begin

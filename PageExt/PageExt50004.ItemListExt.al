@@ -3,6 +3,15 @@ pageextension 50004 "Item List Ext." extends "Item List"
     layout
     {
         // Add changes to page layout here
+        addlast(Control1)
+        {
+            field("CRM Item Id"; "CRM Item Id")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies CRM Item Id.',
+                            RUS = 'Соответствует ID товара в CRM.';
+            }
+        }
     }
 
     actions
@@ -24,7 +33,6 @@ pageextension 50004 "Item List Ext." extends "Item List"
                     trigger OnAction()
                     var
                         _Item: Record Item;
-                        _jsonItemList: JsonArray;
                         _jsonErrorItemList: JsonArray;
                         _jsonItem: JsonObject;
                         _jsonToken: JsonToken;
@@ -34,7 +42,13 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         responseText: Text;
                         connectorCode: Label 'CRM';
                         entityType: Label 'products';
-                        requestMethod: Label 'POST';
+                        POSTrequestMethod: Label 'POST';
+                        PATCHrequestMethod: Label 'PATCH';
+                        TokenType: Text;
+                        AccessToken: Text;
+                        APIResult: Text;
+                        requestMethod: Text[20];
+                        entityTypeValue: Text;
                     begin
                         CurrPage.SetSelectionFilter(_Item);
 
@@ -42,32 +56,41 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         TotalCount := _Item.Count;
                         ConfigProgressBarRecord.Init(TotalCount, Counter, STRSUBSTNO(ApplyingURLMsg, _Item.TableCaption));
 
-                        if _Item.FindSet(false, false) then
-                            repeat
-                                // Create JSON for CRM
-                                _jsonItem := WebServiceMgt.jsonItems(_Item."No.");
-                                Counter += 1;
-                                if _jsonItem.Get('productnumber', _jsonToken) then begin
-                                    _jsonItemList.Add(_jsonItem);
+                        if not WebServiceMgt.GetOauthToken(TokenType, AccessToken, APIResult) then begin
+                            // loging error APIResult
+                            _jsonItem.ReadFrom(APIResult);
+                            _jsonErrorItemList.Add(_jsonItem);
+                        end;
+
+                        if _jsonErrorItemList.Count = 0 then
+                            if _Item.FindSet(false, false) then
+                                repeat
+                                    // Create JSON for CRM
+                                    if _Item."CRM Item Id" <> '' then begin
+                                        requestMethod := PATCHrequestMethod;
+                                        _jsonItem := WebServiceMgt.jsonItemsToPatch(_Item."No.");
+                                        entityTypeValue := StrSubstNo('%1(%2)', entityType, _Item."CRM Item Id");
+                                    end else begin
+                                        requestMethod := POSTrequestMethod;
+                                        _jsonItem := WebServiceMgt.jsonItemsToPost(_Item."No.");
+                                        entityTypeValue := entityType;
+                                    end;
+
+                                    _jsonItem.WriteTo(_jsonText);
+                                    Counter += 1;
 
                                     ConfigProgressBarRecord.Update(STRSUBSTNO(RecordsXofYMsg, Counter, TotalCount));
 
-                                    if ((Counter mod 50) = 0) or (Counter = TotalCount) then begin
-                                        _jsonItemList.WriteTo(_jsonText);
-
-                                        IsSuccessStatusCode := true;
-                                        // try send to CRM
-                                        if not WebServiceMgt.ConnectToCRM(connectorCode, entityType, requestMethod, _jsonText) then begin
-                                            _jsonErrorItemList.Add(_jsonItem);
-                                            _jsonItem.ReadFrom(_jsonText);
-                                            _jsonErrorItemList.Add(_jsonItem);
-                                        end else
-                                            // add CRM product ID to Item
-                                            WebServiceMgt.AddCRMproductIdToItem(_jsonText);
-                                        Clear(_jsonItemList);
-                                    end;
-                                end;
-                            until _Item.Next() = 0;
+                                    IsSuccessStatusCode := true;
+                                    // try send to CRM
+                                    if not WebServiceMgt.CreateProductInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText) then begin
+                                        _jsonErrorItemList.Add(_jsonItem);
+                                        _jsonItem.ReadFrom(_jsonText);
+                                        _jsonErrorItemList.Add(_jsonItem);
+                                    end else
+                                        // add CRM product ID to Item
+                                        WebServiceMgt.AddCRMproductIdToItem(_jsonText);
+                                until _Item.Next() = 0;
                         ConfigProgressBarRecord.Close;
                         if _jsonErrorItemList.Count > 0 then begin
                             _jsonErrorItemList.WriteTo(_jsonText);
@@ -109,30 +132,29 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         if _Item.FindSet(false, false) then
                             repeat
                                 // Create JSON for CRM
-                                _jsonItem := WebServiceMgt.jsonItems(_Item."No.");
+                                _jsonItem := WebServiceMgt.jsonItemsToPost(_Item."No.");
                                 Counter += 1;
 
-                                if _jsonItem.Get('productnumber', _jsonToken) then begin
-                                    _jsonItemList.Add(_jsonItem);
+                                // if _jsonItem.Get('productnumber', _jsonToken) then begin
+                                _jsonItemList.Add(_jsonItem);
 
-                                    ConfigProgressBarRecord.Update(STRSUBSTNO(RecordsXofYMsg, Counter, TotalCount));
+                                ConfigProgressBarRecord.Update(STRSUBSTNO(RecordsXofYMsg, Counter, TotalCount));
 
-                                    if ((Counter mod 50) = 0) or (Counter = TotalCount) then begin
-                                        _jsonItemList.WriteTo(_jsonText);
+                                if ((Counter mod 50) = 0) or (Counter = TotalCount) then begin
+                                    _jsonItemList.WriteTo(_jsonText);
 
-                                        IsSuccessStatusCode := true;
-                                        if not WebServiceMgt.ConnectToCRM(connectorCode, entityType, requestMethod, _jsonText) then begin
-                                            _jsonErrorItemList.Add(_jsonItem);
-                                            _jsonItem.ReadFrom(_jsonText);
-                                            _jsonErrorItemList.Add(_jsonItem);
-                                        end;
-                                        // add CRM product ID to Item
-                                        WebServiceMgt.AddCRMproductIdToItem(_jsonText);
-                                        Clear(_jsonItemList);
-                                        Commit();
+                                    IsSuccessStatusCode := true;
+                                    if not WebServiceMgt.ConnectToCRM(connectorCode, entityType, requestMethod, _jsonText) then begin
+                                        _jsonErrorItemList.Add(_jsonItem);
+                                        _jsonItem.ReadFrom(_jsonText);
+                                        _jsonErrorItemList.Add(_jsonItem);
                                     end;
-
+                                    // add CRM product ID to Item
+                                    WebServiceMgt.AddCRMproductIdToItem(_jsonText);
+                                    Clear(_jsonItemList);
+                                    Commit();
                                 end;
+
                             until _Item.Next() = 0;
                         ConfigProgressBarRecord.Close;
                         if _jsonErrorItemList.Count > 0 then begin
@@ -168,9 +190,8 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         if _Item.FindSet(false, false) then
                             repeat
                                 // Create JSON for CRM
-                                _jsonItem := WebServiceMgt.jsonItems(_Item."No.");
-                                if _jsonItem.Get('productnumber', _jsonToken) then
-                                    _jsonItemList.Add(_jsonItem);
+                                _jsonItem := WebServiceMgt.jsonItemsToPost(_Item."No.");
+                                _jsonItemList.Add(_jsonItem);
 
                                 ConfigProgressBarRecord.Update(STRSUBSTNO(RecordsXofYMsg, Counter, TotalCount));
                                 Counter += 1;
@@ -196,6 +217,9 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         TotalCount: Integer;
                         Counter: Integer;
                     begin
+                        _Item.SetCurrentKey("CRM Item Id");
+                        _Item.SetFilter("CRM Item Id", '=%1', '');
+
                         Counter := 0;
                         TotalCount := _Item.Count;
                         ConfigProgressBarRecord.Init(TotalCount, Counter, STRSUBSTNO(ApplyingURLMsg, _Item.TableCaption));
@@ -203,9 +227,8 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         if _Item.FindSet(false, false) then
                             repeat
                                 // Create JSON for CRM
-                                _jsonItem := WebServiceMgt.jsonItems(_Item."No.");
-                                if _jsonItem.Get('productnumber', _jsonToken) then
-                                    _jsonItemList.Add(_jsonItem);
+                                _jsonItem := WebServiceMgt.jsonItemsToPost(_Item."No.");
+                                _jsonItemList.Add(_jsonItem);
 
                                 ConfigProgressBarRecord.Update(STRSUBSTNO(RecordsXofYMsg, Counter, TotalCount));
                                 Counter += 1;

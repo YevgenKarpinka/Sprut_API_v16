@@ -46,6 +46,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                     requestBody: Text;
                 begin
                     WebServiceMgt.ConnectToCRM(connectorCode, entityType, requestMethod, requestBody);
+                    Message(requestBody);
                 end;
             }
         }
