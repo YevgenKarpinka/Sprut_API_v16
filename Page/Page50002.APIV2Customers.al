@@ -8,7 +8,7 @@ page 50002 "APIV2 - Customers"
     DelayedInsert = true;
     EntityName = 'customerSprut';
     EntitySetName = 'customersSprut';
-    ODataKeyFields = systemId;
+    ODataKeyFields = "No.";
     PageType = API;
     SourceTable = Customer;
     Extensible = false;
