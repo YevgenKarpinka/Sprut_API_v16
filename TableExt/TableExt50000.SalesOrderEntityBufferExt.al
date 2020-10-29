@@ -7,8 +7,6 @@ tableextension 50000 "Sales Order Entity Buffer Ext." extends "Sales Order Entit
         {
             CaptionML = ENU = 'Agreement No.',
                         RUS = 'Номер договора';
-            // TableRelation = "Customer Agreement"."No." WHERE("Customer No." = FIELD("Bill-to Customer No."),
-            //                                                   Active = CONST(true));
         }
 
     }

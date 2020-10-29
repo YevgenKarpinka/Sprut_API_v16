@@ -9,5 +9,22 @@ tableextension 50002 "Sales Header Ext" extends "Sales Header"
             CaptionML = ENU = 'CRM Invoice No.',
                         RUS = 'Номер инвойса в CRM';
         }
+        field(50001; "Last Modified Date Time"; DateTime)
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Last Modified Date Time',
+                        RUS = 'Дата и время последнего изменения';
+            Editable = false;
+        }
     }
+
+    trigger OnInsert()
+    begin
+        "Last Modified Date Time" := CurrentDateTime;
+    end;
+
+    trigger OnModify()
+    begin
+        "Last Modified Date Time" := CurrentDateTime;
+    end;
 }

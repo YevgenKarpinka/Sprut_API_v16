@@ -3,6 +3,16 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
     layout
     {
         // Add changes to page layout here
+        addafter(Status)
+        {
+            field("Last Modified Date Time"; "Last Modified Date Time")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies Last Modified Date Time.',
+                            RUS = 'Указывает на последнюю дату и время модификации.';
+            }
+        }
+
     }
 
     actions
