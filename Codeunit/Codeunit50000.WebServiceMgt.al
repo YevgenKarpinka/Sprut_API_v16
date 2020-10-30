@@ -43,6 +43,13 @@ codeunit 50000 "Web Service Mgt."
         exit(true);
     end;
 
+    procedure CreatePaymentInCRM(entityType: Text; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
+    begin
+        if not OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then
+            exit(false);
+        exit(true);
+    end;
+
     /// <summary> 
     /// Description for OnAPIProcess.
     /// </summary>
@@ -182,192 +189,6 @@ codeunit 50000 "Web Service Mgt."
             Error('Could not find a token with path %1', Path);
     end;
 
-    /// <summary> 
-    /// Description for InvokeSingleRequest.
-    /// </summary>
-    /// <param name="RequestJson">Parameter of type Text.</param>
-    /// <param name="ResponseJson">Parameter of type Text.</param>
-    /// <param name="HttpError">Parameter of type Text.</param>
-    /// <param name="AccessToken">Parameter of type Text.</param>
-    local procedure InvokeSingleRequest(RequestJson: Text; var ResponseJson: Text; var HttpError: Text; AccessToken: Text) Result: Boolean
-    var
-        RequestJObject: JsonObject;
-        HeaderJObject: JsonObject;
-        JToken: JsonToken;
-
-        Resource: Label 'https://org3baffe0c.crm4.dynamics.com/';
-        entityType: Label 'products';
-        webAPI_URL: Label '%1/api/data/v%2/%3';
-        version: Label '9.1';
-        BaseURL: Text;
-    begin
-        if RequestJObject.ReadFrom(RequestJson) then;
-
-        BaseURL := StrSubstNo(webAPI_URL, Resource, version, entityType);
-        RequestJObject.Add('ServiceURL', BaseURL);
-        HeaderJObject.Add('Authorization', StrSubstNo('Bearer %1', AccessToken));
-        if RequestJObject.SelectToken('Header', JToken) then
-            JToken.AsObject().Add('Authorization', StrSubstNo('Bearer %1', AccessToken))
-        else
-            RequestJObject.Add('Header', HeaderJObject);
-        RequestJObject.WriteTo(RequestJson);
-
-        Result := InvokeHttpJSONRequest(RequestJson, ResponseJson, HttpError);
-    end;
-
-    /// <summary> 
-    /// Description for InvokeHttpJSONRequest.
-    /// </summary>
-    /// <param name="RequestJson">Parameter of type Text.</param>
-    /// <param name="ResponseJson">Parameter of type Text.</param>
-    /// <param name="HttpError">Parameter of type Text.</param>
-    local procedure InvokeHttpJSONRequest(RequestJson: Text; var ResponseJson: Text; var HttpError: Text) Result: Boolean
-    var
-        Client: HttpClient;
-        RequestMessage: HttpRequestMessage;
-        ResponseMessage: HttpResponseMessage;
-        ErrorMessage: Text;
-    begin
-        ResponseJson := '';
-        HttpError := '';
-
-        Client.Clear();
-        Client.Timeout(60000);
-        InitHttpRequestContent(RequestMessage, RequestJson);
-        InitHttpRequestMessage(RequestMessage, RequestJson);
-
-        if not Client.Send(RequestMessage, ResponseMessage) then
-            if ResponseMessage.IsBlockedByEnvironment() then
-                ErrorMessage := StrSubstNo(EnvironmentBlocksErr, RequestMessage.GetRequestUri())
-            else
-                ErrorMessage := StrSubstNo(ConnectionErr, RequestMessage.GetRequestUri());
-
-        if ErrorMessage <> '' then
-            Error(ErrorMessage);
-
-        exit(ProcessHttpResponseMessage(ResponseMessage, ResponseJson, HttpError));
-    end;
-
-    /// <summary> 
-    /// Description for InitHttpRequestContent.
-    /// </summary>
-    /// <param name="RequestMessage">Parameter of type HttpRequestMessage.</param>
-    /// <param name="RequestJson">Parameter of type Text.</param>
-    local procedure InitHttpRequestContent(var RequestMessage: HttpRequestMessage; RequestJson: Text)
-    var
-        ContentHeaders: HttpHeaders;
-        JToken: JsonToken;
-        ContentJToken: JsonToken;
-        ContentJson: Text;
-    begin
-        if JToken.ReadFrom(RequestJson) then
-            if JToken.SelectToken('Content', ContentJToken) then begin
-                RequestMessage.Content().Clear();
-                ContentJToken.WriteTo(ContentJson);
-                RequestMessage.Content().WriteFrom(ContentJson);
-                if JToken.SelectToken('Content-Type', JToken) then begin
-                    RequestMessage.Content().GetHeaders(ContentHeaders);
-                    ContentHeaders.Clear();
-                    ContentHeaders.Add('Content-Type', JToken.AsValue().AsText());
-                end;
-            end;
-    end;
-
-    [NonDebuggable]
-    /// <summary> 
-    /// Description for InitHttpRequestMessage.
-    /// </summary>
-    /// <param name="RequestMessage">Parameter of type HttpRequestMessage.</param>
-    /// <param name="RequestJson">Parameter of type Text.</param>
-    local procedure InitHttpRequestMessage(var RequestMessage: HttpRequestMessage; RequestJson: Text)
-    var
-        RequestHeaders: HttpHeaders;
-        JToken: JsonToken;
-        JToken2: JsonToken;
-        ServiceURL: Text;
-        HeadersJson: Text;
-    begin
-        if JToken.ReadFrom(RequestJson) then begin
-            RequestMessage.GetHeaders(RequestHeaders);
-            RequestHeaders.Clear();
-            if JToken.SelectToken('Accept', JToken2) then
-                RequestHeaders.Add('Accept', JToken2.AsValue().AsText());
-            if JToken.AsObject().Get('Header', JToken2) then begin
-                JToken2.WriteTo(HeadersJson);
-                if JToken2.ReadFrom(HeadersJson) then
-                    foreach JToken2 in JToken2.AsObject().Values() do
-                        RequestHeaders.Add(JToken2.Path(), JToken2.AsValue().AsText());
-            end;
-
-            if JToken.SelectToken('Method', JToken2) then
-                RequestMessage.Method(JToken2.AsValue().AsText());
-
-            if JToken.SelectToken('ServiceURL', JToken2) then begin
-                ServiceURL := JToken2.AsValue().AsText();
-                if JToken.SelectToken('URLRequestPath', JToken2) then
-                    ServiceURL += JToken2.AsValue().AsText();
-                RequestMessage.SetRequestUri(ServiceURL);
-            end;
-        end;
-    end;
-
-    /// <summary> 
-    /// Description for ProcessHttpResponseMessage.
-    /// </summary>
-    /// <param name="ResponseMessage">Parameter of type HttpResponseMessage.</param>
-    /// <param name="ResponseJson">Parameter of type Text.</param>
-    /// <param name="HttpError">Parameter of type Text.</param>
-    local procedure ProcessHttpResponseMessage(var ResponseMessage: HttpResponseMessage; var ResponseJson: Text; var HttpError: Text) Result: Boolean
-    var
-        ResponseJObject: JsonObject;
-        ContentJObject: JsonObject;
-        JToken: JsonToken;
-        ResponseText: Text;
-        JsonResponse: Boolean;
-        StatusCode: Integer;
-        StatusReason: Text;
-        StatusDetails: Text;
-    begin
-        Result := ResponseMessage.IsSuccessStatusCode();
-        StatusCode := ResponseMessage.HttpStatusCode();
-        StatusReason := ResponseMessage.ReasonPhrase();
-
-        if ResponseMessage.Content().ReadAs(ResponseText) then
-            JsonResponse := ContentJObject.ReadFrom(ResponseText);
-        if JsonResponse then
-            ResponseJObject.Add('Content', ContentJObject);
-
-        if not Result then begin
-            HttpError := StrSubstNo('HTTP error %1 (%2)', StatusCode, StatusReason);
-            if JsonResponse then
-                if ContentJObject.SelectToken('error_description', JToken) then begin
-                    StatusDetails := JToken.AsValue().AsText();
-                    HttpError += StrSubstNo('\%1', StatusDetails);
-                end;
-        end;
-
-        SetHttpStatus(ResponseJObject, StatusCode, StatusReason, StatusDetails);
-        ResponseJObject.WriteTo(ResponseJson);
-    end;
-
-    /// <summary> 
-    /// Description for SetHttpStatus.
-    /// </summary>
-    /// <param name="JObject">Parameter of type JsonObject.</param>
-    /// <param name="StatusCode">Parameter of type Integer.</param>
-    /// <param name="StatusReason">Parameter of type Text.</param>
-    /// <param name="StatusDetails">Parameter of type Text.</param>
-    local procedure SetHttpStatus(var JObject: JsonObject; StatusCode: Integer; StatusReason: Text; StatusDetails: Text)
-    var
-        JObject2: JsonObject;
-    begin
-        JObject2.Add('code', StatusCode);
-        JObject2.Add('reason', StatusReason);
-        if StatusDetails <> '' then
-            JObject2.Add('details', StatusDetails);
-        JObject.Add('Status', JObject2);
-    end;
-
     procedure jsonItemsToPost(ItemNo: Code[20]): JsonObject
     var
         locItems: Record Item;
@@ -414,6 +235,33 @@ codeunit 50000 "Web Service Mgt."
         exit(JSObjectLine);
     end;
 
+    // {
+    //     "tct_salesorderid@odata.bind": "/salesorders(446e2ca1-35a6-ea11-a812-000d3aba77ea)",
+    //     "tct_payerdetails": "test BC",
+    //     "tct_amount": 160.0000,
+    //     "tct_invoiceid@odata.bind": "/invoices(93dd43f3-e5a3-ea11-a812-000d3abaae50)",
+    //     "transactioncurrencyid@odata.bind": "/transactioncurrencies(d8b0ca73-7060-ea11-a811-000d3ab9be86)"
+    // }
+
+    procedure jsonPaymentToPost(salesOrderId: Text[50]; invoiceId: Text[50]; payerDetails: Text[100]; paymentAmount: Decimal): JsonObject
+    var
+        JSObjectLine: JsonObject;
+        lblSalesOrderId: Label '/salesorders(%1)';
+        lblInvoiceId: Label '/invoices(%1)';
+        lblTransactionCurrencyId: Label '/transactioncurrencies(d8b0ca73-7060-ea11-a811-000d3ab9be86)';
+    begin
+        salesOrderId := StrSubstNo(lblSalesOrderId, salesOrderId);
+        invoiceId := StrSubstNo(lblInvoiceId, invoiceId);
+
+        JSObjectLine.Add('tct_salesorderid@odata.bind', salesOrderId);
+        JSObjectLine.Add('tct_payerdetails', payerDetails);
+        JSObjectLine.Add('tct_amount', paymentAmount);
+        JSObjectLine.Add('tct_invoiceid@odata.bind', invoiceId);
+        JSObjectLine.Add('transactioncurrencyid@odata.bind', lblTransactionCurrencyId);
+
+        exit(JSObjectLine);
+    end;
+
     procedure AddCRMproductIdToItem(jsonText: Text)
     var
         locItem: Record Item;
@@ -429,6 +277,24 @@ codeunit 50000 "Web Service Mgt."
             if locItem.Get(ItemNo) then begin
                 locItem."CRM Item Id" := CRMproductId;
                 locItem.Modify();
+            end;
+        end;
+    end;
+
+    procedure AddCRMpaymentIdToPayment(jsonText: Text; EntryNo: Integer)
+    var
+        locCustLedgerEntry: Record "Cust. Ledger Entry";
+        ItemToken: JsonToken;
+        ItemToken2: JsonToken;
+        CRMpaymenttId: Text[50];
+    begin
+        ItemToken.ReadFrom(jsonText);
+        if ItemToken.AsObject().Get('tct_paymentid', ItemToken2) then begin
+            CRMpaymenttId := CopyStr(GetJSToken(ItemToken.AsObject(), 'tct_paymentid').AsValue().AsText(), 1,
+                                                MaxStrLen(locCustLedgerEntry."CRM Payment Id"));
+            if locCustLedgerEntry.Get(EntryNo) then begin
+                locCustLedgerEntry."CRM Payment Id" := CRMpaymenttId;
+                locCustLedgerEntry.Modify();
             end;
         end;
     end;

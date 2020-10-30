@@ -10,7 +10,4 @@ tableextension 50004 "Item Ext" extends Item
                         RUS = 'Id товара в CRM';
         }
     }
-
-    var
-        myInt: Integer;
 }
