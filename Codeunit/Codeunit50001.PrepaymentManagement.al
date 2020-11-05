@@ -24,7 +24,6 @@ codeunit 50001 "Prepayment Management"
         NotAllowedPostingDatesErr: TextConst ENU = 'Posting date is not within the range of allowed posting dates.',
                                             RUS = 'Дата учета вне пределов разрешенного диапазона дат учета.';
         CustEntryApplyPostedEntries: Codeunit "CustEntry-Apply Posted Entries";
-        tempDtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry" temporary;
         DtldCustLedgEntry2: Record "Detailed Cust. Ledg. Entry";
         Cust: Record Customer;
         DocNo: Code[20];
@@ -167,19 +166,16 @@ codeunit 50001 "Prepayment Management"
     /// <param name="PrepaymentOrderNo">Parameter of type Code[20].</param>
     /// <param name="DocumentNo">Parameter of type Code[20].</param>
     /// <param name="PostingDate">Parameter of type Date.</param>
-    procedure GetLastPrepaymentInvoiceNo(PrepaymentOrderNo: Code[20]; var DocumentNo: Code[20]; var PostingDate: Date)
+    procedure GetPrepaymentInvoices(PrepaymentOrderNo: Code[20]; var tempSalesInvoiceHeader: Record "Sales Invoice Header" temporary)
     var
         SalesInvoiceHeader: Record "Sales Invoice Header";
     begin
         SalesInvoiceHeader.SetCurrentKey("Prepayment Order No.");
         SalesInvoiceHeader.SetRange("Prepayment Order No.", PrepaymentOrderNo);
-        if SalesInvoiceHeader.FindLast() then begin
-            DocumentNo := SalesInvoiceHeader."No.";
-            PostingDate := SalesInvoiceHeader."Posting Date";
-            exit;
+        if SalesInvoiceHeader.FindSet() then begin
+            tempSalesInvoiceHeader := SalesInvoiceHeader;
+            tempSalesInvoiceHeader.Insert();
         end;
-        DocumentNo := '';
-        PostingDate := 0D;
     end;
 
     /// <summary> 
@@ -188,7 +184,7 @@ codeunit 50001 "Prepayment Management"
     /// <param name="PrepaymentOrderNo">Parameter of type Code[20].</param>
     /// <param name="DocumentNo">Parameter of type Code[20].</param>
     /// <param name="PostingDate">Parameter of type Date.</param>
-    procedure GetLastPrepaymentCreaditMemoNo(PrepaymentOrderNo: Code[20]; var DocumentNo: Code[20]; var PostingDate: Date)
+    procedure GetLastPrepaymentCreditMemoNo(PrepaymentOrderNo: Code[20]; var DocumentNo: Code[20]; var PostingDate: Date)
     var
         SalesCreditMemoHeader: Record "Sales Cr.Memo Header";
     begin
@@ -201,6 +197,17 @@ codeunit 50001 "Prepayment Management"
         end;
         DocumentNo := '';
         PostingDate := 0D;
+    end;
+
+    procedure UnApplyPayments(SalesOrderNo: Code[20])
+    var
+        tempSalesInvoiceHeader: Record "Sales Invoice Header" temporary;
+    begin
+        GetPrepaymentInvoices(SalesOrderNo, tempSalesInvoiceHeader);
+        if tempSalesInvoiceHeader.FindSet() then
+            repeat
+                UnApplyCustLedgEntry(GetCustomerLedgerEntryNo(tempSalesInvoiceHeader."No.", tempSalesInvoiceHeader."Posting Date"));
+            until tempSalesInvoiceHeader.Next() = 0;
     end;
 
     /// <summary> 
@@ -228,14 +235,30 @@ codeunit 50001 "Prepayment Management"
     var
         CustLedgEntry: Record "Cust. Ledger Entry";
         DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
-        ApplicationEntryNo: Integer;
     begin
         CheckReversal(CustLedgEntryNo);
-        ApplicationEntryNo := CustEntryApplyPostedEntries.FindLastApplEntry(CustLedgEntryNo);
-        while ApplicationEntryNo <> 0 do begin
-            DtldCustLedgEntry.GET(ApplicationEntryNo);
-            UnApplyCustomer(DtldCustLedgEntry);
-        end;
+        FindApplEntries(CustLedgEntryNo);
+    end;
+
+    procedure FindApplEntries(CustLedgEntryNo: Integer): Integer
+    var
+        CustLedgerEntry: Record "Cust. Ledger Entry";
+        DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
+        ApplicationEntryNo: Integer;
+    begin
+        DtldCustLedgEntry.SetCurrentKey("Cust. Ledger Entry No.", "Entry Type");
+        DtldCustLedgEntry.SetRange("Cust. Ledger Entry No.", CustLedgEntryNo);
+        DtldCustLedgEntry.SetRange("Entry Type", DtldCustLedgEntry."Entry Type"::Application);
+        DtldCustLedgEntry.SetRange(Unapplied, false);
+        ApplicationEntryNo := 0;
+        if DtldCustLedgEntry.FindSet() then
+            repeat
+                if not DtldCustLedgEntry."Prepmt. Diff." then
+                    if (DtldCustLedgEntry."Entry No." > ApplicationEntryNo) then
+                        if CustLedgerEntry.Get(DtldCustLedgEntry."Entry No.") then
+                            if CustLedgerEntry."Document Type" = CustLedgerEntry."Document Type"::Payment then
+                                UnApplyCustomer(ApplicationEntryNo);
+            until DtldCustLedgEntry.Next() = 0;
     end;
 
     /// <summary> 
@@ -255,14 +278,12 @@ codeunit 50001 "Prepayment Management"
     /// Description for UnApplyCustomer.
     /// </summary>
     /// <param name="DtldCustLedgEntry">Parameter of type Record "Detailed Cust. Ledg. Entry".</param>
-    local procedure UnApplyCustomer(DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry")
+    local procedure UnApplyCustomer(ApplicationEntryNo: Integer)
+    var
+        DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
     begin
-        DtldCustLedgEntry.TESTFIELD("Entry Type", DtldCustLedgEntry."Entry Type"::Application);
-        DtldCustLedgEntry.TESTFIELD(Unapplied, FALSE);
+        DtldCustLedgEntry.GET(ApplicationEntryNo);
         SetDtldCustLedgEntry(DtldCustLedgEntry."Entry No.");
-        // InsertEntries();
-        // unapply last entry
-        tempDtldCustLedgEntry.FindLast();
         PostUnApplyCustomer(DtldCustLedgEntry2, DocNo, PostingDate);
     end;
 
@@ -364,7 +385,7 @@ codeunit 50001 "Prepayment Management"
         END;
 
         IF CommitChanges AND (NOT AllowAmtDiffUnapply) THEN
-            COMMIT;
+            Commit();
     end;
 
     /// <summary> 
@@ -394,33 +415,6 @@ codeunit 50001 "Prepayment Management"
         PostingDate := DtldCustLedgEntry2."Posting Date";
         DocNo := DtldCustLedgEntry2."Document No.";
         Cust.GET(DtldCustLedgEntry2."Customer No.");
-    end;
-
-    /// <summary> 
-    /// Description for InsertEntries.
-    /// </summary>
-    local procedure InsertEntries()
-    var
-        DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
-    begin
-        IF DtldCustLedgEntry2."Transaction No." = 0 THEN BEGIN
-            DtldCustLedgEntry.SETCURRENTKEY("Application No.", "Customer No.", "Entry Type");
-            DtldCustLedgEntry.SETRANGE("Application No.", DtldCustLedgEntry2."Application No.");
-        END ELSE BEGIN
-            DtldCustLedgEntry.SETCURRENTKEY("Transaction No.", "Customer No.", "Entry Type");
-            DtldCustLedgEntry.SETRANGE("Transaction No.", DtldCustLedgEntry2."Transaction No.");
-        END;
-        DtldCustLedgEntry.SETRANGE("Customer No.", DtldCustLedgEntry2."Customer No.");
-        tempDtldCustLedgEntry.DELETEALL;
-        IF DtldCustLedgEntry.FINDSET THEN
-            REPEAT
-                IF (DtldCustLedgEntry."Entry Type" <> DtldCustLedgEntry."Entry Type"::"Initial Entry") AND
-                   NOT DtldCustLedgEntry.Unapplied
-                THEN BEGIN
-                    tempDtldCustLedgEntry := DtldCustLedgEntry;
-                    tempDtldCustLedgEntry.INSERT;
-                END;
-            UNTIL DtldCustLedgEntry.NEXT = 0;
     end;
 
     /// <summary> 

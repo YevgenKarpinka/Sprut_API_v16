@@ -8,7 +8,7 @@ page 50001 "APIV2 - Customer Agreements"
     DelayedInsert = true;
     EntityName = 'customerAgreement';
     EntitySetName = 'customerAgreements';
-    ODataKeyFields = systemId;
+    ODataKeyFields = "Customer No.", "No.";
     PageType = API;
     SourceTable = "Customer Agreement";
     Extensible = false;

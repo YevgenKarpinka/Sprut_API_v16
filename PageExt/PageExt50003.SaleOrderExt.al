@@ -18,54 +18,50 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
     actions
     {
         // Add changes to page actions here
-        addafter(PostPrepaymentInvoice)
+        addafter("Prepa&yment")
         {
-            action(PostPrepaymentInvoiceSprut)
+            group(Sprut)
             {
-                ApplicationArea = All;
-                CaptionML = ENU = 'Post Prepayment Invoice Sprut',
+                CaptionML = ENU = 'Sprut',
+                            RUS = 'Sprut';
+                Image = Prepayment;
+
+                action(PostPrepaymentInvoiceSprut)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Post Prepayment Invoice Sprut',
                             RUS = 'Учет счета на предоплату';
-                Image = PrepaymentPost;
+                    Image = PrepaymentPost;
 
-                trigger OnAction()
-                begin
-                    SalesPostPrepaymentsSprut.PostPrepaymentInvoiceSprut(Rec);
-                end;
-            }
-        }
-        addafter(PostPrepaymentCreditMemo)
-        {
-            action(PostPrepaymentCreditMemoSprut)
-            {
-                ApplicationArea = All;
-                CaptionML = ENU = 'Post Prepayment Credit Memo Sprut',
+                    trigger OnAction()
+                    begin
+                        SalesPostPrepaymentsSprut.PostPrepaymentInvoiceSprut(Rec);
+                    end;
+                }
+                action(PostPrepaymentCreditMemoSprut)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Post Prepayment Credit Memo Sprut',
                             RUS = 'Учет кредит ноты на предоплату';
-                Image = PrepaymentPost;
+                    Image = PrepaymentPost;
 
-                trigger OnAction()
-                begin
-                    SalesPostPrepaymentsSprut.PostPrepaymentCreditMemoSprut(Rec);
-                end;
-            }
-        }
-        addafter(PostPrepaymentCreditMemo)
-        {
-            action(UnApplyEntriesSprut)
-            {
-                ApplicationArea = All;
-                CaptionML = ENU = 'Unapply Entries Sprut',
+                    trigger OnAction()
+                    begin
+                        SalesPostPrepaymentsSprut.PostPrepaymentCreditMemoSprut(Rec);
+                    end;
+                }
+                action(UnApplyEntriesSprut)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Unapply Entries Sprut',
                             RUS = 'Отменить применение операций';
-                Image = UnApply;
+                    Image = UnApply;
 
-                trigger OnAction()
-                var
-                    DocumentNo: Code[20];
-                    PostingDate: Date;
-                begin
-                    PrepaymentMgt.GetLastPrepaymentInvoiceNo(Rec."No.", DocumentNo, PostingDate);
-                    PrepaymentMgt.UnApplyCustLedgEntry(PrepaymentMgt.GetCustomerLedgerEntryNo(DocumentNo, PostingDate));
-
-                end;
+                    trigger OnAction()
+                    begin
+                        PrepaymentMgt.UnApplyPayments(Rec."No.");
+                    end;
+                }
             }
         }
     }
