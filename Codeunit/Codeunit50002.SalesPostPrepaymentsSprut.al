@@ -54,10 +54,10 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesHeader.Copy(SalesHeader2);
         ErrorMessageMgt.Activate(ErrorMessageHandler);
         SetDocumentType(SalesHeader."Document Type"::Invoice);
-        Commit();
+        // Commit();
         IF NOT Run(SalesHeader) THEN
             ErrorMessageHandler.ShowErrors;
-        Commit();
+        // Commit();
         SalesHeader2 := SalesHeader;
     end;
 
@@ -74,10 +74,10 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesHeader.Copy(SalesHeader2);
         ErrorMessageMgt.Activate(ErrorMessageHandler);
         SetDocumentType(SalesHeader."Document Type"::"Credit Memo");
-        Commit();
+        // Commit();
         IF NOT Run(SalesHeader) THEN
             ErrorMessageHandler.ShowErrors;
-        Commit();
+        // Commit();
         SalesHeader2 := SalesHeader;
     end;
 
@@ -125,7 +125,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
     var
         Handled: Boolean;
     begin
-        OnBeforeCreditMemo(SalesHeader, Handled);
+        // OnBeforeCreditMemo(SalesHeader, Handled);
         if not Handled then
             Code(SalesHeader, 1);
     end;
@@ -165,7 +165,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         PostedDocTabNo: Integer;
         LineNo: Integer;
     begin
-        OnBeforePostPrepayments(SalesHeader2, DocumentType, SuppressCommit);
+        // OnBeforePostPrepayments(SalesHeader2, DocumentType, SuppressCommit);
 
         SalesHeader := SalesHeader2;
         GLSetup.Get();
@@ -260,7 +260,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
               PostedDocTabNo, GenJnlLineDocNo, TempPrepmtInvLineBuffer."G/L Account No.", SalesHeader."Document Date", SalesHeader."Language Code", PrevLineNo);
         until TempPrepmtInvLineBuffer.Next = 0;
 
-        OnAfterCreateLinesOnBeforeGLPosting(SalesHeader, SalesInvHeader, SalesCrMemoHeader, TempPrepmtInvLineBuffer, DocumentType, LineNo);
+        // OnAfterCreateLinesOnBeforeGLPosting(SalesHeader, SalesInvHeader, SalesCrMemoHeader, TempPrepmtInvLineBuffer, DocumentType, LineNo);
 
         // G/L Posting
         LineCount := 0;
@@ -315,7 +315,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             SalesHeader.Status := SalesHeader.Status::"Pending Prepayment";
         SalesHeader.Modify;
 
-        OnAfterPostPrepaymentsOnBeforeThrowPreviewModeError(SalesHeader, SalesInvHeader, SalesCrMemoHeader, GenJnlPostLine);
+        // OnAfterPostPrepaymentsOnBeforeThrowPreviewModeError(SalesHeader, SalesInvHeader, SalesCrMemoHeader, GenJnlPostLine);
 
         if PreviewMode then begin
             // Window.Close;
@@ -324,7 +324,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
 
         SalesHeader2 := SalesHeader;
 
-        OnAfterPostPrepayments(SalesHeader2, DocumentType, SuppressCommit, SalesInvHeader, SalesCrMemoHeader);
+        // OnAfterPostPrepayments(SalesHeader2, DocumentType, SuppressCommit, SalesInvHeader, SalesCrMemoHeader);
     end;
 
     /// <summary> 
