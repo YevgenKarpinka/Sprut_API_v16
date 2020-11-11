@@ -31,7 +31,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     ApplicationArea = All;
                     CaptionML = ENU = 'Post Prepayment Invoice Sprut',
                             RUS = 'Учет счета на предоплату';
-                    Image = PrepaymentPost;
+                    Image = PrepaymentInvoice;
 
                     trigger OnAction()
                     begin
@@ -43,7 +43,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     ApplicationArea = All;
                     CaptionML = ENU = 'Post Prepayment Credit Memo Sprut',
                             RUS = 'Учет кредит ноты на предоплату';
-                    Image = PrepaymentPost;
+                    Image = PrepaymentCreditMemo;
 
                     trigger OnAction()
                     begin
@@ -60,6 +60,25 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     trigger OnAction()
                     begin
                         PrepaymentMgt.UnApplyPayments(Rec."No.");
+                    end;
+                }
+                action(CreatePrepaymentInvoiceByAmount)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Create Prepayment Invoice By Amount',
+                            RUS = 'Создание счета на предоплату по сумме';
+                    Image = PrepaymentInvoice;
+
+                    trigger OnAction()
+                    var
+                        invoiceID: Text[50];
+                        prepaymentAmount: Decimal;
+                        API_SalesInvoice: Page "APIV2 - Sales Invoice";
+                    begin
+                        invoiceID := 'TEST_INVOICE_CRM';
+                        prepaymentAmount := 333.33;
+                        API_SalesInvoice.SetInit(invoiceID, prepaymentAmount);
+                        API_SalesInvoice.CreatePrepaymentInvoice("No.");
                     end;
                 }
             }

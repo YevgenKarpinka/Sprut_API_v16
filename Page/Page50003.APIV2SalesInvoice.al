@@ -57,12 +57,12 @@ page 50003 "APIV2 - Sales Invoice"
 
                     trigger OnValidate()
                     begin
-                        GetSalesOrder();
+                        GetSalesOrder(Rec."No.");
                         if prepaymentPercent <= SalesHeader."Prepayment %" then
                             Error(PrepaymentPercentCannotBeLessOrEqualErr, SalesHeader."Prepayment %");
                     end;
                 }
-                field(prepaymentAmount; PrepaymentAmount)
+                field(prepaymentAmount; prepaymentAmount)
                 {
                     ApplicationArea = All;
                     Caption = 'prepaymentAmount', Locked = true;
@@ -94,16 +94,14 @@ page 50003 "APIV2 - Sales Invoice"
 
     trigger OnModifyRecord(): Boolean
     begin
-        if SalesHeader.Get(Rec."Document Type", Rec."No.") then begin
-
-            if (PrepaymentAmount <> 0)
+        if SalesHeader.Get(Rec."Document Type", Rec."No.") then
+            if (prepaymentAmount <> 0)
             and (prepaymentPercent <> 0)
             and (invoiceId <> '') then
                 // CreatePrepaymentInvoice(SalesHeader."No.");
 
                 // while testing CRM
                 postedInvoiceNo := 'TEST_INVOICE_NO';
-        end;
     end;
 
     trigger OnNewRecord(BelowxRec: Boolean)
@@ -116,79 +114,121 @@ page 50003 "APIV2 - Sales Invoice"
         invoiceId: Text[50];
         prepaymentPercent: Decimal;
         PrepaymentAmount: Decimal;
-        AdjAmount: Decimal;
+        TotalOrderAmountExclVAT: Decimal;
+        BasePrepaymentAmountExclVAT: Decimal;
+        PrepaymentAmountExclVAT: Decimal;
         postedInvoiceNo: Code[20];
-        ReleaseSalesDoc: Codeunit "Release Sales Document";
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
-        BlankPrepaymentPercentErr: Label 'The blank "prepaymentPercent" is not allowed.', Locked = true;
         BlankPrepaymentAmountErr: Label 'The blank "prepaymentAmount" is not allowed.', Locked = true;
         BlankInvoiceIdErr: Label 'The blank "invoiceId" is not allowed.', Locked = true;
         PrepaymentPercentCannotBeLessOrEqualErr: Label 'The "prepaymentPercent" cannot be less or equal %1.', Locked = true;
-        AmountAdjustmentCannotBeMoreErr: Label 'The the amount adjustment cannot be more %1.', Locked = true;
+        errTotalAmountLessPrepaymentAmount: Label 'Total order amount less prepayment invoice amount.';
 
-    local procedure CreatePrepaymentInvoice(SalesOrderNo: Code[20])
+    procedure SetInit(_invoiceID: Text[50]; _prepaymentAmount: Decimal)
     begin
-        // update "External Document No." and "Prepayment %" to invoiceId
-        GetSalesOrder();
-        SalesHeader."CRM Invoice No." := invoiceId;
-        SalesHeader.Validate("Prepayment %", prepaymentPercent);
-        SalesHeader.Modify();
+        invoiceId := _invoiceID;
+        prepaymentAmount := _prepaymentAmount;
+    end;
 
-        // Check Prepayment amount
-        CheckedPrepaymentAmount(SalesHeader."No.", PrepaymentAmount, AdjAmount);
-        if ABS(AdjAmount) > 1 then
-            Error(AmountAdjustmentCannotBeMoreErr, 1);
+    procedure CreatePrepaymentInvoice(SalesOrderNo: Code[20])
+    begin
+        // Get Sales Order
+        if not GetSalesOrder(SalesOrderNo) then exit;
 
-        if AdjAmount <> 0 then
-            // Update Prepayment amount if delta not aqual 0
-            UpdatePrepaymentAmount(SalesHeader."No.", AdjAmount);
-        // Release Sales order
-        ReleaseSalesDoc.PerformManualRelease(SalesHeader);
-        // Create prepayment invoice
+        // Check Allowed Prepayment Amount
+        if not CheckAllowedPrepaymentAmount(SalesOrderNo, PrepaymentAmount) then
+            Error(errTotalAmountLessPrepaymentAmount, PrepaymentAmount);
+
+        // Set Order Status Open
+        SetSalesOrderStatusOpen(SalesOrderNo);
+
+        // Update Prepayment Amount in Sales Order
+        UpdatePrepaymentAmountInSalesOrder(SalesOrderNo, PrepaymentAmount);
+
+        // Create Prepayment Invoice
         SalesPostPrepaymentsSprut.PostPrepaymentInvoiceSprut(SalesHeader);
 
-
-        // comment while tested from CRM
-        // postedInvoiceNo := SalesHeader."Last Prepayment No."; 
+        // get last prepayment invoice no
+        postedInvoiceNo := SalesHeader."Last Prepayment No.";
     end;
 
-    local procedure UpdatePrepaymentAmount(SalesOrderNo: Code[20]; AdjAmount: Decimal)
+    local procedure GetSalesOrder(_SalesOrderNo: Code[20]): Boolean
+    begin
+        if not SalesHeader.Get(SalesHeader."Document Type"::Order, _SalesOrderNo) then
+            exit(false);
+        exit(true);
+    end;
+
+    local procedure GetVAT(VATBusPostingGroup: Code[20]): Decimal
     var
-        locSalesLine: Record "Sales Line";
+        myInt: Integer;
     begin
-        ReopenOrder(SalesOrderNo);
 
-        locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
-        locSalesLine.SetRange("Document No.", SalesOrderNo);
-        locSalesLine.FindFirst();
-
-        locSalesLine.Validate("Prepayment Amount", locSalesLine."Prepayment Amount" + AdjAmount);
-        locSalesLine.Modify(true);
     end;
 
-    local procedure ReopenOrder(SalesOrderNo: Code[20])
-    begin
-        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
-        if SalesHeader.Status <> SalesHeader.Status::Open then begin
-            SalesHeader.Status := SalesHeader.Status::Open;
-            SalesHeader.Modify();
-        end;
-    end;
-
-    local procedure CheckedPrepaymentAmount(SalesOrderNo: Code[20]; PrepaymentAmount: Decimal; var AdjAmount: Decimal)
+    local procedure CheckAllowedPrepaymentAmount(SalesOrderNo: Code[20]; PrepaymentAmount: Decimal): Boolean
     var
         locSalesLine: Record "Sales Line";
     begin
         locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
         locSalesLine.SetRange("Document No.", SalesOrderNo);
-        locSalesLine.CalcSums("Prepayment Amount");
-        AdjAmount := locSalesLine."Prepayment Amount" - PrepaymentAmount;
+        locSalesLine.SetFilter(Quantity, '<>%1', 0);
+        locSalesLine.CalcSums("Line Amount", "Prepmt. Line Amount");
+
+        TotalOrderAmountExclVAT := locSalesLine."Line Amount";
+        BasePrepaymentAmountExclVAT := locSalesLine."Prepmt. Line Amount";
+
+        if SalesHeader."Prices Including VAT" then
+            PrepaymentAmountExclVAT := PrepaymentAmount
+        else
+            PrepaymentAmountExclVAT := PrepaymentAmount * (1 - locSalesLine."VAT %" / 100);
+
+        exit(TotalOrderAmountExclVAT >= (BasePrepaymentAmountExclVAT + PrepaymentAmountExclVAT))
     end;
 
-    local procedure GetSalesOrder()
+    local procedure SetSalesOrderStatusOpen(SalesOrderNo: Code[20])
     begin
-        if (SalesHeader."Document Type" <> SalesHeader."Document Type"::Order)
-        and (SalesHeader."No." <> Rec."No.") then
-            SalesHeader.Get(SalesHeader."Document Type"::Order, Rec."No.");
+        if SalesHeader.Status = SalesHeader.Status::Open then exit;
+        SalesHeader.Status := SalesHeader.Status::Open;
+        SalesHeader.Modify();
+    end;
+
+    local procedure UpdatePrepaymentAmountInSalesOrder(SalesOrderNo: Code[20]; PrepaymentAmount: Decimal)
+    var
+        locSalesLine: Record "Sales Line";
+        TotalPrepaymentAmountExclVAT: Decimal;
+        FirstLinePrepaymentAmountExclVAT: Decimal;
+        PrepaymentPercent: Decimal;
+        DiffPrepaymentAmount: Decimal;
+    begin
+        // calculate prepayment percent
+        TotalPrepaymentAmountExclVAT := BasePrepaymentAmountExclVAT + PrepaymentAmountExclVAT;
+        PrepaymentPercent := TotalPrepaymentAmountExclVAT * 100 / TotalOrderAmountExclVAT;
+
+        // update prepayment percent sales header
+        SalesHeader."CRM Invoice No." := invoiceId;
+        SalesHeader.Validate("Prepayment %", PrepaymentPercent);
+        SalesHeader.Modify();
+
+        // update prepayment percent sales line
+        locSalesLine.SetCurrentKey(Quantity);
+        locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
+        locSalesLine.SetRange("Document No.", SalesOrderNo);
+        locSalesLine.SetFilter(Quantity, '<>%1', 0);
+
+        locSalesLine.FindSet(false, true);
+        FirstLinePrepaymentAmountExclVAT := locSalesLine."Prepmt. Amt. Incl. VAT";
+        repeat
+            locSalesLine.Validate("Prepayment %", PrepaymentPercent);
+            locSalesLine.UpdatePrePaymentAmounts();
+            locSalesLine.Modify();
+        until locSalesLine.Next() = 0;
+
+        // added difference amount in last sales line 
+        locSalesLine.CalcSums("Prepmt. Amt. Incl. VAT");
+        DiffPrepaymentAmount := PrepaymentAmountExclVAT - (BasePrepaymentAmountExclVAT - locSalesLine."Prepmt. Amt. Incl. VAT");
+
+        locSalesLine.Validate("Prepmt. Amt. Incl. VAT", FirstLinePrepaymentAmountExclVAT + DiffPrepaymentAmount);
+        locSalesLine.Modify();
     end;
 }

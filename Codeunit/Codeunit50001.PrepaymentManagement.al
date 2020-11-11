@@ -23,11 +23,14 @@ codeunit 50001 "Prepayment Management"
                                                     RUS = 'Номер последней транзакции должен соответствовать применению в операции книги клиентов № %1.';
         NotAllowedPostingDatesErr: TextConst ENU = 'Posting date is not within the range of allowed posting dates.',
                                             RUS = 'Дата учета вне пределов разрешенного диапазона дат учета.';
+        errTotalAmountLessPrepaymentAmount: TextConst ENU = 'Total order amount less prepayment invoice amount.',
+                                                    RUS = 'Сумма заказа меньше суммы счета на предоплату.';
         DtldCustLedgEntry2: Record "Detailed Cust. Ledg. Entry";
         Cust: Record Customer;
         CustLedgEntryNo: Integer;
         AllowAmtDiffUnapply: Boolean;
         AmtDiffManagement: Codeunit PrepmtDiffManagement;
+        SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
 
     [EventSubscriber(ObjectType::Table, 37, 'OnBeforeUpdatePrepmtAmounts', '', false, false)]
     /// <summary> 
@@ -399,24 +402,13 @@ codeunit 50001 "Prepayment Management"
             MaxPostingDate := PostingDate;
     end;
 
-    /// <summary> 
-    /// Description for SetDtldCustLedgEntry.
-    /// </summary>
-    /// <param name="EntryNo">Parameter of type Integer.</param>
     local procedure SetDtldCustLedgEntry(EntryNo: Integer)
     begin
         DtldCustLedgEntry2.GET(EntryNo);
         CustLedgEntryNo := DtldCustLedgEntry2."Cust. Ledger Entry No.";
-        // PostingDate := DtldCustLedgEntry2."Posting Date";
-        // DocNo := DtldCustLedgEntry2."Document No.";
         Cust.GET(DtldCustLedgEntry2."Customer No.");
     end;
 
-    /// <summary> 
-    /// Description for CheckAdditionalCurrency.
-    /// </summary>
-    /// <param name="OldPostingDate">Parameter of type Date.</param>
-    /// <param name="NewPostingDate">Parameter of type Date.</param>
     local procedure CheckAdditionalCurrency(OldPostingDate: Date; NewPostingDate: Date)
     var
         CurrExchRate: Record "Currency Exchange Rate";
@@ -520,5 +512,4 @@ codeunit 50001 "Prepayment Management"
                 locCustLedgEntry.Modify();
             end;
     end;
-
 }
