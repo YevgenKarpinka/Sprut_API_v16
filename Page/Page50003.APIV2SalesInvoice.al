@@ -110,13 +110,13 @@ page 50003 "APIV2 - Sales Invoice"
     end;
 
     var
+        Currency: Record Currency;
         SalesHeader: Record "Sales Header";
         invoiceId: Text[50];
         prepaymentPercent: Decimal;
         PrepaymentAmount: Decimal;
-        TotalOrderAmountExclVAT: Decimal;
-        BasePrepaymentAmountExclVAT: Decimal;
-        PrepaymentAmountExclVAT: Decimal;
+        TotalOrderAmount: Decimal;
+        TotalPrepaymentAmountBefore: Decimal;
         postedInvoiceNo: Code[20];
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
         BlankPrepaymentAmountErr: Label 'The blank "prepaymentAmount" is not allowed.', Locked = true;
@@ -133,7 +133,7 @@ page 50003 "APIV2 - Sales Invoice"
     procedure CreatePrepaymentInvoice(SalesOrderNo: Code[20])
     begin
         // Get Sales Order
-        if not GetSalesOrder(SalesOrderNo) then exit;
+        GetSalesOrder(SalesOrderNo);
 
         // Check Allowed Prepayment Amount
         if not CheckAllowedPrepaymentAmount(SalesOrderNo, PrepaymentAmount) then
@@ -152,11 +152,10 @@ page 50003 "APIV2 - Sales Invoice"
         postedInvoiceNo := SalesHeader."Last Prepayment No.";
     end;
 
-    local procedure GetSalesOrder(_SalesOrderNo: Code[20]): Boolean
+    local procedure GetSalesOrder(_SalesOrderNo: Code[20])
     begin
-        if not SalesHeader.Get(SalesHeader."Document Type"::Order, _SalesOrderNo) then
-            exit(false);
-        exit(true);
+        SalesHeader.Get(SalesHeader."Document Type"::Order, _SalesOrderNo);
+        SalesHeader.TestField("Prices Including VAT", true);
     end;
 
     local procedure GetVAT(VATBusPostingGroup: Code[20]): Decimal
@@ -175,15 +174,10 @@ page 50003 "APIV2 - Sales Invoice"
         locSalesLine.SetFilter(Quantity, '<>%1', 0);
         locSalesLine.CalcSums("Line Amount", "Prepmt. Line Amount");
 
-        TotalOrderAmountExclVAT := locSalesLine."Line Amount";
-        BasePrepaymentAmountExclVAT := locSalesLine."Prepmt. Line Amount";
+        TotalOrderAmount := locSalesLine."Line Amount";
+        TotalPrepaymentAmountBefore := locSalesLine."Prepmt. Line Amount";
 
-        if SalesHeader."Prices Including VAT" then
-            PrepaymentAmountExclVAT := PrepaymentAmount
-        else
-            PrepaymentAmountExclVAT := PrepaymentAmount * (1 - locSalesLine."VAT %" / 100);
-
-        exit(TotalOrderAmountExclVAT >= (BasePrepaymentAmountExclVAT + PrepaymentAmountExclVAT))
+        exit(TotalOrderAmount >= (TotalPrepaymentAmountBefore + PrepaymentAmount))
     end;
 
     local procedure SetSalesOrderStatusOpen(SalesOrderNo: Code[20])
@@ -196,14 +190,17 @@ page 50003 "APIV2 - Sales Invoice"
     local procedure UpdatePrepaymentAmountInSalesOrder(SalesOrderNo: Code[20]; PrepaymentAmount: Decimal)
     var
         locSalesLine: Record "Sales Line";
-        TotalPrepaymentAmountExclVAT: Decimal;
-        FirstLinePrepaymentAmountExclVAT: Decimal;
+        TotalPrepaymentAmount: Decimal;
         PrepaymentPercent: Decimal;
-        DiffPrepaymentAmount: Decimal;
+        LinePrepaymentAmount: Decimal;
+        LinesCount: Integer;
+        Counter: Integer;
     begin
+        Currency.Initialize(SalesHeader."Currency Code");
+
         // calculate prepayment percent
-        TotalPrepaymentAmountExclVAT := BasePrepaymentAmountExclVAT + PrepaymentAmountExclVAT;
-        PrepaymentPercent := TotalPrepaymentAmountExclVAT * 100 / TotalOrderAmountExclVAT;
+        TotalPrepaymentAmount := TotalPrepaymentAmountBefore + PrepaymentAmount;
+        PrepaymentPercent := TotalPrepaymentAmount * 100 / TotalOrderAmount;
 
         // update prepayment percent sales header
         SalesHeader."CRM Invoice No." := invoiceId;
@@ -215,20 +212,21 @@ page 50003 "APIV2 - Sales Invoice"
         locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
         locSalesLine.SetRange("Document No.", SalesOrderNo);
         locSalesLine.SetFilter(Quantity, '<>%1', 0);
+        LinesCount := locSalesLine.Count;
 
+        LinePrepaymentAmount := Round(PrepaymentAmount / LinesCount, Currency."Amount Rounding Precision");
+        Counter := 1;
         locSalesLine.FindSet(false, true);
-        FirstLinePrepaymentAmountExclVAT := locSalesLine."Prepmt. Amt. Incl. VAT";
         repeat
-            locSalesLine.Validate("Prepayment %", PrepaymentPercent);
-            locSalesLine.UpdatePrePaymentAmounts();
+            if LinesCount = Counter then
+                locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + PrepaymentAmount
+            else
+                locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + LinePrepaymentAmount;
             locSalesLine.Modify();
+
+            PrepaymentAmount -= LinePrepaymentAmount;
+            Counter += 1;
         until locSalesLine.Next() = 0;
 
-        // added difference amount in last sales line 
-        locSalesLine.CalcSums("Prepmt. Amt. Incl. VAT");
-        DiffPrepaymentAmount := PrepaymentAmountExclVAT - (BasePrepaymentAmountExclVAT - locSalesLine."Prepmt. Amt. Incl. VAT");
-
-        locSalesLine.Validate("Prepmt. Amt. Incl. VAT", FirstLinePrepaymentAmountExclVAT + DiffPrepaymentAmount);
-        locSalesLine.Modify();
     end;
 }

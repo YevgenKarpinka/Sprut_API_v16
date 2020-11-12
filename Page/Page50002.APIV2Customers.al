@@ -129,14 +129,15 @@ page 50002 "APIV2 - Customers"
                     Editable = false;
                     ToolTip = 'Specifies the display name of the tax area.';
                 }
-                field(taxRegistrationNumber; Rec."VAT Registration No.")
+                field(taxRegistrationNumber; Rec."TAX Registration No.")
                 {
                     ApplicationArea = All;
                     Caption = 'taxRegistrationNumber', Locked = true;
+                    ToolTip = 'Specifies the display name of the tax registration number.';
 
                     trigger OnValidate()
                     begin
-                        RegisterFieldSet(Rec.FIELDNO("VAT Registration No."));
+                        RegisterFieldSet(Rec.FIELDNO("TAX Registration No."));
                     end;
                 }
                 field(currencyId; Rec."Currency Id")
@@ -282,7 +283,7 @@ page 50002 "APIV2 - Customers"
 
                     trigger OnValidate()
                     begin
-                        // RegisterIBAN(txtIBAN);
+                        RegisterIBAN();
                     end;
                 }
                 // <<
@@ -336,7 +337,7 @@ page 50002 "APIV2 - Customers"
         Rec.INSERT(TRUE);
 
         ProcessPostalAddress();
-        RegisterIBAN(); // <<
+        // RegisterIBAN(); // <<
 
         RecRef.GETTABLE(Rec);
         // GraphMgtGeneralTools.ProcessNewRecordFromAPI(RecRef, TempFieldSet, CURRENTDATETIME());
@@ -360,7 +361,7 @@ page 50002 "APIV2 - Customers"
         Customer.FINDFIRST();
 
         ProcessPostalAddress();
-        RegisterIBAN(); // <<
+        // RegisterIBAN(); // <<
 
         IF Rec."No." = Customer."No." THEN
             Rec.MODIFY(TRUE)
@@ -408,7 +409,12 @@ page 50002 "APIV2 - Customers"
     var
         CustBankAccount: Record "Customer Bank Account";
     begin
-        if txtIBAN = '' then exit;
+        if txtIBAN = Rec."Default Bank Code" then exit;
+
+        if txtIBAN = '' then begin
+            txtIBAN := Rec."Default Bank Code";
+            exit;
+        end;
 
         CustBankAccount.SetCurrentKey("Customer No.", IBAN);
         CustBankAccount.SetRange("Customer No.", Rec."No.");
@@ -423,6 +429,7 @@ page 50002 "APIV2 - Customers"
 
         if CustBankAccount.Code <> '' then begin
             Rec."Default Bank Code" := CustBankAccount.Code;
+            // txtIBAN := Rec."Default Bank Code";
             RegisterFieldSet(Rec.FIELDNO("Default Bank Code"));
         end;
     end;
