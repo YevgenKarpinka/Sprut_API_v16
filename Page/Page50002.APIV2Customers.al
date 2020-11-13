@@ -412,7 +412,8 @@ page 50002 "APIV2 - Customers"
         if txtIBAN = Rec."Default Bank Code" then exit;
 
         if txtIBAN = '' then begin
-            txtIBAN := Rec."Default Bank Code";
+            CustBankAccount.Get(Rec."Default Bank Code");
+            txtIBAN := CustBankAccount.IBAN;
             exit;
         end;
 
@@ -420,17 +421,23 @@ page 50002 "APIV2 - Customers"
         CustBankAccount.SetRange("Customer No.", Rec."No.");
         CustBankAccount.SetRange(IBAN, txtIBAN);
         if not CustBankAccount.FindFirst() then begin
-            CustBankAccount.Init();
-            CustBankAccount."Customer No." := Rec."No.";
-            CustBankAccount.Code := 'CRM_IBAN_CODE';
-            CustBankAccount.IBAN := txtIBAN;
-            if CustBankAccount.Insert(true) then CustBankAccount.Modify(true);
-        end;
+            CustBankAccount.SetRange(IBAN);
+            CustBankAccount.SetRange(Code, 'CRM_IBAN_CODE');
+            if not CustBankAccount.FindFirst() then begin
+                CustBankAccount.Init();
+                CustBankAccount."Customer No." := Rec."No.";
+                CustBankAccount.Code := 'CRM_IBAN_CODE';
+                CustBankAccount.IBAN := txtIBAN;
+                CustBankAccount.Insert();
+            end else begin
+                CustBankAccount.IBAN := txtIBAN;
+                CustBankAccount.Modify();
+            end;
 
-        if CustBankAccount.Code <> '' then begin
-            Rec."Default Bank Code" := CustBankAccount.Code;
-            // txtIBAN := Rec."Default Bank Code";
-            RegisterFieldSet(Rec.FIELDNO("Default Bank Code"));
+            if CustBankAccount.Code <> '' then begin
+                Rec."Default Bank Code" := CustBankAccount.Code;
+                RegisterFieldSet(Rec.FIELDNO("Default Bank Code"));
+            end;
         end;
     end;
 

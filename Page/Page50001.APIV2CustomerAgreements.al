@@ -217,10 +217,11 @@ page 50001 "APIV2 - Customer Agreements"
         CustomerAgreement: Record "Customer Agreement";
         GraphMgtGeneralTools: Codeunit "Graph Mgt - General Tools";
     begin
-        IF xRec.SystemId <> Rec.SystemId THEN
-            GraphMgtGeneralTools.ErrorIdImmutable();
+        // IF xRec.SystemId <> Rec.SystemId THEN
+        //     GraphMgtGeneralTools.ErrorIdImmutable();
 
-        CustomerAgreement.SETRANGE(SystemId, Rec.SystemId);
+        CustomerAgreement.SETRANGE("Customer No.", Rec."Customer No.");
+        CustomerAgreement.SETRANGE("No.", Rec."No.");
         CustomerAgreement.FINDFIRST();
 
         IF (Rec."No." = CustomerAgreement."No.") and (Rec."Customer No." = CustomerAgreement."Customer No.") THEN

@@ -44,9 +44,16 @@ page 50003 "APIV2 - Sales Invoice"
                     ShowMandatory = true;
 
                     trigger OnValidate()
+                    var
+                        SalesInvoiceHeader: Record "Sales Invoice Header";
                     begin
-                        IF invoiceId = '' THEN
-                            ERROR(BlankInvoiceIdErr);
+                        if invoiceId = '' then
+                            ERROR(errBlankInvoiceId);
+
+                        SalesInvoiceHeader.SetCurrentKey("CRM Invoice No.");
+                        SalesInvoiceHeader.SetRange("CRM Invoice No.", invoiceId);
+                        if not SalesInvoiceHeader.IsEmpty then
+                            Error(errPrepaymentInvoiceIsPosted, invoiceId);
                     end;
                 }
                 field(prepaymentPercent; prepaymentPercent)
@@ -59,7 +66,7 @@ page 50003 "APIV2 - Sales Invoice"
                     begin
                         GetSalesOrder(Rec."No.");
                         if prepaymentPercent <= SalesHeader."Prepayment %" then
-                            Error(PrepaymentPercentCannotBeLessOrEqualErr, SalesHeader."Prepayment %");
+                            Error(errPrepaymentPercentCannotBeLessOrEqual, SalesHeader."Prepayment %");
                     end;
                 }
                 field(prepaymentAmount; prepaymentAmount)
@@ -70,8 +77,8 @@ page 50003 "APIV2 - Sales Invoice"
 
                     trigger OnValidate()
                     begin
-                        IF prepaymentAmount = 0 THEN
-                            ERROR(BlankPrepaymentAmountErr);
+                        if prepaymentAmount = 0 then
+                            ERROR(errBlankPrepaymentAmount);
                     end;
                 }
             }
@@ -94,14 +101,16 @@ page 50003 "APIV2 - Sales Invoice"
 
     trigger OnModifyRecord(): Boolean
     begin
-        if SalesHeader.Get(Rec."Document Type", Rec."No.") then
-            if (prepaymentAmount <> 0)
-            and (prepaymentPercent <> 0)
-            and (invoiceId <> '') then
-                // CreatePrepaymentInvoice(SalesHeader."No.");
 
-                // while testing CRM
-                postedInvoiceNo := 'TEST_INVOICE_NO';
+        if (prepaymentAmount <> 0)
+        and (prepaymentPercent <> 0)
+        and (invoiceId <> '') then begin
+            CreatePrepaymentInvoice(SalesHeader."No.");
+            Rec := SalesHeader;
+
+            // while testing CRM
+            // postedInvoiceNo := 'TEST_INVOICE_NO';
+        end;
     end;
 
     trigger OnNewRecord(BelowxRec: Boolean)
@@ -117,12 +126,14 @@ page 50003 "APIV2 - Sales Invoice"
         PrepaymentAmount: Decimal;
         TotalOrderAmount: Decimal;
         TotalPrepaymentAmountBefore: Decimal;
+        TotalPrepaymentAmountInvoice: Decimal;
         postedInvoiceNo: Code[20];
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
-        BlankPrepaymentAmountErr: Label 'The blank "prepaymentAmount" is not allowed.', Locked = true;
-        BlankInvoiceIdErr: Label 'The blank "invoiceId" is not allowed.', Locked = true;
-        PrepaymentPercentCannotBeLessOrEqualErr: Label 'The "prepaymentPercent" cannot be less or equal %1.', Locked = true;
+        errBlankPrepaymentAmount: Label 'The blank "prepaymentAmount" is not allowed.', Locked = true;
+        errBlankInvoiceId: Label 'The blank "invoiceId" is not allowed.', Locked = true;
+        errPrepaymentPercentCannotBeLessOrEqual: Label 'The "prepaymentPercent" cannot be less or equal %1.', Locked = true;
         errTotalAmountLessPrepaymentAmount: Label 'Total order amount less prepayment invoice amount.';
+        errPrepaymentInvoiceIsPosted: Label 'Prepayment invoice %1 has already been created.';
 
     procedure SetInit(_invoiceID: Text[50]; _prepaymentAmount: Decimal)
     begin
@@ -134,6 +145,9 @@ page 50003 "APIV2 - Sales Invoice"
     begin
         // Get Sales Order
         GetSalesOrder(SalesOrderNo);
+
+        Currency.Initialize(SalesHeader."Currency Code");
+        PrepaymentAmount := Round(PrepaymentAmount, Currency."Amount Rounding Precision");
 
         // Check Allowed Prepayment Amount
         if not CheckAllowedPrepaymentAmount(SalesOrderNo, PrepaymentAmount) then
@@ -158,13 +172,6 @@ page 50003 "APIV2 - Sales Invoice"
         SalesHeader.TestField("Prices Including VAT", true);
     end;
 
-    local procedure GetVAT(VATBusPostingGroup: Code[20]): Decimal
-    var
-        myInt: Integer;
-    begin
-
-    end;
-
     local procedure CheckAllowedPrepaymentAmount(SalesOrderNo: Code[20]; PrepaymentAmount: Decimal): Boolean
     var
         locSalesLine: Record "Sales Line";
@@ -172,12 +179,13 @@ page 50003 "APIV2 - Sales Invoice"
         locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
         locSalesLine.SetRange("Document No.", SalesOrderNo);
         locSalesLine.SetFilter(Quantity, '<>%1', 0);
-        locSalesLine.CalcSums("Line Amount", "Prepmt. Line Amount");
+        locSalesLine.CalcSums("Line Amount", "Prepmt. Line Amount", "Prepmt. Amt. Inv.");
 
         TotalOrderAmount := locSalesLine."Line Amount";
         TotalPrepaymentAmountBefore := locSalesLine."Prepmt. Line Amount";
+        TotalPrepaymentAmountInvoice := locSalesLine."Prepmt. Amt. Inv.";
 
-        exit(TotalOrderAmount >= (TotalPrepaymentAmountBefore + PrepaymentAmount))
+        exit(TotalOrderAmount >= (TotalPrepaymentAmountInvoice + PrepaymentAmount))
     end;
 
     local procedure SetSalesOrderStatusOpen(SalesOrderNo: Code[20])
@@ -193,13 +201,14 @@ page 50003 "APIV2 - Sales Invoice"
         TotalPrepaymentAmount: Decimal;
         PrepaymentPercent: Decimal;
         LinePrepaymentAmount: Decimal;
+        DiffAmounts: Decimal;
         LinesCount: Integer;
         Counter: Integer;
     begin
         Currency.Initialize(SalesHeader."Currency Code");
 
         // calculate prepayment percent
-        TotalPrepaymentAmount := TotalPrepaymentAmountBefore + PrepaymentAmount;
+        TotalPrepaymentAmount := TotalPrepaymentAmountInvoice + PrepaymentAmount;
         PrepaymentPercent := TotalPrepaymentAmount * 100 / TotalOrderAmount;
 
         // update prepayment percent sales header
@@ -212,21 +221,32 @@ page 50003 "APIV2 - Sales Invoice"
         locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
         locSalesLine.SetRange("Document No.", SalesOrderNo);
         locSalesLine.SetFilter(Quantity, '<>%1', 0);
+        locSalesLine.CalcSums("Prepmt. Line Amount");
+
+        DiffAmounts := TotalPrepaymentAmount - locSalesLine."Prepmt. Line Amount";
+
+        if DiffAmounts < Currency."Amount Rounding Precision" then exit;
+
         LinesCount := locSalesLine.Count;
+        LinePrepaymentAmount := Round(DiffAmounts / LinesCount, Currency."Amount Rounding Precision");
+        if LinePrepaymentAmount > 0 then begin
 
-        LinePrepaymentAmount := Round(PrepaymentAmount / LinesCount, Currency."Amount Rounding Precision");
-        Counter := 1;
-        locSalesLine.FindSet(false, true);
-        repeat
-            if LinesCount = Counter then
-                locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + PrepaymentAmount
-            else
-                locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + LinePrepaymentAmount;
+            locSalesLine.FindSet(false, true);
+            repeat
+                if Counter = LinesCount then
+                    locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + DiffAmounts
+                else
+                    locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + LinePrepaymentAmount;
+                locSalesLine.Modify();
+
+                DiffAmounts -= LinePrepaymentAmount;
+            until locSalesLine.Next() = 0;
+
+        end else begin
+            locSalesLine.FindLast();
+            locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + DiffAmounts;
             locSalesLine.Modify();
-
-            PrepaymentAmount -= LinePrepaymentAmount;
-            Counter += 1;
-        until locSalesLine.Next() = 0;
+        end;
 
     end;
 }

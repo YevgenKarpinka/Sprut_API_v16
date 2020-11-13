@@ -41,10 +41,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SuppressCommit: Boolean;
         PreviewMode: Boolean;
 
-    /// <summary> 
-    /// Description for PostPrepaymentInvoiceSprut.
-    /// </summary>
-    /// <param name="SalesHeader2">Parameter of type Record "Sales Header".</param>
     procedure PostPrepaymentInvoiceSprut(var SalesHeader2: Record "Sales Header")
     var
         SalesHeader: Record "Sales Header";
@@ -54,7 +50,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesHeader.Copy(SalesHeader2);
         ErrorMessageMgt.Activate(ErrorMessageHandler);
         SetDocumentType(SalesHeader."Document Type"::Invoice);
-        // Commit();
+        Commit();
         IF NOT Run(SalesHeader) THEN
             ErrorMessageHandler.ShowErrors;
         // Commit();
@@ -72,13 +68,22 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         ErrorMessageHandler: Codeunit "Error Message Handler";
     begin
         SalesHeader.Copy(SalesHeader2);
+        ClearAllCRMInvoiceNo(SalesHeader."No.");
         ErrorMessageMgt.Activate(ErrorMessageHandler);
         SetDocumentType(SalesHeader."Document Type"::"Credit Memo");
-        // Commit();
+        Commit();
         IF NOT Run(SalesHeader) THEN
             ErrorMessageHandler.ShowErrors;
         // Commit();
         SalesHeader2 := SalesHeader;
+    end;
+
+    local procedure ClearAllCRMInvoiceNo(SalesOrderNo: Code[20])
+    var
+        SalesInvoiceHeader: Record "Sales Invoice Header";
+    begin
+        SalesInvoiceHeader.SetRange("Order No.");
+        SalesInvoiceHeader.ModifyAll("CRM Invoice No.", '');
     end;
 
     /// <summary> 
