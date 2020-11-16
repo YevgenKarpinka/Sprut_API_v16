@@ -81,6 +81,31 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         API_SalesInvoice.CreatePrepaymentInvoice("No.");
                     end;
                 }
+                action(GetSpecification)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Get Specification',
+                                RUS = 'Получить спецификацию';
+                    Image = ShowInventoryPeriods;
+
+                    trigger OnAction()
+                    var
+                        _Item: Record Item;
+                        _jsonErrorItemList: JsonArray;
+                        _jsonItem: JsonObject;
+                        _jsonToken: JsonToken;
+                        _jsonText: Text;
+                        TotalCount: Integer;
+                        Counter: Integer;
+                        responseText: Text;
+                        connectorCode: Label 'CRM';
+                        entityType: Label 'specification';
+                        POSTrequestMethod: Label 'POST';
+                        SalesOrderNo: Text;
+                    begin
+                        SalesOrderNo := '321321';
+                    end;
+                }
             }
         }
     }

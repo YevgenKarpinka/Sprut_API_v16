@@ -50,13 +50,64 @@ codeunit 50000 "Web Service Mgt."
         exit(true);
     end;
 
-    /// <summary> 
-    /// Description for OnAPIProcess.
-    /// </summary>
-    /// <param name="entityType">Parameter of type Text[20].</param>
-    /// <param name="requestMethod">Parameter of type Code[20].</param>
-    /// <param name="tokenType">Parameter of type Text.</param>
-    /// <param name="accessToken">Parameter of type Text.</param>
+    procedure GetSpecificationFromCRM(entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
+    begin
+        if not GetEntity(entityType, requestMethod, Body) then
+            exit(false);
+        exit(true);
+    end;
+
+    procedure GetInvoicesromCRM(entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
+    begin
+        if not GetEntity(entityType, requestMethod, Body) then
+            exit(false);
+        exit(true);
+    end;
+
+    local procedure GetEntity(entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
+    var
+        // {{resource}}/api/data/v{{version}}/{{entityType}}
+        // webAPI_URL: Label '%1/api/data/v%2/%3';
+        webAPI_URL: Label 'https://sprutapi.azurewebsites.net/api/%1';
+        // resource: Label 'https://org3baffe0c.crm4.dynamics.com';
+        // version: Label '9.1';
+        // Accept: Label 'Accept';
+        // Prefer: Label 'Prefer';
+        // Authorization: Label 'Authorization';
+        // AcceptValue: Label 'application/json';
+        // PreferValue: Label 'return=representation';
+        ContentType: Label 'Content-Type';
+        ContentTypeValue: Label 'application/json';
+        Client: HttpClient;
+        RequestMessage: HttpRequestMessage;
+        ResponseMessage: HttpResponseMessage;
+        RequestHeader: HttpHeaders;
+        BaseURL: Text;
+        AuthorizationToken: Text;
+    begin
+        BaseURL := StrSubstNo(webAPI_URL, entityType);
+        // AuthorizationToken := StrSubstNo('%1 %2', tokenType, accessToken);
+
+        RequestMessage.Method := requestMethod;
+        RequestMessage.SetRequestUri(BaseURL);
+        RequestMessage.GetHeaders(RequestHeader);
+        // RequestHeader.Add(Authorization, AuthorizationToken);
+        case requestMethod of
+            'POST', 'PATCH':
+                begin
+                    RequestMessage.Content.WriteFrom(Body);
+                    RequestMessage.Content.GetHeaders(RequestHeader);
+                    RequestHeader.Remove(ContentType);
+                    RequestHeader.Add(ContentType, ContentTypeValue);
+                    // RequestHeader.Add(Prefer, PreferValue);
+                end;
+        end;
+
+        Client.Send(RequestMessage, ResponseMessage);
+        ResponseMessage.Content.ReadAs(Body);
+        exit(ResponseMessage.IsSuccessStatusCode);
+    end;
+
     local procedure OnAPIProcess(entityType: Text; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
     var
         // {{resource}}/api/data/v{{version}}/{{entityType}}

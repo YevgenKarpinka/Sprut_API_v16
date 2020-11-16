@@ -64,9 +64,9 @@ page 50003 "APIV2 - Sales Invoice"
 
                     trigger OnValidate()
                     begin
-                        GetSalesOrder(Rec."No.");
-                        if prepaymentPercent <= SalesHeader."Prepayment %" then
-                            Error(errPrepaymentPercentCannotBeLessOrEqual, SalesHeader."Prepayment %");
+                        // GetSalesOrder(Rec."No.");
+                        if prepaymentPercent <= 0 then
+                            Error(errPrepaymentPercentCannotBeLessOrEqual, 0);
                     end;
                 }
                 field(prepaymentAmount; prepaymentAmount)
@@ -101,10 +101,10 @@ page 50003 "APIV2 - Sales Invoice"
 
     trigger OnModifyRecord(): Boolean
     begin
-
         if (prepaymentAmount <> 0)
         and (prepaymentPercent <> 0)
         and (invoiceId <> '') then begin
+            GetSalesOrder(Rec."No.");
             CreatePrepaymentInvoice(SalesHeader."No.");
             Rec := SalesHeader;
 
