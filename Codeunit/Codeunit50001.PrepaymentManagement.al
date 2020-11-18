@@ -320,9 +320,9 @@ codeunit 50001 "Prepayment Management"
         AdjustExchangeRates: Report "Adjust Exchange Rates";
     begin
         MaxPostingDate := 0D;
-        // GLEntry.LOCKTABLE;
-        // DtldCustLedgEntry.LOCKTABLE;
-        // CustLedgEntry.LOCKTABLE;
+        GLEntry.LockTable();
+        DtldCustLedgEntry.LockTable();
+        CustLedgEntry.LockTable();
         CustLedgEntry.GET(DtldCustLedgEntry2."Cust. Ledger Entry No.");
         CheckPostingDate(PostingDate, MaxPostingDate);
         IF PostingDate < DtldCustLedgEntry2."Posting Date" THEN
@@ -361,7 +361,6 @@ codeunit 50001 "Prepayment Management"
 
         SourceCodeSetup.GET;
         CustLedgEntry.GET(DtldCustLedgEntry2."Cust. Ledger Entry No.");
-        // MarkUnApplyPayment(CustLedgEntry);
         GenJnlLine."Document No." := DocNo;
         GenJnlLine."Posting Date" := PostingDate;
         GenJnlLine."Account Type" := GenJnlLine."Account Type"::Customer;

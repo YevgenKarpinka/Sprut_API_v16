@@ -75,8 +75,8 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         prepaymentAmount: Decimal;
                         API_SalesInvoice: Page "APIV2 - Sales Invoice";
                     begin
-                        invoiceID := 'TEST_INVOICE_CRM';
-                        prepaymentAmount := 333.33;
+                        invoiceID := 'INV-01942-D4F6G1';
+                        prepaymentAmount := 2270;
                         API_SalesInvoice.SetInit(invoiceID, prepaymentAmount);
                         API_SalesInvoice.CreatePrepaymentInvoice("No.");
                     end;
