@@ -31,8 +31,8 @@ codeunit 50005 "CRM Action API"
         end else
             SalesHeader.Get(SalesHeader."Document Type"::Order, salesOrderId);
 
-        // exit(StrSubstNo(msgSalesOrderGetIsOk, sourceType, SalesHeader."No."));
-        exit(GetJsonSalesOrderLines(SalesHeader."No."));
+        exit(StrSubstNo(msgSalesOrderGetIsOk, sourceType, SalesHeader."No."));
+        // exit(GetJsonSalesOrderLines(SalesHeader."No."));
     end;
 
     local procedure GetJsonSalesOrderLines(SalesOrderNo: Code[20]): Text

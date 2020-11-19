@@ -118,7 +118,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
     var
         Handled: Boolean;
     begin
-        // OnBeforeInvoice(SalesHeader, Handled);
         if not Handled then
             Code(SalesHeader, 0);
     end;
@@ -131,7 +130,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
     var
         Handled: Boolean;
     begin
-        // OnBeforeCreditMemo(SalesHeader, Handled);
         if not Handled then
             Code(SalesHeader, 1);
     end;
@@ -157,7 +155,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         CustLedgEntry: Record "Cust. Ledger Entry";
         TempSalesLines: Record "Sales Line" temporary;
         GenJnlPostPreview: Codeunit "Gen. Jnl.-Post Preview";
-        // Window: Dialog;
         GenJnlLineDocNo: Code[20];
         GenJnlLineExtDocNo: Code[35];
         SrcCode: Code[10];
@@ -171,7 +168,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         PostedDocTabNo: Integer;
         LineNo: Integer;
     begin
-        // OnBeforePostPrepayments(SalesHeader2, DocumentType, SuppressCommit);
 
         SalesHeader := SalesHeader2;
         GLSetup.Get();
@@ -186,14 +182,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             if not SuppressCommit then
                 Commit();
         end;
-
-        // Window.Open(
-        //   '#1#################################\\' +
-        //   Text002 +
-        //   Text004 +
-        //   Text005 +
-        //   Text006);
-        // Window.Update(1, StrSubstNo('%1 %2', SelectStr(1 + DocumentType, Text019), SalesHeader."No."));
 
         SourceCodeSetup.Get();
         SrcCode := SourceCodeSetup.Sales;
@@ -214,7 +202,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
                     InsertSalesInvHeader(SalesInvHeader, SalesHeader, PostingDescription, GenJnlLineDocNo, SrcCode, PostingNoSeriesCode);
                     GenJnlLineDocType := GenJnlLine."Document Type"::Invoice;
                     PostedDocTabNo := DATABASE::"Sales Invoice Header";
-                    // Window.Update(1, StrSubstNo(Text003, SalesHeader."Document Type", SalesHeader."No.", SalesInvHeader."No."));
                 end;
             DocumentType::"Credit Memo":
                 begin
@@ -224,7 +211,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
                       CalcPmtDiscOnCrMemos);
                     GenJnlLineDocType := GenJnlLine."Document Type"::"Credit Memo";
                     PostedDocTabNo := DATABASE::"Sales Cr.Memo Header";
-                    // Window.Update(1, StrSubstNo(Text011, SalesHeader."Document Type", SalesHeader."No.", SalesCrMemoHeader."No."));
                 end;
         end;
         GenJnlLineExtDocNo := SalesHeader."External Document No.";
@@ -244,7 +230,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         TempPrepmtInvLineBuffer.Find('-');
         repeat
             LineCount := LineCount + 1;
-            // Window.Update(2, LineCount);
             if TempPrepmtInvLineBuffer."Line No." <> 0 then
                 LineNo := PrevLineNo + TempPrepmtInvLineBuffer."Line No."
             else
@@ -265,8 +250,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             InsertExtendedText(
               PostedDocTabNo, GenJnlLineDocNo, TempPrepmtInvLineBuffer."G/L Account No.", SalesHeader."Document Date", SalesHeader."Language Code", PrevLineNo);
         until TempPrepmtInvLineBuffer.Next = 0;
-
-        // OnAfterCreateLinesOnBeforeGLPosting(SalesHeader, SalesInvHeader, SalesCrMemoHeader, TempPrepmtInvLineBuffer, DocumentType, LineNo);
 
         // G/L Posting
         LineCount := 0;
@@ -291,7 +274,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         TempPrepmtInvLineBuffer.Find('+');
         repeat
             LineCount := LineCount + 1;
-            // Window.Update(3, LineCount);
 
             PostPrepmtInvLineBuffer(
               SalesHeader, TempPrepmtInvLineBuffer, DocumentType, PostingDescription,
@@ -299,7 +281,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         until TempPrepmtInvLineBuffer.Next(-1) = 0;
 
         // Post customer entry
-        // Window.Update(4, 1);
         PostCustomerEntry(
           SalesHeader, TotalPrepmtInvLineBuffer, TotalPrepmtInvLineBufferLCY, DocumentType, PostingDescription,
           GenJnlLineDocType, GenJnlLineDocNo, GenJnlLineExtDocNo, SrcCode, PostingNoSeriesCode, CalcPmtDiscOnCrMemos);
@@ -308,7 +289,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
 
         // Balancing account
         if SalesHeader."Bal. Account No." <> '' then begin
-            // Window.Update(5, 1);
             CustLedgEntry.FindLast;
             PostBalancingEntry(
               SalesHeader, TotalPrepmtInvLineBuffer, TotalPrepmtInvLineBufferLCY, CustLedgEntry, DocumentType,
@@ -321,16 +301,11 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             SalesHeader.Status := SalesHeader.Status::"Pending Prepayment";
         SalesHeader.Modify;
 
-        // OnAfterPostPrepaymentsOnBeforeThrowPreviewModeError(SalesHeader, SalesInvHeader, SalesCrMemoHeader, GenJnlPostLine);
-
         if PreviewMode then begin
-            // Window.Close;
             GenJnlPostPreview.ThrowError;
         end;
 
         SalesHeader2 := SalesHeader;
-
-        // OnAfterPostPrepayments(SalesHeader2, DocumentType, SuppressCommit, SalesInvHeader, SalesCrMemoHeader);
     end;
 
     /// <summary> 
@@ -363,7 +338,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             Cust.Get(SalesHeader."Bill-to Customer No.");
             Cust.CheckBlockedCustOnDocs(Cust, PrepmtDocTypeToDocType(DocumentType), false, true);
         end;
-        // OnAfterCheckPrepmtDoc(SalesHeader, DocumentType, SuppressCommit);
     end;
 
     /// <summary> 
@@ -459,8 +433,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
 
         TotalPrepmtInvLineBufLCY.IncrAmounts(PrepmtInvLineBuf);
-
-        // OnAfterRoundAmounts(SalesHeader, PrepmtInvLineBuf, TotalPrepmtInvLineBuf, TotalPrepmtInvLineBufLCY);
     end;
 
     /// <summary> 
@@ -521,8 +493,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
                  SalesHeader, PrepmtInvLineBuf2, TotalPrepmtInvLineBuffer, SalesLine."Line No.")
             then
                 TempPrepmtInvLineBuf.InsertInvLineBuffer(PrepmtInvLineBuf2);
-
-        // OnAfterBuildInvLineBuffer(TempPrepmtInvLineBuf);
     end;
 
     /// <summary> 
@@ -759,7 +729,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
     procedure FillInvLineBuffer(SalesHeader: Record "Sales Header"; SalesLine: Record "Sales Line"; var PrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer")
     begin
         PrepmtInvLineBuf.Init;
-        // OnBeforeFillInvLineBuffer(PrepmtInvLineBuf, SalesHeader, SalesLine);
         PrepmtInvLineBuf."G/L Account No." := GetPrepmtAccNo(SalesLine."Gen. Bus. Posting Group", SalesLine."Gen. Prod. Posting Group");
 
         if not SalesHeader."Compress Prepayment" then begin
@@ -778,7 +747,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         PrepmtInvLineBuf."VAT Amount (ACY)" := SalesLine."Prepmt. Amt. Incl. VAT" - SalesLine."Prepayment Amount";
         PrepmtInvLineBuf."VAT Base Before Pmt. Disc." := -SalesLine."Prepayment Amount";
 
-        // OnAfterFillInvLineBuffer(PrepmtInvLineBuf, SalesLine);
     end;
 
     /// <summary> 
@@ -811,7 +779,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
 
             PrepmtInvLineBuf."VAT Amount" := SalesLine."Amount Including VAT" - SalesLine."Line Amount";
             PrepmtInvLineBuf."VAT Amount (ACY)" := SalesLine."Amount Including VAT" - SalesLine."Line Amount";
-            // OnAfterInsertInvoiceRounding(SalesHeader, PrepmtInvLineBuf, TotalPrepmtInvLineBuf, PrevLineNo);
             exit(true);
         end;
     end;
@@ -984,12 +951,10 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
                 if PrepmtAmt <> 0 then begin
                     VATAmountLine.Get(
                       SalesLine."Prepayment VAT Identifier", SalesLine."Prepmt. VAT Calc. Type", SalesLine."Prepayment Tax Group Code", false, PrepmtAmt >= 0);
-                    // OnUpdateVATOnLinesOnAfterVATAmountLineGet(VATAmountLine);
                     if VATAmountLine.Modified then begin
                         RemainderExists :=
                           TempVATAmountLineRemainder.Get(
                             SalesLine."Prepayment VAT Identifier", SalesLine."Prepmt. VAT Calc. Type", SalesLine."Prepayment Tax Group Code", false, PrepmtAmt >= 0);
-                        // OnUpdateVATOnLinesOnAfterGetRemainder(TempVATAmountLineRemainder, RemainderExists);
                         if not RemainderExists then begin
                             TempVATAmountLineRemainder := VATAmountLine;
                             TempVATAmountLineRemainder.Init();
@@ -1066,7 +1031,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
                 end;
             until SalesLine.Next = 0;
 
-        // OnAfterUpdateVATOnLines(SalesHeader, SalesLine, VATAmountLine, DocumentType);
     end;
 
     /// <summary> 
@@ -1118,7 +1082,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
           NewAmount, Currency, SalesHeader."Currency Factor", SalesHeader."Prices Including VAT",
           SalesHeader."VAT Base Discount %", SalesHeader."Tax Area Code", SalesHeader."Tax Liable", SalesHeader."Posting Date", false);
 
-        // OnAfterCalcVATAmountLines(SalesHeader, SalesLine, VATAmountLine, DocumentType);
     end;
 
     /// <summary> 
@@ -1274,9 +1237,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         GenJnlLine.Correction :=
           (DocumentType = DocumentType::"Credit Memo") and GLSetup."Mark Cr. Memos as Corrections";
 
-        // OnBeforePostPrepmtInvLineBuffer(GenJnlLine, PrepmtInvLineBuffer, SuppressCommit);
         RunGenJnlPostLine(GenJnlLine);
-        // OnAfterPostPrepmtInvLineBuffer(GenJnlLine, PrepmtInvLineBuffer, SuppressCommit, GenJnlPostLine);
     end;
 
     /// <summary> 
@@ -1314,9 +1275,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
 
         GenJnlLine.Correction := (DocumentType = DocumentType::"Credit Memo") and GLSetup."Mark Cr. Memos as Corrections";
 
-        // OnBeforePostCustomerEntry(GenJnlLine, TotalPrepmtInvLineBuffer, TotalPrepmtInvLineBufferLCY, SuppressCommit);
         GenJnlPostLine.RunWithCheck(GenJnlLine);
-        // OnAfterPostCustomerEntry(GenJnlLine, TotalPrepmtInvLineBuffer, TotalPrepmtInvLineBufferLCY, SuppressCommit);
     end;
 
     [EventSubscriber(ObjectType::Table, 81, 'OnAfterCopyGenJnlLineFromSalesHeaderPrepmtPost', '', false, false)]
@@ -1379,9 +1338,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         GenJnlLine."Applies-to Doc. Type" := DocType;
         GenJnlLine."Applies-to Doc. No." := DocNo;
 
-        // OnBeforePostBalancingEntry(GenJnlLine, CustLedgEntry, TotalPrepmtInvLineBuffer, TotalPrepmtInvLineBufferLCY, SuppressCommit);
         GenJnlPostLine.RunWithCheck(GenJnlLine);
-        // OnAfterPostBalancingEntry(GenJnlLine, CustLedgEntry, TotalPrepmtInvLineBuffer, TotalPrepmtInvLineBufferLCY, SuppressCommit);
     end;
 
     /// <summary> 
@@ -1605,7 +1562,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
                 end;
         end;
 
-        // OnAfterUpdatePostedSalesDocument(DocumentType, DocumentNo, SuppressCommit);
     end;
 
     /// <summary> 
@@ -1634,10 +1590,8 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesInvHeader."Prepayment Invoice" := true;
         SalesInvHeader."Prepayment Order No." := SalesHeader."No.";
         SalesInvHeader."No. Series" := PostingNoSeriesCode;
-        // OnBeforeSalesInvHeaderInsert(SalesInvHeader, SalesHeader, SuppressCommit);
         SalesInvHeader.Insert();
         CopyHeaderCommentLines(SalesHeader."No.", DATABASE::"Sales Invoice Header", GenJnlLineDocNo);
-        // OnAfterSalesInvHeaderInsert(SalesInvHeader, SalesHeader, SuppressCommit);
     end;
 
     /// <summary> 
@@ -1682,11 +1636,9 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesInvLine."VAT Calculation Type" := PrepmtInvLineBuffer."VAT Calculation Type";
         SalesInvLine."VAT Base Amount" := PrepmtInvLineBuffer."VAT Base Amount";
         SalesInvLine."VAT Identifier" := PrepmtInvLineBuffer."VAT Identifier";
-        // OnBeforeSalesInvLineInsert(SalesInvLine, SalesInvHeader, PrepmtInvLineBuffer, SuppressCommit);
         SalesInvLine.Insert();
         CopyLineCommentLines(
           SalesHeader."No.", DATABASE::"Sales Invoice Header", SalesInvHeader."No.", PrepmtInvLineBuffer."Line No.", LineNo);
-        // OnAfterSalesInvLineInsert(SalesInvLine, SalesInvHeader, PrepmtInvLineBuffer, SuppressCommit);
     end;
 
     /// <summary> 
@@ -1721,10 +1673,8 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesCrMemoHeader."Prepayment Order No." := SalesHeader."No.";
         SalesCrMemoHeader.Correction := GLSetup."Mark Cr. Memos as Corrections";
         SalesCrMemoHeader."No. Series" := PostingNoSeriesCode;
-        // OnBeforeSalesCrMemoHeaderInsert(SalesCrMemoHeader, SalesHeader, SuppressCommit);
         SalesCrMemoHeader.Insert();
         CopyHeaderCommentLines(SalesHeader."No.", DATABASE::"Sales Cr.Memo Header", GenJnlLineDocNo);
-        // OnAfterSalesCrMemoHeaderInsert(SalesCrMemoHeader, SalesHeader, SuppressCommit);
     end;
 
     /// <summary> 
@@ -1769,11 +1719,9 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesCrMemoLine."VAT Calculation Type" := PrepmtInvLineBuffer."VAT Calculation Type";
         SalesCrMemoLine."VAT Base Amount" := PrepmtInvLineBuffer."VAT Base Amount";
         SalesCrMemoLine."VAT Identifier" := PrepmtInvLineBuffer."VAT Identifier";
-        // OnBeforeSalesCrMemoLineInsert(SalesCrMemoLine, SalesCrMemoHeader, PrepmtInvLineBuffer, SuppressCommit);
         SalesCrMemoLine.Insert();
         CopyLineCommentLines(
           SalesHeader."No.", DATABASE::"Sales Cr.Memo Header", SalesCrMemoHeader."No.", PrepmtInvLineBuffer."Line No.", LineNo);
-        // OnAfterSalesCrMemoLineInsert(SalesCrMemoLine, SalesCrMemoHeader, PrepmtInvLineBuffer, SuppressCommit);
     end;
 
     /// <summary> 

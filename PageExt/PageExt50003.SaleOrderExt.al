@@ -104,6 +104,35 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         SalesOrderNo: Text;
                     begin
                         SalesOrderNo := '321321';
+                        WebServicesMgt.GetSpecificationFromCRM(SalesOrderNo, entityType, POSTrequestMethod, responseText);
+                        Message(responseText);
+                    end;
+                }
+                action(GetPrepInvoices)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Get Prep.Invoices',
+                                RUS = 'Получить счета на предоплату';
+                    Image = ShowInventoryPeriods;
+
+                    trigger OnAction()
+                    var
+                        _Item: Record Item;
+                        _jsonErrorItemList: JsonArray;
+                        _jsonItem: JsonObject;
+                        _jsonToken: JsonToken;
+                        _jsonText: Text;
+                        TotalCount: Integer;
+                        Counter: Integer;
+                        responseText: Text;
+                        connectorCode: Label 'CRM';
+                        entityType: Label 'invoice';
+                        POSTrequestMethod: Label 'POST';
+                        SalesOrderNo: Text;
+                    begin
+                        SalesOrderNo := 'ПРЗК-20-00033';
+                        WebServicesMgt.GetSpecificationFromCRM(SalesOrderNo, entityType, POSTrequestMethod, responseText);
+                        Message(responseText);
                     end;
                 }
             }
@@ -113,4 +142,5 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
     var
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
         PrepaymentMgt: Codeunit "Prepayment Management";
+        WebServicesMgt: Codeunit "Web Service Mgt.";
 }

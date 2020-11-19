@@ -50,32 +50,33 @@ codeunit 50000 "Web Service Mgt."
         exit(true);
     end;
 
-    procedure GetSpecificationFromCRM(entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
+    procedure GetSpecificationFromCRM(SalesOrderNo: Code[20]; entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
     begin
+        GetBodyFromSalesOrderNo(SalesOrderNo, Body);
         if not GetEntity(entityType, requestMethod, Body) then
             exit(false);
         exit(true);
     end;
 
-    procedure GetInvoicesromCRM(entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
+    procedure GetInvoicesFromCRM(SalesOrderNo: Code[20]; entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
     begin
+        GetBodyFromSalesOrderNo(SalesOrderNo, Body);
         if not GetEntity(entityType, requestMethod, Body) then
             exit(false);
         exit(true);
+    end;
+
+    local procedure GetBodyFromSalesOrderNo(SalesOrderNo: Code[20]; var Body: Text)
+    var
+        JSObjectBody: JsonObject;
+    begin
+        JSObjectBody.Add('document_no', SalesOrderNo);
+        JSObjectBody.WriteTo(Body);
     end;
 
     local procedure GetEntity(entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
     var
-        // {{resource}}/api/data/v{{version}}/{{entityType}}
-        // webAPI_URL: Label '%1/api/data/v%2/%3';
         webAPI_URL: Label 'https://sprutapi.azurewebsites.net/api/%1';
-        // resource: Label 'https://org3baffe0c.crm4.dynamics.com';
-        // version: Label '9.1';
-        // Accept: Label 'Accept';
-        // Prefer: Label 'Prefer';
-        // Authorization: Label 'Authorization';
-        // AcceptValue: Label 'application/json';
-        // PreferValue: Label 'return=representation';
         ContentType: Label 'Content-Type';
         ContentTypeValue: Label 'application/json';
         Client: HttpClient;
@@ -86,12 +87,10 @@ codeunit 50000 "Web Service Mgt."
         AuthorizationToken: Text;
     begin
         BaseURL := StrSubstNo(webAPI_URL, entityType);
-        // AuthorizationToken := StrSubstNo('%1 %2', tokenType, accessToken);
 
         RequestMessage.Method := requestMethod;
         RequestMessage.SetRequestUri(BaseURL);
         RequestMessage.GetHeaders(RequestHeader);
-        // RequestHeader.Add(Authorization, AuthorizationToken);
         case requestMethod of
             'POST', 'PATCH':
                 begin
@@ -99,13 +98,93 @@ codeunit 50000 "Web Service Mgt."
                     RequestMessage.Content.GetHeaders(RequestHeader);
                     RequestHeader.Remove(ContentType);
                     RequestHeader.Add(ContentType, ContentTypeValue);
-                    // RequestHeader.Add(Prefer, PreferValue);
                 end;
         end;
 
         Client.Send(RequestMessage, ResponseMessage);
         ResponseMessage.Content.ReadAs(Body);
         exit(ResponseMessage.IsSuccessStatusCode);
+    end;
+
+    local procedure GetSpecificationAmount(ResponceToken: Text): Decimal
+    var
+        jsonRespToken: JsonObject;
+    begin
+        jsonRespToken.ReadFrom(ResponceToken);
+        exit(Round(GetJSToken(jsonRespToken, 'order_amount').AsValue().AsDecimal(), 0.01));
+    end;
+
+    local procedure GetSpecificationLinesArray(ResponceToken: Text): Text
+    var
+        jsonRespToken: JsonObject;
+        jsonRespTokenLines: JsonArray;
+        RespTokenLines: Text;
+    begin
+        jsonRespToken.ReadFrom(ResponceToken);
+        jsonRespTokenLines := GetJSToken(jsonRespToken, 'lines').AsArray();
+        jsonRespTokenLines.WriteTo(RespTokenLines);
+        exit(RespTokenLines);
+    end;
+
+    local procedure GetSpecificationLinesAmount(ResponceTokenLines: Text): Decimal
+    var
+        SpecLineQty: Decimal;
+        SpecLineUnitPrice: Decimal;
+        SpecLineAmount: Decimal;
+        jsonLines: JsonArray;
+        LineToken: JsonToken;
+    begin
+        jsonLines.ReadFrom(ResponceTokenLines);
+        foreach LineToken in jsonLines do begin
+            SpecLineQty := GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal();
+            SpecLineUnitPrice := GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal();
+            SpecLineAmount += SpecLineQty * SpecLineUnitPrice;
+        end;
+
+        SpecLineAmount := Round(SpecLineAmount, 0.01);
+        exit(SpecLineAmount);
+    end;
+
+    local procedure CheckSpecificationAmount(ResponceToken: Text): Decimal
+    var
+        SpecAmount: Decimal;
+        SpecLineAmount: Decimal;
+        ResponceTokenLine: Text;
+    begin
+        SpecAmount := GetSpecificationAmount(ResponceToken);
+        ResponceTokenLine := GetSpecificationLinesArray(ResponceToken);
+        SpecLineAmount := GetSpecificationLinesAmount(ResponceTokenLine);
+
+        if SpecAmount = SpecLineAmount then
+            exit(SpecAmount);
+        exit(0);
+    end;
+
+    local procedure GetTestResponceSpecification(): Text
+    var
+        TestResponce: Text;
+    //{
+    //     document_no: 321321,
+    //     order_amount: 590.0000000000,
+    //     lines: [
+    //         {
+    //             line_no: null,
+    //             no: 1110,
+    //             quantity: 1.0000000000,
+    //             unit_price: 500.0000
+    //         },
+    //         {
+    //             line_no: null,
+    //             no: 1100,
+    //             quantity: 1.0000000000,
+    //             unit_price: 90.0000
+    //         }
+    //     ]
+    // }
+
+    begin
+
+        exit(TestResponce);
     end;
 
     local procedure OnAPIProcess(entityType: Text; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
