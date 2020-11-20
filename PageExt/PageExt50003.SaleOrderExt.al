@@ -103,7 +103,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         POSTrequestMethod: Label 'POST';
                         SalesOrderNo: Text;
                     begin
-                        SalesOrderNo := '321321';
+                        SalesOrderNo := 'ПРЗК-20-00053';
                         WebServicesMgt.GetSpecificationFromCRM(SalesOrderNo, entityType, POSTrequestMethod, responseText);
                         Message(responseText);
                     end;
@@ -130,8 +130,8 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         POSTrequestMethod: Label 'POST';
                         SalesOrderNo: Text;
                     begin
-                        SalesOrderNo := 'ПРЗК-20-00033';
-                        WebServicesMgt.GetSpecificationFromCRM(SalesOrderNo, entityType, POSTrequestMethod, responseText);
+                        SalesOrderNo := 'ПРЗК-20-00047';
+                        WebServicesMgt.GetInvoicesFromCRM(SalesOrderNo, entityType, POSTrequestMethod, responseText);
                         Message(responseText);
                     end;
                 }

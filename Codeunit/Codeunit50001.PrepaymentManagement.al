@@ -32,13 +32,14 @@ codeunit 50001 "Prepayment Management"
         AmtDiffManagement: Codeunit PrepmtDiffManagement;
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
 
+    procedure ModifyingSalesOrder()
+    var
+        myInt: Integer;
+    begin
+        // 
+    end;
+
     [EventSubscriber(ObjectType::Table, 37, 'OnBeforeUpdatePrepmtAmounts', '', false, false)]
-    /// <summary> 
-    /// Description for UpdatePrepaymentAmounts.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
-    /// <param name="IsHandled">Parameter of type Boolean.</param>
     local procedure UpdatePrepaymentAmounts(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var IsHandled: Boolean)
     var
         SalesLineUpdate: Record "Sales Line";
@@ -128,11 +129,6 @@ codeunit 50001 "Prepayment Management"
             until (SalesLineUpdate.Next() = 0) or (CurrentAdjPrepAmount = 0);
     end;
 
-    /// <summary> 
-    /// Description for UpdatePrepmtAmountCurrLine.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
     local procedure UpdatePrepmtAmountCurrLine(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line");
     begin
         if SalesHeader."Prices Including VAT" then begin
@@ -148,9 +144,6 @@ codeunit 50001 "Prepayment Management"
         SalesLine.Modify();
     end;
 
-    /// <summary> 
-    /// Description for GetSRSetup.
-    /// </summary>
     local procedure GetSRSetup()
     begin
         IF not SRSetup.Get() then begin
@@ -159,12 +152,6 @@ codeunit 50001 "Prepayment Management"
         end;
     end;
 
-    /// <summary> 
-    /// Description for GetLastPrepaymentInvoiceNo.
-    /// </summary>
-    /// <param name="PrepaymentOrderNo">Parameter of type Code[20].</param>
-    /// <param name="DocumentNo">Parameter of type Code[20].</param>
-    /// <param name="PostingDate">Parameter of type Date.</param>
     procedure GetPrepaymentInvoices(PrepaymentOrderNo: Code[20]; var tempSalesInvoiceHeader: Record "Sales Invoice Header" temporary)
     var
         SalesInvoiceHeader: Record "Sales Invoice Header";
@@ -178,12 +165,6 @@ codeunit 50001 "Prepayment Management"
             until SalesInvoiceHeader.Next() = 0;
     end;
 
-    /// <summary> 
-    /// Description for GetLastPrepaymentCreaditMemoNo.
-    /// </summary>
-    /// <param name="PrepaymentOrderNo">Parameter of type Code[20].</param>
-    /// <param name="DocumentNo">Parameter of type Code[20].</param>
-    /// <param name="PostingDate">Parameter of type Date.</param>
     procedure GetLastPrepaymentCreditMemoNo(PrepaymentOrderNo: Code[20]; var DocumentNo: Code[20]; var PostingDate: Date)
     var
         SalesCreditMemoHeader: Record "Sales Cr.Memo Header";
@@ -210,12 +191,6 @@ codeunit 50001 "Prepayment Management"
             until tempSalesInvoiceHeader.Next() = 0;
     end;
 
-    /// <summary> 
-    /// Description for GetCustomerLedgerEntryNo.
-    /// </summary>
-    /// <param name="DocumentNo">Parameter of type Code[20].</param>
-    /// <param name="PostingDate">Parameter of type Date.</param>
-    /// <returns>Return variable "Integer".</returns>
     procedure GetCustomerLedgerEntryNo(DocumentNo: Code[20]; PostingDate: Date): Integer
     var
         CustLedgerEntry: Record "Cust. Ledger Entry";
@@ -298,9 +273,9 @@ codeunit 50001 "Prepayment Management"
 
     local procedure PostUnApplyCustomer(DtldCustLedgEntry2: Record "Detailed Cust. Ledg. Entry"; DocNo: Code[20]; PostingDate: Date)
     begin
-        // PostUnApplyCustomerCommit(DtldCustLedgEntry2, DocNo, PostingDate, TRUE);
+        PostUnApplyCustomerCommit(DtldCustLedgEntry2, DocNo, PostingDate, TRUE);
         // for testing commit false
-        PostUnApplyCustomerCommit(DtldCustLedgEntry2, DocNo, PostingDate, false);
+        // PostUnApplyCustomerCommit(DtldCustLedgEntry2, DocNo, PostingDate, false);
     end;
 
     local procedure PostUnApplyCustomerCommit(DtldCustLedgEntry2: Record "Detailed Cust. Ledg. Entry"; DocNo: Code[20]; PostingDate: Date; CommitChanges: Boolean)
