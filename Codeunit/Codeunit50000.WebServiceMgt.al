@@ -160,33 +160,6 @@ codeunit 50000 "Web Service Mgt."
         exit(0);
     end;
 
-    local procedure GetTestResponceSpecification(): Text
-    var
-        TestResponce: Text;
-    //{
-    //     document_no: 321321,
-    //     order_amount: 590.0000000000,
-    //     lines: [
-    //         {
-    //             line_no: null,
-    //             no: 1110,
-    //             quantity: 1.0000000000,
-    //             unit_price: 500.0000
-    //         },
-    //         {
-    //             line_no: null,
-    //             no: 1100,
-    //             quantity: 1.0000000000,
-    //             unit_price: 90.0000
-    //         }
-    //     ]
-    // }
-
-    begin
-
-        exit(TestResponce);
-    end;
-
     local procedure OnAPIProcess(entityType: Text; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
     var
         // {{resource}}/api/data/v{{version}}/{{entityType}}

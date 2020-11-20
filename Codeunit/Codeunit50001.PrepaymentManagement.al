@@ -7,36 +7,103 @@ codeunit 50001 "Prepayment Management"
 
     var
         Currency: Record Currency;
-        SRSetup: Record "Sales & Receivables Setup";
-        GLSetup: Record "General Ledger Setup";
-        CannotUnapplyInReversalErr: TextConst ENU = 'You cannot unapply Cust. Ledger Entry No. %1 because the entry is part of a reversal.',
-                                            RUS = 'Нельзя отменить операцию книги клиентов № %1, поскольку эта операция входит в состав сторнирования.';
-        NoApplicationEntryErr: TextConst ENU = 'Cust. Ledger Entry No. %1 does not have an application entry.',
-                                        RUS = 'У операции книги клиентов № %1 нет операции применения.';
-        MustNotBeBeforeErr: TextConst ENU = 'The Posting Date entered must not be before the Posting Date on the Cust. Ledger Entry.',
-                                    RUS = 'Введенная дата учета не должна предшествовать дате учета операции книги клиентов.';
-        CannotUnapplyExchRateErr: TextConst ENU = 'You cannot unapply the entry with the posting date %1, because the exchange rate for the additional reporting currency has been changed.',
-                                            RUS = 'Нельзя отменить операцию с датой учета %1, поскольку изменился курс дополнительной отчетной валюты.';
-        UnapplyAllPostedAfterThisEntryErr: TextConst ENU = 'Before you can unapply this entry, you must first unapply all application entries in Cust. Ledger Entry No. %1 that were posted after this entry.',
-                                                    RUS = 'Перед отменой этой операции необходимо отменить все операции применения в операции книги клиентов № %1, учтенные после этой операции.';
-        LatestEntryMustBeAnApplicationErr: TextConst ENU = 'The latest Transaction No. must be an application in Cust. Ledger Entry No. %1.',
-                                                    RUS = 'Номер последней транзакции должен соответствовать применению в операции книги клиентов № %1.';
-        NotAllowedPostingDatesErr: TextConst ENU = 'Posting date is not within the range of allowed posting dates.',
-                                            RUS = 'Дата учета вне пределов разрешенного диапазона дат учета.';
-        errTotalAmountLessPrepaymentAmount: TextConst ENU = 'Total order amount less prepayment invoice amount.',
-                                                    RUS = 'Сумма заказа меньше суммы счета на предоплату.';
-        DtldCustLedgEntry2: Record "Detailed Cust. Ledg. Entry";
         Cust: Record Customer;
-        CustLedgEntryNo: Integer;
-        AllowAmtDiffUnapply: Boolean;
+        DtldCustLedgEntry2: Record "Detailed Cust. Ledg. Entry";
+        GLSetup: Record "General Ledger Setup";
+        SRSetup: Record "Sales & Receivables Setup";
         AmtDiffManagement: Codeunit PrepmtDiffManagement;
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
+        AllowAmtDiffUnapply: Boolean;
+        CustLedgEntryNo: Integer;
+        FirstInsertLineNo: Integer;
+        UnapplyAllPostedAfterThisEntryErr: TextConst ENU = 'Before you can unapply this entry, you must first unapply all application entries in Cust. Ledger Entry No. %1 that were posted after this entry.',
+                                                    RUS = 'Перед отменой этой операции необходимо отменить все операции применения в операции книги клиентов № %1, учтенные после этой операции.';
+        NoApplicationEntryErr: TextConst ENU = 'Cust. Ledger Entry No. %1 does not have an application entry.',
+                                        RUS = 'У операции книги клиентов № %1 нет операции применения.';
+        NotAllowedPostingDatesErr: TextConst ENU = 'Posting date is not within the range of allowed posting dates.',
+                                            RUS = 'Дата учета вне пределов разрешенного диапазона дат учета.';
+        LatestEntryMustBeAnApplicationErr: TextConst ENU = 'The latest Transaction No. must be an application in Cust. Ledger Entry No. %1.',
+                                                    RUS = 'Номер последней транзакции должен соответствовать применению в операции книги клиентов № %1.';
+        MustNotBeBeforeErr: TextConst ENU = 'The Posting Date entered must not be before the Posting Date on the Cust. Ledger Entry.',
+                                    RUS = 'Введенная дата учета не должна предшествовать дате учета операции книги клиентов.';
+        errTotalAmountLessPrepaymentAmount: TextConst ENU = 'Total order amount less prepayment invoice amount.',
+                                                    RUS = 'Сумма заказа меньше суммы счета на предоплату.';
+        CannotUnapplyInReversalErr: TextConst ENU = 'You cannot unapply Cust. Ledger Entry No. %1 because the entry is part of a reversal.',
+                                            RUS = 'Нельзя отменить операцию книги клиентов № %1, поскольку эта операция входит в состав сторнирования.';
+        CannotUnapplyExchRateErr: TextConst ENU = 'You cannot unapply the entry with the posting date %1, because the exchange rate for the additional reporting currency has been changed.',
+                                            RUS = 'Нельзя отменить операцию с датой учета %1, поскольку изменился курс дополнительной отчетной валюты.';
 
-    procedure ModifyingSalesOrder()
+    local procedure SalesLineExist(SalesLine: Record "Sales Line"): Boolean
     var
         myInt: Integer;
     begin
-        // 
+
+    end;
+
+    local procedure OnDeleteSalesOrderLine(SalesOrderNo: Code[20])
+    var
+        SalesLine: Record "Sales Line";
+    begin
+        // get sales line for modify
+        SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
+        SalesLine.SetRange("Document No.", SalesOrderNo);
+        SalesLine.SetRange(Type, SalesLine.Type::Item);
+        SalesLine.SetFilter("Line No.", '<%1', FirstInsertLineNo);
+        if SalesLine.FindSet(false, false) then
+            repeat
+                if not SalesLineExist(SalesLine) then
+                    SalesLine.Delete(true);
+            until SalesLine.Next() = 0;
+    end;
+
+    procedure OnModifySalesOrder(SalesOrderNo: Code[20]; LineNo: Integer; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal)
+    var
+        SalesLine: Record "Sales Line";
+        FirstInsert: Boolean;
+    begin
+        // get sales line for modify
+        SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
+        SalesLine.SetRange("Document No.", SalesOrderNo);
+        SalesLine.SetRange(Type, SalesLine.Type::Item);
+        SalesLine.SetRange("Line No.", LineNo);
+        if SalesLine.FindFirst() then begin
+            if (SalesLine."No." <> ItemNo) or (SalesLine."Prepmt. Amt. Inv." > LineAmount) then begin
+                // insert new line
+                InsertNewSalesLine(SalesLine, SalesOrderNo, ItemNo, Qty, UnitPrice, LineAmount);
+            end else begin
+                // modify line
+                ModifySalesLine(SalesLine, Qty, UnitPrice, LineAmount);
+            end;
+        end else begin
+            // insert new line
+            InsertNewSalesLine(SalesLine, SalesOrderNo, ItemNo, Qty, UnitPrice, LineAmount);
+        end;
+        if not FirstInsert then begin
+            FirstInsertLineNo := SalesLine."Line No.";
+        end;
+    end;
+
+    local procedure ModifySalesLine(var SalesLine: Record "Sales Line"; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal)
+    begin
+        SalesLine.Validate(Quantity, Qty);
+        SalesLine.Validate("Unit Price", UnitPrice);
+        SalesLine.Validate("Line Amount", LineAmount);
+        SalesLine.Modify(true);
+    end;
+
+    local procedure InsertNewSalesLine(var SalesLine: Record "Sales Line"; SalesOrderNo: Code[20]; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal)
+    begin
+        SalesLine.Init();
+        SalesLine."Document Type" := SalesLine."Document Type"::Order;
+        SalesLine."Document No." := SalesOrderNo;
+        SalesLine.Insert(true);
+
+        SalesLine.Type := SalesLine.Type::Item;
+        SalesLine.Validate("No.", ItemNo);
+        SalesLine.Validate(Quantity, Qty);
+        SalesLine.Validate("Unit Price", UnitPrice);
+        SalesLine.Validate("Line Amount", LineAmount);
+        SalesLine.Modify(true);
     end;
 
     [EventSubscriber(ObjectType::Table, 37, 'OnBeforeUpdatePrepmtAmounts', '', false, false)]

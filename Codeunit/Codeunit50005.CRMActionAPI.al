@@ -5,22 +5,18 @@ codeunit 50005 "CRM Action API"
         errUndefinedSourceType: Label 'undefined "sourceType" %1';
         OrderId: Text[50];
 
+
+
     procedure OnAfterChangedSalesOrder(sourceType: Text[50]; salesOrderId: Text[50]): Text
     var
         SalesHeader: Record "Sales Header";
     begin
         OrderId := salesOrderId;
         case sourceType of
-            'Invoice':
+            'Specification', 'Invoice':
                 begin
 
                 end;
-
-            'Specification':
-                begin
-
-                end;
-
             else
                 Error(errUndefinedSourceType, sourceType);
         end;
