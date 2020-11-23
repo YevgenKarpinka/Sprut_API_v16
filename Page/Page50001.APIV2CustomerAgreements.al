@@ -68,6 +68,16 @@ page 50001 "APIV2 - Customer Agreements"
                         RegisterFieldSet(Rec.FIELDNO(Active));
                     end;
                 }
+                field(status; Rec.Status)
+                {
+                    ApplicationArea = All;
+                    Caption = 'status', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO(Status));
+                    end;
+                }
                 field(agreementDate; Rec."Agreement Date")
                 {
                     ApplicationArea = All;

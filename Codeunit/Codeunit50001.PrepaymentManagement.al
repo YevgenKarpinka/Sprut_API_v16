@@ -13,6 +13,7 @@ codeunit 50001 "Prepayment Management"
         SRSetup: Record "Sales & Receivables Setup";
         AmtDiffManagement: Codeunit PrepmtDiffManagement;
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
+        WebServicesMgt: Codeunit "Web Service Mgt.";
         AllowAmtDiffUnapply: Boolean;
         CustLedgEntryNo: Integer;
         FirstInsertLineNo: Integer;
@@ -44,43 +45,35 @@ codeunit 50001 "Prepayment Management"
     var
         SalesLine: Record "Sales Line";
     begin
-        // get sales line for modify
         SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
         SalesLine.SetRange("Document No.", SalesOrderNo);
-        SalesLine.SetRange(Type, SalesLine.Type::Item);
-        SalesLine.SetFilter("Line No.", '<%1', FirstInsertLineNo);
-        if SalesLine.FindSet(false, false) then
-            repeat
-                if not SalesLineExist(SalesLine) then
-                    SalesLine.Delete(true);
-            until SalesLine.Next() = 0;
+        SalesLine.DeleteAll(true);
     end;
 
-    procedure OnModifySalesOrder(SalesOrderNo: Code[20]; LineNo: Integer; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal)
+    procedure OnModifySalesOrder(SalesOrderNo: Code[20])
     var
-        SalesLine: Record "Sales Line";
-        FirstInsert: Boolean;
+        SalesHeader: Record "Sales Header";
+        SpecificationResponseText: Text;
+        InvoicesResponseText: Text;
     begin
-        // get sales line for modify
-        SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
-        SalesLine.SetRange("Document No.", SalesOrderNo);
-        SalesLine.SetRange(Type, SalesLine.Type::Item);
-        SalesLine.SetRange("Line No.", LineNo);
-        if SalesLine.FindFirst() then begin
-            if (SalesLine."No." <> ItemNo) or (SalesLine."Prepmt. Amt. Inv." > LineAmount) then begin
-                // insert new line
-                InsertNewSalesLine(SalesLine, SalesOrderNo, ItemNo, Qty, UnitPrice, LineAmount);
-            end else begin
-                // modify line
-                ModifySalesLine(SalesLine, Qty, UnitPrice, LineAmount);
-            end;
-        end else begin
-            // insert new line
-            InsertNewSalesLine(SalesLine, SalesOrderNo, ItemNo, Qty, UnitPrice, LineAmount);
-        end;
-        if not FirstInsert then begin
-            FirstInsertLineNo := SalesLine."Line No.";
-        end;
+        // Check Specification Amount
+        WebServicesMgt.GetSpecificationAndInvoice(SalesOrderNo, SpecificationResponseText, InvoicesResponseText);
+
+        // unapply prepayments
+        UnApplyPayments(SalesOrderNo);
+
+        // create credit memo for prepayment invoice
+        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
+        SalesPostPrepaymentsSprut.PostPrepaymentCreditMemoSprut(SalesHeader);
+
+        // delete all sales lines
+        OnDeleteSalesOrderLine(SalesOrderNo);
+
+        // insert sales line
+        InsertSalesLineFromCRM(SalesOrderNo, SpecificationResponseText);
+
+        // create prepayment invoice by amount
+        CreatePrepaymentInvoicesFromCRM(SalesOrderNo, InvoicesResponseText);
     end;
 
     local procedure ModifySalesLine(var SalesLine: Record "Sales Line"; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal)
@@ -91,7 +84,55 @@ codeunit 50001 "Prepayment Management"
         SalesLine.Modify(true);
     end;
 
-    local procedure InsertNewSalesLine(var SalesLine: Record "Sales Line"; SalesOrderNo: Code[20]; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal)
+    local procedure InsertSalesLineFromCRM(SalesOrderNo: Code[20]; responseText: Text)
+    var
+        connectorCode: Label 'CRM';
+        entityType: Label 'specification';
+        POSTrequestMethod: Label 'POST';
+        ItemNo: Code[20];
+        Qty: Decimal;
+        UnitPrice: Decimal;
+        LineAmount: Decimal;
+        ResponceTokenLine: Text;
+        jsonLines: JsonArray;
+        LineToken: JsonToken;
+    begin
+        //  to do
+        // post to CRM for getting json with sales lines
+        ResponceTokenLine := WebServicesMgt.GetSpecificationLinesArray(responseText);
+
+        // loop for insert sales lines
+        jsonLines.ReadFrom(ResponceTokenLine);
+        foreach LineToken in jsonLines do begin
+            ItemNo := WebServicesMgt.GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+            Qty := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.01);
+            UnitPrice := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
+            LineAmount := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
+            InsertNewSalesLine(SalesOrderNo, ItemNo, Qty, UnitPrice, LineAmount);
+        end;
+    end;
+
+    local procedure CreatePrepaymentInvoicesFromCRM(SalesOrderNo: Code[20]; responseText: Text);
+    var
+        invoiceID: Text[50];
+        API_SalesInvoice: Page "APIV2 - Sales Invoice";
+        PrepmInvAmount: Decimal;
+        jsonPrepmInv: JsonArray;
+        PrepmInvToken: JsonToken;
+    begin
+        // loop for create prepayment invoices
+        jsonPrepmInv.ReadFrom(responseText);
+        foreach PrepmInvToken in jsonPrepmInv do begin
+            invoiceID := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
+            PrepmInvAmount := Round(WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
+            API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount);
+            API_SalesInvoice.CreatePrepaymentInvoice(SalesOrderNo);
+        end;
+    end;
+
+    local procedure InsertNewSalesLine(SalesOrderNo: Code[20]; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal)
+    var
+        SalesLine: Record "Sales Line";
     begin
         SalesLine.Init();
         SalesLine."Document Type" := SalesLine."Document Type"::Order;

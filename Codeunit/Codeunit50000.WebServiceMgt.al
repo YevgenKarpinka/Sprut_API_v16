@@ -6,10 +6,8 @@ codeunit 50000 "Web Service Mgt."
     end;
 
     var
-        EnvironmentBlocksErr: Label 'Environment blocks an outgoing HTTP request to ''%1''.',
-            Comment = '%1 - url, e.g. https://microsoft.com';
-        ConnectionErr: Label 'Connection to the remote service ''%1'' could not be established.',
-            Comment = '%1 - url, e.g. https://microsoft.com';
+        errHeaderAmountNotEqualSumsLinesAmount: Label 'Sales header amount = %1 not equal sums sales lines amount = %2';
+        errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount: Label 'Sales order amount = %1 can not be less prepayment invoices amount = %2';
 
     /// <summary> 
     /// Description for ConnectToCRM.
@@ -114,7 +112,7 @@ codeunit 50000 "Web Service Mgt."
         exit(Round(GetJSToken(jsonRespToken, 'order_amount').AsValue().AsDecimal(), 0.01));
     end;
 
-    local procedure GetSpecificationLinesArray(ResponceToken: Text): Text
+    procedure GetSpecificationLinesArray(ResponceToken: Text): Text
     var
         jsonRespToken: JsonObject;
         jsonRespTokenLines: JsonArray;
@@ -124,6 +122,20 @@ codeunit 50000 "Web Service Mgt."
         jsonRespTokenLines := GetJSToken(jsonRespToken, 'lines').AsArray();
         jsonRespTokenLines.WriteTo(RespTokenLines);
         exit(RespTokenLines);
+    end;
+
+    local procedure GetPrepaymentInvoicesAmount(ResponceTokenLines: Text): Decimal
+    var
+        PrepmInvAmount: Decimal;
+        jsonPrepmInv: JsonArray;
+        PrepmInvToken: JsonToken;
+    begin
+        jsonPrepmInv.ReadFrom(ResponceTokenLines);
+        foreach PrepmInvToken in jsonPrepmInv do
+            PrepmInvAmount += GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal();
+
+        PrepmInvAmount := Round(PrepmInvAmount, 0.01);
+        exit(PrepmInvAmount);
     end;
 
     local procedure GetSpecificationLinesAmount(ResponceTokenLines: Text): Decimal
@@ -157,7 +169,26 @@ codeunit 50000 "Web Service Mgt."
 
         if SpecAmount = SpecLineAmount then
             exit(SpecAmount);
-        exit(0);
+
+        Error(errHeaderAmountNotEqualSumsLinesAmount, SpecAmount, SpecLineAmount);
+    end;
+
+    procedure GetSpecificationAndInvoice(SalesOrderNo: Code[20]; var SpecificationResponseText: Text; var InvoicesResponseText: Text)
+    var
+        connectorCode: Label 'CRM';
+        entityType: Label 'specification';
+        POSTrequestMethod: Label 'POST';
+        SpecAmount: Decimal;
+        PrepmInvAmount: Decimal;
+    begin
+        GetSpecificationFromCRM(SalesOrderNo, entityType, POSTrequestMethod, SpecificationResponseText);
+        GetInvoicesFromCRM(SalesOrderNo, entityType, POSTrequestMethod, InvoicesResponseText);
+
+        SpecAmount := CheckSpecificationAmount(SpecificationResponseText);
+        PrepmInvAmount := GetPrepaymentInvoicesAmount(InvoicesResponseText);
+
+        if SpecAmount < PrepmInvAmount then
+            Error(errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount, SpecAmount, PrepmInvAmount);
     end;
 
     local procedure OnAPIProcess(entityType: Text; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
@@ -275,7 +306,7 @@ codeunit 50000 "Web Service Mgt."
     /// </summary>
     /// <param name="_JSONObject">Parameter of type JsonObject.</param>
     /// <param name="TokenKey">Parameter of type Text.</param>
-    local procedure GetJSToken(_JSONObject: JsonObject; TokenKey: Text) _JSONToken: JsonToken
+    procedure GetJSToken(_JSONObject: JsonObject; TokenKey: Text) _JSONToken: JsonToken
     begin
         if not _JSONObject.Get(TokenKey, _JSONToken) then
             Error('Could not find a token with key %1', TokenKey);
