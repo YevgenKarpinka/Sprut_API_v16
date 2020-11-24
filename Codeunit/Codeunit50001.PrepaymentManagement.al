@@ -40,7 +40,7 @@ codeunit 50001 "Prepayment Management"
         GenJournalLine."Agreement No." := TempPaymentRegistrationBuffer."Agreement No.";
     end;
 
-    local procedure OnDeleteSalesOrderLine(SalesOrderNo: Code[20])
+    procedure OnDeleteSalesOrderLine(SalesOrderNo: Code[20])
     var
         SalesLine: Record "Sales Line";
     begin
@@ -98,11 +98,8 @@ codeunit 50001 "Prepayment Management"
         SalesLine.Modify(true);
     end;
 
-    local procedure InsertSalesLineFromCRM(SalesOrderNo: Code[20]; responseText: Text)
+    procedure InsertSalesLineFromCRM(SalesOrderNo: Code[20]; responseText: Text)
     var
-        connectorCode: Label 'CRM';
-        entityType: Label 'specification';
-        POSTrequestMethod: Label 'POST';
         ItemNo: Code[20];
         Qty: Decimal;
         UnitPrice: Decimal;
@@ -126,7 +123,7 @@ codeunit 50001 "Prepayment Management"
         end;
     end;
 
-    local procedure CreatePrepaymentInvoicesFromCRM(SalesOrderNo: Code[20]; responseText: Text);
+    procedure CreatePrepaymentInvoicesFromCRM(SalesOrderNo: Code[20]; responseText: Text);
     var
         invoiceID: Text[50];
         API_SalesInvoice: Page "APIV2 - Sales Invoice";
