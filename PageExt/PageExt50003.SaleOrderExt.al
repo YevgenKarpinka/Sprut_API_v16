@@ -135,6 +135,21 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         Message(responseText);
                     end;
                 }
+                action(ModifySalesOrder)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Modify Sales Order',
+                                RUS = 'Изменить заказ продажи';
+                    Image = ShowInventoryPeriods;
+
+                    trigger OnAction()
+                    var
+                        msgSalesOrderModified: Label 'Sales Order %1 Modified';
+                    begin
+                        PrepaymentMgt.OnModifySalesOrder(Rec."No.");
+                        Message(msgSalesOrderModified, Rec."No.");
+                    end;
+                }
             }
         }
     }

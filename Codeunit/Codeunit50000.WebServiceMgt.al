@@ -6,8 +6,8 @@ codeunit 50000 "Web Service Mgt."
     end;
 
     var
-        errHeaderAmountNotEqualSumsLinesAmount: Label 'Sales header amount = %1 not equal sums sales lines amount = %2';
-        errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount: Label 'Sales order amount = %1 can not be less prepayment invoices amount = %2';
+        errHeaderAmountNotEqualSumsLinesAmount: Label 'Sales header amount %1 not equal sums sales lines amount %2';
+        errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount: Label 'Sales order amount %1 can not be less prepayment invoices amount %2';
 
     /// <summary> 
     /// Description for ConnectToCRM.
@@ -140,18 +140,13 @@ codeunit 50000 "Web Service Mgt."
 
     local procedure GetSpecificationLinesAmount(ResponceTokenLines: Text): Decimal
     var
-        SpecLineQty: Decimal;
-        SpecLineUnitPrice: Decimal;
         SpecLineAmount: Decimal;
         jsonLines: JsonArray;
         LineToken: JsonToken;
     begin
         jsonLines.ReadFrom(ResponceTokenLines);
-        foreach LineToken in jsonLines do begin
-            SpecLineQty := GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal();
-            SpecLineUnitPrice := GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal();
-            SpecLineAmount += SpecLineQty * SpecLineUnitPrice;
-        end;
+        foreach LineToken in jsonLines do
+            SpecLineAmount += GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal();
 
         SpecLineAmount := Round(SpecLineAmount, 0.01);
         exit(SpecLineAmount);
@@ -176,13 +171,17 @@ codeunit 50000 "Web Service Mgt."
     procedure GetSpecificationAndInvoice(SalesOrderNo: Code[20]; var SpecificationResponseText: Text; var InvoicesResponseText: Text)
     var
         connectorCode: Label 'CRM';
-        entityType: Label 'specification';
+        SpecEntityType: Label 'specification';
+        InvEntityType: Label 'invoice';
         POSTrequestMethod: Label 'POST';
         SpecAmount: Decimal;
         PrepmInvAmount: Decimal;
     begin
-        GetSpecificationFromCRM(SalesOrderNo, entityType, POSTrequestMethod, SpecificationResponseText);
-        GetInvoicesFromCRM(SalesOrderNo, entityType, POSTrequestMethod, InvoicesResponseText);
+        // for testing
+        SalesOrderNo := 'ПРЗК-20-00053';
+
+        GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
+        GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
 
         SpecAmount := CheckSpecificationAmount(SpecificationResponseText);
         PrepmInvAmount := GetPrepaymentInvoicesAmount(InvoicesResponseText);

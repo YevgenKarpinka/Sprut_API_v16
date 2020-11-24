@@ -34,11 +34,10 @@ codeunit 50001 "Prepayment Management"
         CannotUnapplyExchRateErr: TextConst ENU = 'You cannot unapply the entry with the posting date %1, because the exchange rate for the additional reporting currency has been changed.',
                                             RUS = 'Нельзя отменить операцию с датой учета %1, поскольку изменился курс дополнительной отчетной валюты.';
 
-    local procedure SalesLineExist(SalesLine: Record "Sales Line"): Boolean
-    var
-        myInt: Integer;
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::"Payment Registration Mgt.", 'OnBeforeGenJnlLineInsert', '', false, false)]
+    local procedure UpdateAgreementNo(var GenJournalLine: Record "Gen. Journal Line"; TempPaymentRegistrationBuffer: Record "Payment Registration Buffer" temporary)
     begin
-
+        GenJournalLine."Agreement No." := TempPaymentRegistrationBuffer."Agreement No.";
     end;
 
     local procedure OnDeleteSalesOrderLine(SalesOrderNo: Code[20])
@@ -48,6 +47,15 @@ codeunit 50001 "Prepayment Management"
         SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
         SalesLine.SetRange("Document No.", SalesOrderNo);
         SalesLine.DeleteAll(true);
+    end;
+
+    local procedure OpenSalesOrder(var SalesHeader: Record "Sales Header"; SalesOrderNo: Code[20])
+    begin
+        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
+        if SalesHeader.Status <> SalesHeader.Status::Open then begin
+            SalesHeader.Status := SalesHeader.Status::Open;
+            SalesHeader.Modify();
+        end;
     end;
 
     procedure OnModifySalesOrder(SalesOrderNo: Code[20])
@@ -62,9 +70,15 @@ codeunit 50001 "Prepayment Management"
         // unapply prepayments
         UnApplyPayments(SalesOrderNo);
 
+        // Open Sales Order
+        OpenSalesOrder(SalesHeader, SalesOrderNo);
+
         // create credit memo for prepayment invoice
-        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
-        SalesPostPrepaymentsSprut.PostPrepaymentCreditMemoSprut(SalesHeader);
+        if SalesPostPrepaymentsSprut.CheckOpenPrepaymentLines(SalesHeader, 1) then
+            SalesPostPrepaymentsSprut.PostPrepaymentCreditMemoSprut(SalesHeader);
+
+        // Open Sales Order
+        OpenSalesOrder(SalesHeader, SalesOrderNo);
 
         // delete all sales lines
         OnDeleteSalesOrderLine(SalesOrderNo);
@@ -130,6 +144,17 @@ codeunit 50001 "Prepayment Management"
         end;
     end;
 
+    local procedure GetSalesOrderLastLineNo(SalesOrderNo: Code[20]): Integer
+    var
+        SalesLine: Record "Sales Line";
+    begin
+        SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
+        SalesLine.SetRange("Document No.", SalesOrderNo);
+        if SalesLine.FindLast() then
+            exit(SalesLine."Line No." + 10000);
+        exit(10000);
+    end;
+
     local procedure InsertNewSalesLine(SalesOrderNo: Code[20]; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal)
     var
         SalesLine: Record "Sales Line";
@@ -137,6 +162,7 @@ codeunit 50001 "Prepayment Management"
         SalesLine.Init();
         SalesLine."Document Type" := SalesLine."Document Type"::Order;
         SalesLine."Document No." := SalesOrderNo;
+        SalesLine."Line No." := GetSalesOrderLastLineNo(SalesOrderNo);
         SalesLine.Insert(true);
 
         SalesLine.Type := SalesLine.Type::Item;
@@ -356,8 +382,12 @@ codeunit 50001 "Prepayment Management"
         if tempDtldCustLedgEntry.FindLast() then
             repeat
                 if CustLedgerEntry.Get(tempDtldCustLedgEntry."Applied Cust. Ledger Entry No.") then
-                    if CustLedgerEntry."Document Type" = CustLedgerEntry."Document Type"::Payment then
-                        UnApplyCustomer(tempDtldCustLedgEntry."Entry No.");
+                    if CustLedgerEntry."Document Type" = CustLedgerEntry."Document Type"::Payment then begin
+                        if DtldCustLedgEntry.Get(tempDtldCustLedgEntry."Entry No.")
+                        and not DtldCustLedgEntry.Unapplied then
+                            UnApplyCustomer(tempDtldCustLedgEntry."Entry No.");
+                    end;
+
             until tempDtldCustLedgEntry.Next(-1) = 0;
     end;
 

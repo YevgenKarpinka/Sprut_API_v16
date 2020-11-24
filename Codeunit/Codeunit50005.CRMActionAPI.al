@@ -1,6 +1,7 @@
 codeunit 50005 "CRM Action API"
 {
     var
+        PrepaymentMgt: Codeunit "Prepayment Management";
         msgSalesOrderGetIsOk: Label 'the processed from %1 sales order %2 is ok';
         errUndefinedSourceType: Label 'undefined "sourceType" %1';
         OrderId: Text[50];
@@ -12,20 +13,23 @@ codeunit 50005 "CRM Action API"
         SalesHeader: Record "Sales Header";
     begin
         OrderId := salesOrderId;
-        case sourceType of
-            'Specification', 'Invoice':
-                begin
-
-                end;
-            else
-                Error(errUndefinedSourceType, sourceType);
-        end;
 
         if StrLen(salesOrderId) > 20 then begin
             SalesHeader.SetRange(SystemId, salesOrderId);
             SalesHeader.FindFirst();
         end else
             SalesHeader.Get(SalesHeader."Document Type"::Order, salesOrderId);
+
+        case sourceType of
+            'Specification', 'Invoice':
+                begin
+                    PrepaymentMgt.OnModifySalesOrder(SalesHeader."No.");
+                end;
+            else
+                Error(errUndefinedSourceType, sourceType);
+        end;
+
+
 
         exit(StrSubstNo(msgSalesOrderGetIsOk, sourceType, SalesHeader."No."));
         // exit(GetJsonSalesOrderLines(SalesHeader."No."));
