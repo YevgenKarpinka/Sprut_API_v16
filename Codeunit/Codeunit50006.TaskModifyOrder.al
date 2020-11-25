@@ -2,8 +2,8 @@ codeunit 50006 "Task Modify Order"
 {
     trigger OnRun()
     begin
-        GetFirstRecordForExecute();
-        Execute();
+        if GetFirstRecordForExecute() then
+            Execute();
     end;
 
     var
@@ -24,6 +24,7 @@ codeunit 50006 "Task Modify Order"
         case recTaskModifyOrder.Status of
             recTaskModifyOrder.Status::OnUnApplyPayments:
                 begin
+                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
                     // unapply prepayments
                     PrepmMgt.UnApplyPayments(recTaskModifyOrder."Order No.");
                     // Open Sales Order
@@ -33,10 +34,14 @@ codeunit 50006 "Task Modify Order"
                         SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
                     // modify task status to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnModifyOrder);
+
+                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
                 end;
 
             recTaskModifyOrder.Status::OnModifyOrder:
                 begin
+                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
+
                     WebServicesMgt.GetSpecificationFromCRM(recTaskModifyOrder."Order No.", SpecEntityType, POSTrequestMethod, SpecificationResponseText);
                     // Open Sales Order
                     OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
@@ -46,27 +51,33 @@ codeunit 50006 "Task Modify Order"
                     PrepmMgt.InsertSalesLineFromCRM(recTaskModifyOrder."Order No.", SpecificationResponseText);
                     // modify task status to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnCreateInvoices);
+
+                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
                 end;
 
             recTaskModifyOrder.Status::OnCreateInvoices:
                 begin
+                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
+
                     WebServicesMgt.GetInvoicesFromCRM(recTaskModifyOrder."Order No.", InvEntityType, POSTrequestMethod, InvoicesResponseText);
                     // create prepayment invoice by amount
                     PrepmMgt.CreatePrepaymentInvoicesFromCRM(recTaskModifyOrder."Order No.", InvoicesResponseText);
                     // modify task status to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnSendToCRM);
+                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
                 end;
 
             recTaskModifyOrder.Status::OnSendToCRM:
                 begin
-
+                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
                     // modify task status to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnSendToEmail);
+                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
                 end;
             recTaskModifyOrder.Status::OnSendToEmail:
                 begin
-
+                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
                     // modify task status to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::Done);
@@ -79,6 +90,8 @@ codeunit 50006 "Task Modify Order"
     local procedure ModifyTaskStatusToNextLevel(NextTaskStatus: Enum TaskStatus)
     begin
         recTaskModifyOrder.Status := NextTaskStatus;
+        if NextTaskStatus = NextTaskStatus::Done then
+            recTaskModifyOrder."Work Status" := recTaskModifyOrder."Work Status"::Done;
         recTaskModifyOrder.Modify(true);
     end;
 
@@ -91,10 +104,28 @@ codeunit 50006 "Task Modify Order"
         end;
     end;
 
-    local procedure GetFirstRecordForExecute()
+    local procedure UpdateWorkStatus(newWorkStatus: Enum WorkStatus)
+    begin
+        recTaskModifyOrder.LockTable();
+        recTaskModifyOrder."Work Status" := newWorkStatus;
+        recTaskModifyOrder.Modify();
+        Commit();
+    end;
+
+    local procedure GetFirstRecordForExecute(): Boolean
     begin
         recTaskModifyOrder.SetCurrentKey(Status);
         recTaskModifyOrder.SetFilter(Status, '<>%1', recTaskModifyOrder.Status::Done);
-        recTaskModifyOrder.FindFirst();
+        recTaskModifyOrder.SetRange("Work Status", recTaskModifyOrder."Work Status"::WaitingForWork);
+        if recTaskModifyOrder.FindFirst() then
+            exit(true);
+        exit(false);
+    end;
+
+    procedure CreateTaskModifyOrder(SalesOrderNo: Code[20])
+    begin
+        recTaskModifyOrder.Init();
+        recTaskModifyOrder."Order No." := SalesOrderNo;
+        recTaskModifyOrder.Insert(true);
     end;
 }

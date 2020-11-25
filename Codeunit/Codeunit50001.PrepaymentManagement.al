@@ -14,6 +14,7 @@ codeunit 50001 "Prepayment Management"
         AmtDiffManagement: Codeunit PrepmtDiffManagement;
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
         WebServicesMgt: Codeunit "Web Service Mgt.";
+        TaskModifyOrder: Codeunit "Task Modify Order";
         AllowAmtDiffUnapply: Boolean;
         CustLedgEntryNo: Integer;
         FirstInsertLineNo: Integer;
@@ -58,7 +59,18 @@ codeunit 50001 "Prepayment Management"
         end;
     end;
 
-    procedure OnModifySalesOrder(SalesOrderNo: Code[20])
+    procedure OnModifySalesOrderInTask(SalesOrderNo: Code[20])
+    var
+        SpecificationResponseText: Text;
+        InvoicesResponseText: Text;
+    begin
+        // Check Specification Amount
+        WebServicesMgt.GetSpecificationAndInvoice(SalesOrderNo, SpecificationResponseText, InvoicesResponseText);
+        // Create Task Modify Order
+        TaskModifyOrder.CreateTaskModifyOrder(SalesOrderNo);
+    end;
+
+    procedure OnModifySalesOrderOneLine(SalesOrderNo: Code[20])
     var
         SalesHeader: Record "Sales Header";
         SpecificationResponseText: Text;

@@ -50,6 +50,9 @@ codeunit 50000 "Web Service Mgt."
 
     procedure GetSpecificationFromCRM(SalesOrderNo: Code[20]; entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
     begin
+        // for testing
+        SalesOrderNo := 'ПРЗК-20-00053';
+
         GetBodyFromSalesOrderNo(SalesOrderNo, Body);
         if not GetEntity(entityType, requestMethod, Body) then
             exit(false);
@@ -58,6 +61,9 @@ codeunit 50000 "Web Service Mgt."
 
     procedure GetInvoicesFromCRM(SalesOrderNo: Code[20]; entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
     begin
+        // for testing
+        SalesOrderNo := 'ПРЗК-20-00053';
+
         GetBodyFromSalesOrderNo(SalesOrderNo, Body);
         if not GetEntity(entityType, requestMethod, Body) then
             exit(false);
@@ -177,9 +183,6 @@ codeunit 50000 "Web Service Mgt."
         SpecAmount: Decimal;
         PrepmInvAmount: Decimal;
     begin
-        // for testing
-        SalesOrderNo := 'ПРЗК-20-00053';
-
         GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
         GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
 

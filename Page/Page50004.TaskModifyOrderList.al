@@ -22,6 +22,10 @@ page 50004 "Task Modify Order List"
                 {
                     ApplicationArea = All;
                 }
+                field("Work Status"; "Work Status")
+                {
+                    ApplicationArea = All;
+                }
                 field("Order No."; "Order No.")
                 {
                     ApplicationArea = All;

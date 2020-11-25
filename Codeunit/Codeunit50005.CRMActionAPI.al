@@ -23,7 +23,7 @@ codeunit 50005 "CRM Action API"
         case sourceType of
             'Specification', 'Invoice':
                 begin
-                    PrepaymentMgt.OnModifySalesOrder(SalesHeader."No.");
+                    PrepaymentMgt.OnModifySalesOrderOneLine(SalesHeader."No.");
                 end;
             else
                 Error(errUndefinedSourceType, sourceType);

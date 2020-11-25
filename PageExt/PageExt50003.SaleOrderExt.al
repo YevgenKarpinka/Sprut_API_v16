@@ -146,7 +146,8 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     var
                         msgSalesOrderModified: Label 'Sales Order %1 Modified';
                     begin
-                        PrepaymentMgt.OnModifySalesOrder(Rec."No.");
+                        // PrepaymentMgt.OnModifySalesOrderOneLine(Rec."No.");
+                        PrepaymentMgt.OnModifySalesOrderInTask(Rec."No.");
                         Message(msgSalesOrderModified, Rec."No.");
                     end;
                 }

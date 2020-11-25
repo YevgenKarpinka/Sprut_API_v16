@@ -33,6 +33,10 @@ table 50002 "Task Modify Order"
         {
             DataClassification = CustomerContent;
         }
+        field(8; "Work Status"; Enum WorkStatus)
+        {
+            DataClassification = CustomerContent;
+        }
     }
 
     keys
@@ -93,6 +97,24 @@ enum 50002 TaskStatus
         CaptionML = ENU = 'OnSendToEmail', RUS = 'OnSendToEmail';
     }
     value(5; Done)
+    {
+        CaptionML = ENU = 'Done', RUS = 'Done';
+    }
+}
+
+enum 50003 WorkStatus
+{
+    Extensible = true;
+
+    value(0; WaitingForWork)
+    {
+        CaptionML = ENU = 'WaitingForWork', RUS = 'WaitingForWork';
+    }
+    value(1; InWork)
+    {
+        CaptionML = ENU = 'InWork', RUS = 'InWork';
+    }
+    value(2; Done)
     {
         CaptionML = ENU = 'Done', RUS = 'Done';
     }
