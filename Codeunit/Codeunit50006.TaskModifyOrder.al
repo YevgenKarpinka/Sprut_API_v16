@@ -22,7 +22,7 @@ codeunit 50006 "Task Modify Order"
         SalesHeader: Record "Sales Header";
     begin
         case recTaskModifyOrder.Status of
-            recTaskModifyOrder.Status::OnUnApplyPayments:
+            recTaskModifyOrder.Status::OnModifyOrder:
                 begin
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
                     // unapply prepayments
@@ -32,16 +32,7 @@ codeunit 50006 "Task Modify Order"
                     // create credit memo for prepayment invoice
                     if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
                         SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
-                    // modify task status to next level
-                    ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnModifyOrder);
-
-                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
-                end;
-
-            recTaskModifyOrder.Status::OnModifyOrder:
-                begin
-                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
-
+                    // Get Specification From CRM
                     WebServicesMgt.GetSpecificationFromCRM(recTaskModifyOrder."Order No.", SpecEntityType, POSTrequestMethod, SpecificationResponseText);
                     // Open Sales Order
                     OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
@@ -49,20 +40,11 @@ codeunit 50006 "Task Modify Order"
                     PrepmMgt.OnDeleteSalesOrderLine(recTaskModifyOrder."Order No.");
                     // insert sales line
                     PrepmMgt.InsertSalesLineFromCRM(recTaskModifyOrder."Order No.", SpecificationResponseText);
-                    // modify task status to next level
-                    ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnCreateInvoices);
-
-                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
-                end;
-
-            recTaskModifyOrder.Status::OnCreateInvoices:
-                begin
-                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
-
+                    // Get Invoices From CRM
                     WebServicesMgt.GetInvoicesFromCRM(recTaskModifyOrder."Order No.", InvEntityType, POSTrequestMethod, InvoicesResponseText);
                     // create prepayment invoice by amount
                     PrepmMgt.CreatePrepaymentInvoicesFromCRM(recTaskModifyOrder."Order No.", InvoicesResponseText);
-                    // modify task status to next level
+                    // modify task statuses to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnSendToCRM);
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
                 end;

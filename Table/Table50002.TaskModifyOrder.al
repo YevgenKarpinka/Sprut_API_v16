@@ -76,27 +76,19 @@ enum 50002 TaskStatus
 {
     Extensible = true;
 
-    value(0; OnUnApplyPayments)
-    {
-        CaptionML = ENU = 'OnUnApplyPayments', RUS = 'OnUnApplyPayments';
-    }
-    value(1; OnModifyOrder)
+    value(0; OnModifyOrder)
     {
         CaptionML = ENU = 'OnModifyOrder', RUS = 'OnModifyOrder';
     }
-    value(2; OnCreateInvoices)
-    {
-        CaptionML = ENU = 'OnCreateInvoices', RUS = 'OnCreateInvoices';
-    }
-    value(3; OnSendToCRM)
+    value(1; OnSendToCRM)
     {
         CaptionML = ENU = 'OnSendToCRM', RUS = 'OnSendToCRM';
     }
-    value(4; OnSendToEmail)
+    value(2; OnSendToEmail)
     {
         CaptionML = ENU = 'OnSendToEmail', RUS = 'OnSendToEmail';
     }
-    value(5; Done)
+    value(3; Done)
     {
         CaptionML = ENU = 'Done', RUS = 'Done';
     }
@@ -114,7 +106,11 @@ enum 50003 WorkStatus
     {
         CaptionML = ENU = 'InWork', RUS = 'InWork';
     }
-    value(2; Done)
+    value(2; Error)
+    {
+        CaptionML = ENU = 'Error', RUS = 'Error';
+    }
+    value(3; Done)
     {
         CaptionML = ENU = 'Done', RUS = 'Done';
     }

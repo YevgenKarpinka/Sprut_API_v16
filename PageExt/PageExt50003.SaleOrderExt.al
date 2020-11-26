@@ -151,6 +151,21 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         Message(msgSalesOrderModified, Rec."No.");
                     end;
                 }
+                action(ReportUnApppliedEntry)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Report UnAppplied Entries',
+                                RUS = 'Отчет непримененных операций';
+                    Image = ShowInventoryPeriods;
+
+                    trigger OnAction()
+                    var
+                        _SalesHeader: Record "Sales Header";
+                    begin
+                        CurrPage.SetSelectionFilter(_SalesHeader);
+                        Report.Run(Report::"UnApply Prep. Cust. Entry", true, true, _SalesHeader);
+                    end;
+                }
             }
         }
     }
