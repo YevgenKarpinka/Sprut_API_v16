@@ -65,9 +65,10 @@ codeunit 50001 "Prepayment Management"
         InvoicesResponseText: Text;
     begin
         // Check Specification Amount
-        WebServicesMgt.GetSpecificationAndInvoice(SalesOrderNo, SpecificationResponseText, InvoicesResponseText);
-        // Create Task Modify Order
-        TaskModifyOrder.CreateTaskModifyOrder(SalesOrderNo);
+        // check modification sales order need
+        if WebServicesMgt.GetSpecificationAndInvoice(SalesOrderNo, SpecificationResponseText, InvoicesResponseText) then
+            // Create Task Modify Order
+            TaskModifyOrder.CreateTaskModifyOrder(SalesOrderNo);
     end;
 
     procedure OnModifySalesOrderOneLine(SalesOrderNo: Code[20])
@@ -182,7 +183,8 @@ codeunit 50001 "Prepayment Management"
         SalesLine.Modify(true);
     end;
 
-    [EventSubscriber(ObjectType::Table, 37, 'OnBeforeUpdatePrepmtAmounts', '', false, false)]
+    // for test
+    // [EventSubscriber(ObjectType::Table, 37, 'OnBeforeUpdatePrepmtAmounts', '', false, false)]
     local procedure UpdatePrepaymentAmounts(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var IsHandled: Boolean)
     var
         SalesLineUpdate: Record "Sales Line";

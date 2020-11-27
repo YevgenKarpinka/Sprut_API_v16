@@ -25,25 +25,32 @@ codeunit 50006 "Task Modify Order"
             recTaskModifyOrder.Status::OnModifyOrder:
                 begin
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
-                    // unapply prepayments
-                    PrepmMgt.UnApplyPayments(recTaskModifyOrder."Order No.");
-                    // Open Sales Order
-                    OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
-                    // create credit memo for prepayment invoice
-                    if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
-                        SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
-                    // Get Specification From CRM
-                    WebServicesMgt.GetSpecificationFromCRM(recTaskModifyOrder."Order No.", SpecEntityType, POSTrequestMethod, SpecificationResponseText);
-                    // Open Sales Order
-                    OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
-                    // delete all sales lines
-                    PrepmMgt.OnDeleteSalesOrderLine(recTaskModifyOrder."Order No.");
-                    // insert sales line
-                    PrepmMgt.InsertSalesLineFromCRM(recTaskModifyOrder."Order No.", SpecificationResponseText);
-                    // Get Invoices From CRM
-                    WebServicesMgt.GetInvoicesFromCRM(recTaskModifyOrder."Order No.", InvEntityType, POSTrequestMethod, InvoicesResponseText);
-                    // create prepayment invoice by amount
-                    PrepmMgt.CreatePrepaymentInvoicesFromCRM(recTaskModifyOrder."Order No.", InvoicesResponseText);
+
+                    // analyze need full update sales order or not
+                    if WebServicesMgt.NeedFullUpdateSalesOrder(recTaskModifyOrder."Order No.") then begin
+
+                        // unapply prepayments
+                        PrepmMgt.UnApplyPayments(recTaskModifyOrder."Order No.");
+                        // Open Sales Order
+                        OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
+                        // create credit memo for prepayment invoice
+                        if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
+                            SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
+                        // Get Specification From CRM
+                        WebServicesMgt.GetSpecificationFromCRM(recTaskModifyOrder."Order No.", SpecEntityType, POSTrequestMethod, SpecificationResponseText);
+                        // Open Sales Order
+                        OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
+                        // delete all sales lines
+                        PrepmMgt.OnDeleteSalesOrderLine(recTaskModifyOrder."Order No.");
+                        // insert sales line
+                        PrepmMgt.InsertSalesLineFromCRM(recTaskModifyOrder."Order No.", SpecificationResponseText);
+                        // Get Invoices From CRM
+                        WebServicesMgt.GetInvoicesFromCRM(recTaskModifyOrder."Order No.", InvEntityType, POSTrequestMethod, InvoicesResponseText);
+                        // create prepayment invoice by amount
+                        PrepmMgt.CreatePrepaymentInvoicesFromCRM(recTaskModifyOrder."Order No.", InvoicesResponseText);
+
+                    end;
+
                     // modify task statuses to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnSendToCRM);
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
@@ -77,7 +84,10 @@ codeunit 50006 "Task Modify Order"
         recTaskModifyOrder.Modify(true);
     end;
 
-    local procedure OpenSalesOrder(var SalesHeader: Record "Sales Header"; SalesOrderNo: Code[20])
+    local procedure OpenSalesOrder(var SalesHeader:
+                                           Record "Sales Header";
+    SalesOrderNo:
+        Code[20])
     begin
         SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
         if SalesHeader.Status <> SalesHeader.Status::Open then begin
@@ -94,7 +104,8 @@ codeunit 50006 "Task Modify Order"
         Commit();
     end;
 
-    local procedure GetFirstRecordForExecute(): Boolean
+    local procedure GetFirstRecordForExecute():
+                                Boolean
     begin
         recTaskModifyOrder.SetCurrentKey(Status);
         recTaskModifyOrder.SetFilter(Status, '<>%1', recTaskModifyOrder.Status::Done);

@@ -51,7 +51,7 @@ codeunit 50000 "Web Service Mgt."
     procedure GetSpecificationFromCRM(SalesOrderNo: Code[20]; entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
     begin
         // for testing
-        SalesOrderNo := 'ПРЗК-20-00053';
+        // SalesOrderNo := 'ПРЗК-20-00053';
 
         GetBodyFromSalesOrderNo(SalesOrderNo, Body);
         if not GetEntity(entityType, requestMethod, Body) then
@@ -62,7 +62,7 @@ codeunit 50000 "Web Service Mgt."
     procedure GetInvoicesFromCRM(SalesOrderNo: Code[20]; entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
     begin
         // for testing
-        SalesOrderNo := 'ПРЗК-20-00053';
+        // SalesOrderNo := 'ПРЗК-20-00053';
 
         GetBodyFromSalesOrderNo(SalesOrderNo, Body);
         if not GetEntity(entityType, requestMethod, Body) then
@@ -174,7 +174,7 @@ codeunit 50000 "Web Service Mgt."
         Error(errHeaderAmountNotEqualSumsLinesAmount, SpecAmount, SpecLineAmount);
     end;
 
-    procedure GetSpecificationAndInvoice(SalesOrderNo: Code[20]; var SpecificationResponseText: Text; var InvoicesResponseText: Text)
+    procedure GetSpecificationAndInvoice(SalesOrderNo: Code[20]; var SpecificationResponseText: Text; var InvoicesResponseText: Text): Boolean
     var
         connectorCode: Label 'CRM';
         SpecEntityType: Label 'specification';
@@ -189,8 +189,177 @@ codeunit 50000 "Web Service Mgt."
         SpecAmount := CheckSpecificationAmount(SpecificationResponseText);
         PrepmInvAmount := GetPrepaymentInvoicesAmount(InvoicesResponseText);
 
+        // check Specification Amount and Prepayment Amount
         if SpecAmount < PrepmInvAmount then
             Error(errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount, SpecAmount, PrepmInvAmount);
+
+        // check sales order for change need
+        if SalesOrderChangeNeed(SalesOrderNo, SpecificationResponseText) then
+            exit(true);
+
+        // check prepayment invoices for change need
+        if PrepaymentInvoicesChangeNeed(SalesOrderNo, InvoicesResponseText) then
+            exit(true);
+
+        exit(false);
+    end;
+
+    procedure NeedFullUpdateSalesOrder(SalesOrderNo: Code[20]): Boolean
+    var
+        SpecificationResponseText: Text;
+        InvoicesResponseText: Text;
+        connectorCode: Label 'CRM';
+        SpecEntityType: Label 'specification';
+        InvEntityType: Label 'invoice';
+        POSTrequestMethod: Label 'POST';
+        SpecAmount: Decimal;
+        PrepmInvAmount: Decimal;
+    begin
+        GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
+        GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+
+        // check prepayment invoices for change need
+        if PrepaymentInvoicesChangeNeed(SalesOrderNo, InvoicesResponseText) then
+            exit(true);
+
+        // check sales order for change need
+        if SalesOrderFullChangesNeed(SalesOrderNo, SpecificationResponseText) then
+            exit(true);
+
+        exit(false);
+    end;
+
+    local procedure SalesOrderFullChangesNeed(SalesOrderNo: Code[20]; ResponceToken: Text): Boolean
+    var
+        SalesHeader: Record "Sales Header";
+        SalesLine: Record "Sales Line";
+        SpecAmount: Decimal;
+        SpecLineAmount: Decimal;
+        LineNo: Integer;
+        ItemNo: Text[20];
+        Qty: Decimal;
+        UnitPrice: Decimal;
+        ResponceTokenLine: Text;
+        jsonLines: JsonArray;
+        LineToken: JsonToken;
+    begin
+        SpecAmount := GetSpecificationAmount(ResponceToken);
+        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
+        SalesHeader.CalcFields("Amount Including VAT");
+
+        if SpecAmount <> SalesHeader."Amount Including VAT" then
+            exit(true);
+
+        ResponceTokenLine := GetSpecificationLinesArray(ResponceToken);
+        jsonLines.ReadFrom(ResponceTokenLine);
+        foreach LineToken in jsonLines do begin
+            if GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then
+                exit(true);
+
+            LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
+            ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+            Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
+            UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
+            SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
+
+            if not SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then exit(true);
+            if SalesLine."No." <> ItemNo then exit(true);
+            if SalesLine.Quantity < Qty then exit(true);
+            if SalesLine."Unit Price" < UnitPrice then exit(true);
+            if SalesLine."Line Amount" < SpecLineAmount then exit(true);
+        end;
+
+        foreach LineToken in jsonLines do begin
+            LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
+            ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+            Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
+            UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
+            SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
+
+            SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo);
+            if SalesLine.Quantity <> Qty then
+                SalesLine.Validate(Quantity, Qty);
+            if SalesLine."Unit Price" <> UnitPrice then
+                SalesLine.Validate("Unit Price", UnitPrice);
+            if SalesLine."Line Amount" <> SpecLineAmount then
+                SalesLine.Validate("Line Amount", SpecLineAmount);
+            SalesLine.Modify(true);
+        end;
+
+
+        exit(false);
+    end;
+
+    local procedure SalesOrderChangeNeed(SalesOrderNo: Code[20]; ResponceToken: Text): Boolean
+    var
+        SalesHeader: Record "Sales Header";
+        SalesLine: Record "Sales Line";
+        SpecAmount: Decimal;
+        SpecLineAmount: Decimal;
+        LineNo: Integer;
+        ItemNo: Text[20];
+        Qty: Decimal;
+        UnitPrice: Decimal;
+        ResponceTokenLine: Text;
+        jsonLines: JsonArray;
+        LineToken: JsonToken;
+    begin
+        SpecAmount := GetSpecificationAmount(ResponceToken);
+        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
+        SalesHeader.CalcFields("Amount Including VAT");
+
+        if SpecAmount <> SalesHeader."Amount Including VAT" then
+            exit(true);
+
+        ResponceTokenLine := GetSpecificationLinesArray(ResponceToken);
+        jsonLines.ReadFrom(ResponceTokenLine);
+        foreach LineToken in jsonLines do begin
+            if GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then
+                exit(true);
+
+            LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
+            ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+            Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
+            UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
+            SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
+
+            if not SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then exit(true);
+            if SalesLine."No." <> ItemNo then exit(true);
+            if SalesLine.Quantity <> Qty then exit(true);
+            if SalesLine."Unit Price" <> UnitPrice then exit(true);
+            if SalesLine."Line Amount" <> SpecLineAmount then exit(true);
+        end;
+
+        exit(false);
+    end;
+
+    local procedure PrepaymentInvoicesChangeNeed(SalesOrderNo: Code[20]; ResponceTokenLines: Text): Boolean
+    var
+        SalesInvHeader: Record "Sales Invoice Header";
+        invoiceID: Text[50];
+        PrepmInvAmount: Decimal;
+        bcPrepmInvAmount: Decimal;
+        jsonPrepmInv: JsonArray;
+        PrepmInvToken: JsonToken;
+    begin
+        SalesInvHeader.SetCurrentKey("CRM Invoice No.");
+        jsonPrepmInv.ReadFrom(ResponceTokenLines);
+        foreach PrepmInvToken in jsonPrepmInv do begin
+            invoiceID := GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
+            PrepmInvAmount := Round(GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
+
+            SalesInvHeader.SetRange("CRM Invoice No.", invoiceID);
+            if SalesInvHeader.FindSet() then
+                repeat
+                    SalesInvHeader.CalcFields("Amount Including VAT");
+                    bcPrepmInvAmount += SalesInvHeader."Amount Including VAT";
+                until SalesInvHeader.Next() = 0;
+
+            if PrepmInvAmount <> bcPrepmInvAmount then
+                exit(true);
+        end;
+
+        exit(false);
     end;
 
     local procedure OnAPIProcess(entityType: Text; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean

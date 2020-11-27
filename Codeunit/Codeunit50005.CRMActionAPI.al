@@ -12,24 +12,17 @@ codeunit 50005 "CRM Action API"
     var
         SalesHeader: Record "Sales Header";
     begin
-        OrderId := salesOrderId;
-
-        if StrLen(salesOrderId) > 20 then begin
-            SalesHeader.SetRange(SystemId, salesOrderId);
-            SalesHeader.FindFirst();
-        end else
-            SalesHeader.Get(SalesHeader."Document Type"::Order, salesOrderId);
+        SalesHeader.Get(SalesHeader."Document Type"::Order, salesOrderId);
 
         case sourceType of
             'Specification', 'Invoice':
                 begin
-                    PrepaymentMgt.OnModifySalesOrderOneLine(SalesHeader."No.");
+                    // PrepaymentMgt.OnModifySalesOrderOneLine(SalesHeader."No.");
+                    PrepaymentMgt.OnModifySalesOrderInTask(SalesHeader."No.");
                 end;
             else
                 Error(errUndefinedSourceType, sourceType);
         end;
-
-
 
         exit(StrSubstNo(msgSalesOrderGetIsOk, sourceType, SalesHeader."No."));
         // exit(GetJsonSalesOrderLines(SalesHeader."No."));

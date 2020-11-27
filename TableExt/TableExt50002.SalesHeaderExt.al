@@ -3,7 +3,7 @@ tableextension 50002 "Sales Header Ext" extends "Sales Header"
     fields
     {
         // Add changes to table fields here
-        field(50000; "CRM Invoice No."; Text[30])
+        field(50000; "CRM Invoice No."; Text[50])
         {
             DataClassification = CustomerContent;
             CaptionML = ENU = 'CRM Invoice No.',

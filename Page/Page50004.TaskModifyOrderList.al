@@ -4,7 +4,7 @@ page 50004 "Task Modify Order List"
     ApplicationArea = All;
     UsageCategory = Administration;
     SourceTable = "Task Modify Order";
-    Editable = false;
+    // Editable = false;
     CaptionML = ENU = 'Task Modify Order List',
                 RUS = 'Task Modify Order List';
 
