@@ -69,6 +69,9 @@ codeunit 50006 "Task Modify Order"
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
                     // https://robertostefanettinavblog.com/2020/06/15/business-central-send-email-with-multi-attachments/
+                    // https://yzhums.com/1799/
+
+
                     // modify task status to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::Done);
                 end;
