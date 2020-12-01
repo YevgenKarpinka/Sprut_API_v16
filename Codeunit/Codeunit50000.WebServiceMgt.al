@@ -603,4 +603,66 @@ codeunit 50000 "Web Service Mgt."
             end;
         end;
     end;
+
+    local procedure SendToEmail(SalesOrderNo: Code[20])
+    var
+        recuser: Record User;
+        ToAddr: List of [Text];
+        PurchaseHeader: Record "Purchase Header";
+        RecRef: RecordRef;
+        text001: Label 'Email Sended';
+        text002: Label 'Email address not present, go to User page and fill Contact Email field.';
+        text003: Label 'User not identified';
+    begin
+        //read user email config
+        recuser.Reset();
+        recuser.SetFilter("User Security ID", UserSecurityId());
+        if recuser.FindFirst() then begin
+
+            //Send email after report building
+            if recuser."Contact Email" <> '' then begin
+                ToAddr.Add(recuser."Contact Email");   //contact email on User
+                PurchaseHeader := Rec;
+                CurrPage.SetSelectionFilter(PurchaseHeader);
+                clear(RecRef);
+                RecRef.GetTable(PurchaseHeader);
+
+                //send
+                if ReportSendMail(50102, RecRef, RecRef.number, PurchaseHeader."No.", ToAddr, 'ODA ' + PurchaseHeader."No.", 'Purch. Order Documents', PurchaseHeader."No." + ' ' + PurchaseHeader."Pay-to Name" + '.pdf') then
+                    Message(text001);
+            end
+            else
+                Message(text002);
+        end
+        else
+            Message(text003);
+    end;
+
+    local procedure ReportSendMail(ReportToSend: Integer; Recordr: RecordRef; ToAddr: List of [Text]; Subject: Text[100]; Body: Text[100]; AttachmentName: Text[100]): Boolean
+    var
+        outStreamReport: OutStream;
+        inStreamReport: InStream;
+        Parameters: Text;
+        tempBlob: Codeunit "Temp Blob";
+        Base64EncodedString: Text;
+        Mail: Codeunit "SMTP Mail";
+        SmtpConf: Record "SMTP Mail Setup";
+
+    begin
+        //SMTP
+        SmtpConf.GET();
+        TempBlob.CreateOutStream(outStreamReport);
+        TempBlob.CreateInStream(inStreamReport);
+
+        //Print Report
+        Report.SaveAs(ReportToSend, Parameters, ReportFormat::Pdf, outStreamReport, Recordr);
+
+        //Create mail
+        CLEAR(Mail);
+        Mail.CreateMessage('Business Central Mailing System', SmtpConf."User ID", ToAddr, Subject, Body);
+        Mail.AddAttachmentStream(inStreamReport, AttachmentName);
+
+        //Send mail
+        exit(Mail.Send());
+    end;
 }

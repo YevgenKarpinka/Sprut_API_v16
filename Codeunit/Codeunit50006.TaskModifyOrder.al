@@ -68,6 +68,8 @@ codeunit 50006 "Task Modify Order"
                 begin
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
+
+                    // https://community.dynamics.com/business/f/dynamics-365-business-central-forum/383532/smtp-mail-setup-with-mfa-not-working-with-o365
                     // https://robertostefanettinavblog.com/2020/06/15/business-central-send-email-with-multi-attachments/
                     // https://yzhums.com/1799/
 
