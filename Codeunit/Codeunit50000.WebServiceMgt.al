@@ -606,29 +606,30 @@ codeunit 50000 "Web Service Mgt."
 
     local procedure SendToEmail(SalesOrderNo: Code[20])
     var
-        recuser: Record User;
+        recUser: Record User;
         ToAddr: List of [Text];
-        PurchaseHeader: Record "Purchase Header";
+        SalesHeader: Record "Sales Header";
         RecRef: RecordRef;
         text001: Label 'Email Sended';
         text002: Label 'Email address not present, go to User page and fill Contact Email field.';
         text003: Label 'User not identified';
     begin
         //read user email config
-        recuser.Reset();
-        recuser.SetFilter("User Security ID", UserSecurityId());
-        if recuser.FindFirst() then begin
+        recUser.Reset();
+        recUser.SetFilter("User Security ID", UserSecurityId());
+        if recUser.FindFirst() then begin
 
             //Send email after report building
-            if recuser."Contact Email" <> '' then begin
-                ToAddr.Add(recuser."Contact Email");   //contact email on User
-                PurchaseHeader := Rec;
-                CurrPage.SetSelectionFilter(PurchaseHeader);
-                clear(RecRef);
-                RecRef.GetTable(PurchaseHeader);
+            if recUser."Contact Email" <> '' then begin
+                ToAddr.Add(recUser."Contact Email");   //contact email on User
+                SalesHeader.SetRange("Document Type", SalesHeader."Document Type"::Order);
+                SalesHeader.SetRange("No.", SalesOrderNo);
+                Clear(RecRef);
+                RecRef.GetTable(SalesHeader);
 
                 //send
-                if ReportSendMail(50102, RecRef, RecRef.number, PurchaseHeader."No.", ToAddr, 'ODA ' + PurchaseHeader."No.", 'Purch. Order Documents', PurchaseHeader."No." + ' ' + PurchaseHeader."Pay-to Name" + '.pdf') then
+                // ReportSendMail(ReportToSend: Integer; Recordr: RecordRef; ToAddr: List of [Text]; Subject: Text[100]; Body: Text[100]; AttachmentName: Text[100])
+                if ReportSendMail(50000, RecRef, ToAddr, SalesHeader."No.", 'Sales Prepayment Invoices for Sales Order ' + SalesHeader."No.", SalesHeader."No." + '_' + SalesHeader."Sell-to Customer Name" + '_PrepmInv' + '.pdf') then
                     Message(text001);
             end
             else
@@ -647,7 +648,6 @@ codeunit 50000 "Web Service Mgt."
         Base64EncodedString: Text;
         Mail: Codeunit "SMTP Mail";
         SmtpConf: Record "SMTP Mail Setup";
-
     begin
         //SMTP
         SmtpConf.GET();
