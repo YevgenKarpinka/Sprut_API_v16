@@ -57,10 +57,13 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesHeader2 := SalesHeader;
     end;
 
-    /// <summary> 
-    /// Description for PostPrepaymentCreditMemoSprut.
-    /// </summary>
-    /// <param name="SalesHeader2">Parameter of type Record "Sales Header".</param>
+    [EventSubscriber(ObjectType::Codeunit, codeunit::"Sales-Post Prepayments", 'OnAfterPostPrepayments', '', false, false)]
+    local procedure OnAfterPostPrepayments(var SalesHeader: Record "Sales Header"; DocumentType: Option)
+    begin
+        if DocumentType = 1 then
+            ClearAllCRMInvoiceNo(SalesHeader."No.");
+    end;
+
     procedure PostPrepaymentCreditMemoSprut(var SalesHeader2: Record "Sales Header")
     var
         SalesHeader: Record "Sales Header";
@@ -82,8 +85,8 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
     var
         SalesInvoiceHeader: Record "Sales Invoice Header";
     begin
-        SalesInvoiceHeader.SetCurrentKey("Order No.");
-        SalesInvoiceHeader.SetRange("Order No.");
+        SalesInvoiceHeader.SetCurrentKey("Prepayment Order No.");
+        SalesInvoiceHeader.SetRange("Prepayment Order No.", SalesOrderNo);
         SalesInvoiceHeader.ModifyAll("CRM Invoice No.", '');
     end;
 
@@ -110,10 +113,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
-    /// <summary> 
-    /// Description for Invoice.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
     procedure Invoice(var SalesHeader: Record "Sales Header")
     var
         Handled: Boolean;
@@ -122,10 +121,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             Code(SalesHeader, 0);
     end;
 
-    /// <summary> 
-    /// Description for CreditMemo.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
     procedure CreditMemo(var SalesHeader: Record "Sales Header")
     var
         Handled: Boolean;
@@ -134,11 +129,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             Code(SalesHeader, 1);
     end;
 
-    /// <summary> 
-    /// Description for Code.
-    /// </summary>
-    /// <param name="SalesHeader2">Parameter of type Record "Sales Header".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
     local procedure "Code"(var SalesHeader2: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo")
     var
         SourceCodeSetup: Record "Source Code Setup";
@@ -168,7 +158,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         PostedDocTabNo: Integer;
         LineNo: Integer;
     begin
-
         SalesHeader := SalesHeader2;
         GLSetup.Get();
         SalesSetup.Get();
@@ -308,11 +297,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesHeader2 := SalesHeader;
     end;
 
-    /// <summary> 
-    /// Description for CheckPrepmtDoc.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
     procedure CheckPrepmtDoc(SalesHeader: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo")
     var
         Cust: Record Customer;
@@ -340,14 +324,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
-    /// <summary> 
-    /// Description for UpdateDocNos.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
-    /// <param name="DocNo">Parameter of type Code[20].</param>
-    /// <param name="NoSeriesCode">Parameter of type Code[20].</param>
-    /// <param name="ModifyHeader">Parameter of type Boolean.</param>
     local procedure UpdateDocNos(var SalesHeader: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo"; var DocNo: Code[20]; var NoSeriesCode: Code[20]; var ModifyHeader: Boolean)
     var
         NoSeriesMgt: Codeunit NoSeriesManagement;
