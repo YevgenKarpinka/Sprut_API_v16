@@ -77,7 +77,7 @@ page 50003 "APIV2 - Sales Invoice"
 
                     trigger OnValidate()
                     begin
-                        if prepaymentAmount = 0 then
+                        if prepaymentAmount <= 0 then
                             ERROR(errBlankPrepaymentAmount);
                     end;
                 }
@@ -110,6 +110,11 @@ page 50003 "APIV2 - Sales Invoice"
 
             // while testing CRM
             // postedInvoiceNo := 'TEST_INVOICE_NO';
+        end else begin
+            if prepaymentAmount <= 0 then
+                ERROR(errBlankPrepaymentAmount);
+            if prepaymentPercent <= 0 then
+                Error(errPrepaymentPercentCannotBeLessOrEqual, 0);
         end;
     end;
 
