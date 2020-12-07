@@ -650,7 +650,7 @@ codeunit 50000 "Web Service Mgt."
         SmtpConf: Record "SMTP Mail Setup";
     begin
         //SMTP
-        SmtpConf.GET();
+        SmtpConf.Get();
         TempBlob.CreateOutStream(outStreamReport);
         TempBlob.CreateInStream(inStreamReport);
 
@@ -658,7 +658,7 @@ codeunit 50000 "Web Service Mgt."
         Report.SaveAs(ReportToSend, Parameters, ReportFormat::Pdf, outStreamReport, Recordr);
 
         //Create mail
-        CLEAR(Mail);
+        Clear(Mail);
         Mail.CreateMessage('Business Central Mailing System', SmtpConf."User ID", ToAddr, Subject, Body);
         Mail.AddAttachmentStream(inStreamReport, AttachmentName);
 

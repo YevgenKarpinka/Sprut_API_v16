@@ -120,6 +120,7 @@ codeunit 50001 "Prepayment Management"
         ResponceTokenLine: Text;
         jsonLines: JsonArray;
         LineToken: JsonToken;
+        crmLineID: Guid;
     begin
         //  to do
         // post to CRM for getting json with sales lines
@@ -132,7 +133,8 @@ codeunit 50001 "Prepayment Management"
             Qty := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.01);
             UnitPrice := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
             LineAmount := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
-            InsertNewSalesLine(SalesOrderNo, ItemNo, Qty, UnitPrice, LineAmount);
+            crmLineID := WebServicesMgt.GetJSToken(LineToken.AsObject(), 'crm_line_id').AsValue().AsText();
+            InsertNewSalesLine(SalesOrderNo, ItemNo, Qty, UnitPrice, LineAmount, crmLineID);
         end;
     end;
 
@@ -165,7 +167,7 @@ codeunit 50001 "Prepayment Management"
         exit(10000);
     end;
 
-    local procedure InsertNewSalesLine(SalesOrderNo: Code[20]; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal)
+    local procedure InsertNewSalesLine(SalesOrderNo: Code[20]; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal; crmLineID: Guid)
     var
         SalesLine: Record "Sales Line";
     begin
@@ -180,6 +182,8 @@ codeunit 50001 "Prepayment Management"
         SalesLine.Validate(Quantity, Qty);
         SalesLine.Validate("Unit Price", UnitPrice);
         SalesLine.Validate("Line Amount", LineAmount);
+        Evaluate(SalesLine."CRM ID", crmLineID);
+        SalesLine.Validate("CRM ID");
         SalesLine.Modify(true);
     end;
 

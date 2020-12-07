@@ -166,6 +166,20 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         Report.Run(Report::"UnApply Prep. Cust. Entry", true, true, _SalesHeader);
                     end;
                 }
+                action(OnPostSalesOrder)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'On Post Sales Order',
+                                RUS = 'On Post Sales Order';
+                    Image = ShowInventoryPeriods;
+
+                    trigger OnAction()
+                    var
+                        cmrAction: Codeunit "CRM Action API";
+                    begin
+                        cmrAction.OnPostSalesOrder(Rec."No.", 'Test01', 21.07);
+                    end;
+                }
             }
         }
     }

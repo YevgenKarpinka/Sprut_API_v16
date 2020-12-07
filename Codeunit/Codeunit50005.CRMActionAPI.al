@@ -54,6 +54,7 @@ codeunit 50005 "CRM Action API"
             SalesHeader."CRM Invoice No." := crmInvoiceId;
             SalesHeader.Modify();
             SalesHeader.Invoice := true;
+            SalesHeader.Ship := true;
             CODEUNIT.RUN(CODEUNIT::"Sales-Post", SalesHeader);
         end;
 

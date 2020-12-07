@@ -25,6 +25,11 @@ pageextension 50001 "Sales Order Subform Ext" extends "Sales Order Subform"
             {
                 ApplicationArea = All;
             }
+            field("CRM ID"; "CRM ID")
+            {
+                ApplicationArea = All;
+                Visible = false;
+            }
         }
     }
 
