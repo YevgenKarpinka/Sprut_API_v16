@@ -58,6 +58,16 @@ page 50001 "APIV2 - Customer Agreements"
                         RegisterFieldSet(Rec.FIELDNO("External Agreement No."));
                     end;
                 }
+                field(crmID; Rec."CRM ID")
+                {
+                    ApplicationArea = All;
+                    Caption = 'crmID', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO("CRM ID"));
+                    end;
+                }
                 field(active; Rec.Active)
                 {
                     ApplicationArea = All;

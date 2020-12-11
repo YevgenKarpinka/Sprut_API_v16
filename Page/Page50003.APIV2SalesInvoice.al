@@ -56,18 +56,24 @@ page 50003 "APIV2 - Sales Invoice"
                             Error(errPrepaymentInvoiceIsPosted, invoiceId);
                     end;
                 }
+                field(crmId; crmId)
+                {
+                    ApplicationArea = All;
+                    Caption = 'crmId', Locked = true;
+                    ShowMandatory = true;
+                }
                 field(prepaymentPercent; prepaymentPercent)
                 {
                     ApplicationArea = All;
                     Caption = 'prepaymentPercent', Locked = true;
                     ShowMandatory = true;
 
-                    trigger OnValidate()
-                    begin
-                        // GetSalesOrder(Rec."No.");
-                        if prepaymentPercent <= 0 then
-                            Error(errPrepaymentPercentCannotBeLessOrEqual, 0);
-                    end;
+                    // trigger OnValidate()
+                    // begin
+                    //     // GetSalesOrder(Rec."No.");
+                    //     if prepaymentPercent <= 0 then
+                    //         Error(errPrepaymentPercentCannotBeLessOrEqual, 0);
+                    // end;
                 }
                 field(prepaymentAmount; prepaymentAmount)
                 {
@@ -75,11 +81,11 @@ page 50003 "APIV2 - Sales Invoice"
                     Caption = 'prepaymentAmount', Locked = true;
                     ShowMandatory = true;
 
-                    trigger OnValidate()
-                    begin
-                        if prepaymentAmount <= 0 then
-                            ERROR(errBlankPrepaymentAmount);
-                    end;
+                    // trigger OnValidate()
+                    // begin
+                    //     if prepaymentAmount <= 0 then
+                    //         ERROR(errBlankPrepaymentAmount);
+                    // end;
                 }
             }
         }
@@ -103,7 +109,8 @@ page 50003 "APIV2 - Sales Invoice"
     begin
         if (prepaymentAmount <> 0)
         and (prepaymentPercent <> 0)
-        and (invoiceId <> '') then begin
+        and (invoiceId <> '')
+        and not IsNullGuid(crmId) then begin
             GetSalesOrder(Rec."No.");
             CreatePrepaymentInvoice(SalesHeader."No.");
             Rec := SalesHeader;
@@ -111,6 +118,10 @@ page 50003 "APIV2 - Sales Invoice"
             // while testing CRM
             // postedInvoiceNo := 'TEST_INVOICE_NO';
         end else begin
+            if invoiceId = '' then
+                Error(errBlankInvoiceId);
+            if IsNullGuid(crmId) then
+                Error(errCRM_IDisNullNotAllowed);
             if prepaymentAmount <= 0 then
                 ERROR(errBlankPrepaymentAmount);
             if prepaymentPercent <= 0 then
@@ -127,6 +138,7 @@ page 50003 "APIV2 - Sales Invoice"
         Currency: Record Currency;
         SalesHeader: Record "Sales Header";
         invoiceId: Text[50];
+        crmId: Guid;
         prepaymentPercent: Decimal;
         PrepaymentAmount: Decimal;
         TotalOrderAmount: Decimal;
@@ -139,6 +151,7 @@ page 50003 "APIV2 - Sales Invoice"
         errPrepaymentPercentCannotBeLessOrEqual: Label 'The "prepaymentPercent" cannot be less or equal %1.', Locked = true;
         errTotalAmountLessPrepaymentAmount: Label 'Total order amount less prepayment invoice amount.';
         errPrepaymentInvoiceIsPosted: Label 'Prepayment invoice %1 has already been created.';
+        errCRM_IDisNullNotAllowed: Label 'The blank "crmId" is not allowed.', Locked = true;
 
     procedure SetInit(_invoiceID: Text[50]; _prepaymentAmount: Decimal)
     begin
@@ -218,6 +231,7 @@ page 50003 "APIV2 - Sales Invoice"
 
         // update prepayment percent sales header
         SalesHeader."CRM Invoice No." := invoiceId;
+        SalesHeader."CRM ID" := crmId;
         SalesHeader.Validate("Prepayment %", PrepaymentPercent);
         SalesHeader.Modify();
 

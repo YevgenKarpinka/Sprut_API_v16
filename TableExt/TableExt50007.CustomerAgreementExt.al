@@ -7,6 +7,10 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
         {
             DataClassification = CustomerContent;
         }
+        field(50001; "CRM ID"; Guid)
+        {
+            DataClassification = CustomerContent;
+        }
     }
 
 }

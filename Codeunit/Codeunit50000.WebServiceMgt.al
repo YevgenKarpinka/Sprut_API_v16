@@ -540,14 +540,6 @@ codeunit 50000 "Web Service Mgt."
         exit(JSObjectLine);
     end;
 
-    // {
-    //     "tct_salesorderid@odata.bind": "/salesorders(446e2ca1-35a6-ea11-a812-000d3aba77ea)",
-    //     "tct_payerdetails": "test BC",
-    //     "tct_amount": 160.0000,
-    //     "tct_invoiceid@odata.bind": "/invoices(93dd43f3-e5a3-ea11-a812-000d3abaae50)",
-    //     "transactioncurrencyid@odata.bind": "/transactioncurrencies(d8b0ca73-7060-ea11-a811-000d3ab9be86)"
-    // }
-
     procedure jsonPaymentToPost(salesOrderId: Text[50]; invoiceId: Text[50]; payerDetails: Text[100]; paymentAmount: Decimal): JsonObject
     var
         JSObjectLine: JsonObject;
@@ -567,6 +559,14 @@ codeunit 50000 "Web Service Mgt."
         exit(JSObjectLine);
     end;
 
+    procedure jsonPaymentToPatch(): JsonObject
+    var
+        JSObjectLine: JsonObject;
+    begin
+        JSObjectLine.Add('statuscode', 0);
+        exit(JSObjectLine);
+    end;
+
     procedure AddCRMproductIdToItem(jsonText: Text)
     var
         locItem: Record Item;
@@ -578,7 +578,7 @@ codeunit 50000 "Web Service Mgt."
         ItemToken.ReadFrom(jsonText);
         if ItemToken.AsObject().Get('tct_bc_product_number', ItemToken2) then begin
             ItemNo := GetJSToken(ItemToken.AsObject(), 'tct_bc_product_number').AsValue().AsText();
-            CRMproductId := CopyStr(GetJSToken(ItemToken.AsObject(), 'productid').AsValue().AsText(), 1, MaxStrLen(locItem."CRM Item Id"));
+            CRMproductId := GetJSToken(ItemToken.AsObject(), 'productid').AsValue().AsText();
             if locItem.Get(ItemNo) then begin
                 locItem."CRM Item Id" := CRMproductId;
                 locItem.Modify();
@@ -586,21 +586,21 @@ codeunit 50000 "Web Service Mgt."
         end;
     end;
 
-    procedure AddCRMpaymentIdToPayment(jsonText: Text; EntryNo: Integer)
+    procedure AddCRMpaymentIdToPayment(jsonText: Text; crmInvoiceNo: Code[50])
     var
-        locCustLedgerEntry: Record "Cust. Ledger Entry";
-        ItemToken: JsonToken;
-        ItemToken2: JsonToken;
-        CRMpaymenttId: Text[50];
+        locDtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
+        PaymentToken: JsonToken;
+        PaymentToken2: JsonToken;
+        ItemNo: Text[20];
+        CRMpaymentId: Text[50];
     begin
-        ItemToken.ReadFrom(jsonText);
-        if ItemToken.AsObject().Get('tct_paymentid', ItemToken2) then begin
-            CRMpaymenttId := CopyStr(GetJSToken(ItemToken.AsObject(), 'tct_paymentid').AsValue().AsText(), 1,
-                                                MaxStrLen(locCustLedgerEntry."CRM Payment Id"));
-            if locCustLedgerEntry.Get(EntryNo) then begin
-                locCustLedgerEntry."CRM Payment Id" := CRMpaymenttId;
-                locCustLedgerEntry.Modify();
-            end;
+        PaymentToken.ReadFrom(jsonText);
+        if PaymentToken.AsObject().Get('tct_paymentid', PaymentToken2) then begin
+            CRMpaymentId := GetJSToken(PaymentToken.AsObject(), 'tct_paymentid').AsValue().AsText();
+
+            locDtldCustLedgEntry.SetCurrentKey("CRM Invoice No.");
+            locDtldCustLedgEntry.SetRange("CRM Invoice No.", crmInvoiceNo);
+            locDtldCustLedgEntry.ModifyAll("CRM Payment Id", CRMpaymentId);
         end;
     end;
 
@@ -664,5 +664,88 @@ codeunit 50000 "Web Service Mgt."
 
         //Send mail
         exit(Mail.Send());
+    end;
+
+    [EventSubscriber(ObjectType::Codeunit, 226, 'OnAfterPostUnapplyCustLedgEntry', '', false, false)]
+    local procedure OnAfterPostUnapplyCustLedgEntry(DetailedCustLedgEntry: Record "Detailed Cust. Ledg. Entry"; CustLedgerEntry: Record "Cust. Ledger Entry")
+    var
+        SalesInvHeader: Record "Sales Invoice Header";
+        CustAgreement: Record "Customer Agreement";
+    begin
+        if (DetailedCustLedgEntry."Entry Type" = DetailedCustLedgEntry."Entry Type"::Application)
+        and (DetailedCustLedgEntry."Document Type" = DetailedCustLedgEntry."Document Type"::Payment)
+        and (CustLedgerEntry."Document Type" = CustLedgerEntry."Document Type"::Invoice) then begin
+            if SalesInvHeader.Get(CustLedgerEntry."Document No.")
+            and (SalesInvHeader."CRM Invoice No." <> '') then begin
+                if CustAgreement.Get(SalesInvHeader."Sell-to Customer No.", SalesInvHeader."Agreement No.")
+                    and not IsNullGuid(CustAgreement."CRM ID") then
+                    // sent to CRM payment with amount equal 0
+                    SendPaymentToCRM(SalesInvHeader."CRM Header ID", '', 0, SalesInvHeader."CRM Invoice No.", SalesInvHeader."CRM ID", DetailedCustLedgEntry."CRM Payment Id");
+            end;
+        end;
+    end;
+
+    procedure SendPaymentToCRM(custAgreementId: Guid; PayerDetails: Text[100]; paymentAmount: Decimal; crmInvoiceNo: Text[50]; crmId: Guid; crmPaymentId: Guid)
+    var
+        _jsonErrorItemList: JsonArray;
+        _jsonPayment: JsonObject;
+        _jsonToken: JsonToken;
+        _jsonText: Text;
+        TotalCount: Integer;
+        Counter: Integer;
+        responseText: Text;
+        connectorCode: Label 'CRM';
+        entityType: Label 'tct_payments';
+        POSTrequestMethod: Label 'POST';
+        PATCHrequestMethod: Label 'PATCH';
+        TokenType: Text;
+        AccessToken: Text;
+        APIResult: Text;
+        requestMethod: Text[20];
+        entityTypeValue: Text;
+    begin
+
+        // >> init for test
+        custAgreementId := '446e2ca1-35a6-ea11-a812-000d3aba77ea';
+        crmId := '93dd43f3-e5a3-ea11-a812-000d3abaae50';
+        payerDetails := 'test payment from BC';
+        paymentAmount := 155;
+        // <<
+
+        Counter := 0;
+        TotalCount := 1;
+
+        if not GetOauthToken(TokenType, AccessToken, APIResult) then begin
+            // loging error APIResult
+            _jsonPayment.ReadFrom(APIResult);
+            _jsonErrorItemList.Add(_jsonPayment);
+        end;
+
+        if _jsonErrorItemList.Count = 0 then begin
+
+            // Create JSON for CRM
+            if IsNullGuid(crmPaymentId) then begin
+                requestMethod := POSTrequestMethod;
+                entityTypeValue := entityType;
+                _jsonPayment := jsonPaymentToPost(custAgreementId, crmId, payerDetails, paymentAmount);
+            end else begin
+                requestMethod := PATCHrequestMethod;
+                entityTypeValue := StrSubstNo('%1(%2)', entityType, crmPaymentId);
+                _jsonPayment := jsonPaymentToPatch();
+            end;
+
+            _jsonPayment.WriteTo(_jsonText);
+            Counter += 1;
+
+            // try send to CRM
+            if not CreatePaymentInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText) then begin
+                _jsonErrorItemList.Add(_jsonPayment);
+                _jsonPayment.ReadFrom(_jsonText);
+                _jsonErrorItemList.Add(_jsonPayment);
+            end else
+                // add CRM product ID to Item
+                AddCRMpaymentIdToPayment(_jsonText, crmInvoiceNo);
+        end;
+        if _jsonErrorItemList.Count > 0 then;
     end;
 }

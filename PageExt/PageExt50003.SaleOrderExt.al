@@ -11,6 +11,21 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                 ToolTipML = ENU = 'Specifies Last Modified Date Time.',
                             RUS = 'Указывает на последнюю дату и время модификации.';
             }
+            field("CRM ID"; "CRM ID")
+            {
+                ApplicationArea = All;
+                Visible = false;
+            }
+            field("CRM Header ID"; "CRM Header ID")
+            {
+                ApplicationArea = All;
+                Visible = false;
+            }
+            field("CRM Source Type"; "CRM Source Type")
+            {
+                ApplicationArea = All;
+                Visible = false;
+            }
         }
 
     }

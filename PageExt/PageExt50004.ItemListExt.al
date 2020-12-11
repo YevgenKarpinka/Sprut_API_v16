@@ -66,7 +66,7 @@ pageextension 50004 "Item List Ext." extends "Item List"
                             if _Item.FindSet(false, false) then
                                 repeat
                                     // Create JSON for CRM
-                                    if _Item."CRM Item Id" <> '' then begin
+                                    if not IsNullGuid(_Item."CRM Item Id") then begin
                                         requestMethod := PATCHrequestMethod;
                                         _jsonItem := WebServiceMgt.jsonItemsToPatch(_Item."No.");
                                         entityTypeValue := StrSubstNo('%1(%2)', entityType, _Item."CRM Item Id");
@@ -147,7 +147,7 @@ pageextension 50004 "Item List Ext." extends "Item List"
                             if _Item.FindSet(false, false) then
                                 repeat
                                     // Create JSON for CRM
-                                    if _Item."CRM Item Id" <> '' then begin
+                                    if not IsNullGuid(_Item."CRM Item Id") then begin
                                         requestMethod := PATCHrequestMethod;
                                         _jsonItem := WebServiceMgt.jsonItemsToPatch(_Item."No.");
                                         entityTypeValue := StrSubstNo('%1(%2)', entityType, _Item."CRM Item Id");
@@ -316,7 +316,7 @@ pageextension 50004 "Item List Ext." extends "Item List"
 
                             IsSuccessStatusCode := true;
                             // try send to CRM
-                            if not WebServiceMgt.CreateProductInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText) then begin
+                            if not WebServiceMgt.CreatePaymentInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText) then begin
                                 _jsonErrorItemList.Add(_jsonPayment);
                                 _jsonPayment.ReadFrom(_jsonText);
                                 _jsonErrorItemList.Add(_jsonPayment);
