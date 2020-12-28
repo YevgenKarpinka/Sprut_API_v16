@@ -153,9 +153,10 @@ page 50003 "APIV2 - Sales Invoice"
         errPrepaymentInvoiceIsPosted: Label 'Prepayment invoice %1 has already been created.';
         errCRM_IDisNullNotAllowed: Label 'The blank "crmId" is not allowed.', Locked = true;
 
-    procedure SetInit(_invoiceID: Text[50]; _prepaymentAmount: Decimal)
+    procedure SetInit(_invoiceID: Text[50]; _prepaymentAmount: Decimal; _crmId: Guid)
     begin
         invoiceId := _invoiceID;
+        crmId := _crmId;
         prepaymentAmount := _prepaymentAmount;
     end;
 

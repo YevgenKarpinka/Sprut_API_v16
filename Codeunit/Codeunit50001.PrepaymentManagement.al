@@ -133,7 +133,7 @@ codeunit 50001 "Prepayment Management"
             Qty := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.01);
             UnitPrice := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
             LineAmount := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
-            crmLineID := WebServicesMgt.GetJSToken(LineToken.AsObject(), 'crm_line_id').AsValue().AsText();
+            crmLineID := WebServicesMgt.GetJSToken(LineToken.AsObject(), 'CRM_ID').AsValue().AsText();
             InsertNewSalesLine(SalesOrderNo, ItemNo, Qty, UnitPrice, LineAmount, crmLineID);
         end;
     end;
@@ -141,6 +141,7 @@ codeunit 50001 "Prepayment Management"
     procedure CreatePrepaymentInvoicesFromCRM(SalesOrderNo: Code[20]; responseText: Text);
     var
         invoiceID: Text[50];
+        crmId: Guid;
         API_SalesInvoice: Page "APIV2 - Sales Invoice";
         PrepmInvAmount: Decimal;
         jsonPrepmInv: JsonArray;
@@ -151,7 +152,8 @@ codeunit 50001 "Prepayment Management"
         foreach PrepmInvToken in jsonPrepmInv do begin
             invoiceID := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
             PrepmInvAmount := Round(WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
-            API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount);
+            crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'CRM_ID').AsValue().AsText();
+            API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId);
             API_SalesInvoice.CreatePrepaymentInvoice(SalesOrderNo);
         end;
     end;

@@ -88,11 +88,13 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     var
                         invoiceID: Text[50];
                         prepaymentAmount: Decimal;
+                        crmId: Guid;
                         API_SalesInvoice: Page "APIV2 - Sales Invoice";
                     begin
                         invoiceID := 'INV-01942-D4F6G1';
                         prepaymentAmount := 2270;
-                        API_SalesInvoice.SetInit(invoiceID, prepaymentAmount);
+                        crmId := '12b095da-4e2a-eb11-a813-000d3aba77ea';
+                        API_SalesInvoice.SetInit(invoiceID, prepaymentAmount, crmId);
                         API_SalesInvoice.CreatePrepaymentInvoice("No.");
                     end;
                 }
