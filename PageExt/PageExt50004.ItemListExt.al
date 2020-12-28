@@ -11,6 +11,12 @@ pageextension 50004 "Item List Ext." extends "Item List"
                 ToolTipML = ENU = 'Specifies CRM Item Id.',
                             RUS = 'Соответствует ID товара в CRM.';
             }
+            field("1C Path"; "1C Path")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies 1C Path.',
+                            RUS = 'Определяет путь в 1C.';
+            }
         }
     }
 
