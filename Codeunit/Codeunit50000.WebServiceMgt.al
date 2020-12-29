@@ -9,13 +9,6 @@ codeunit 50000 "Web Service Mgt."
         errHeaderAmountNotEqualSumsLinesAmount: Label 'Sales header amount %1 not equal sums sales lines amount %2';
         errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount: Label 'Sales order amount %1 can not be less prepayment invoices amount %2';
 
-    /// <summary> 
-    /// Description for ConnectToCRM.
-    /// </summary>
-    /// <param name="connectorCode">Parameter of type Code[20].</param>
-    /// <param name="entityType">Parameter of type Text[20].</param>
-    /// <param name="requestMethod">Parameter of type Code[20].</param>
-    /// <returns>Return variable "Boolean".</returns>
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]; var Body: Text): Boolean
     var
         tokenType: Text;
@@ -76,6 +69,41 @@ codeunit 50000 "Web Service Mgt."
     begin
         JSObjectBody.Add('document_no', SalesOrderNo);
         JSObjectBody.WriteTo(Body);
+    end;
+
+    procedure SetInvoicesLineIdToCRM(SalesOrderNo: Code[20]; entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
+    begin
+        // for testing
+        // SalesOrderNo := 'ПРЗК-20-00053';
+
+        SetBodyFromSalesOrderNo(SalesOrderNo, Body);
+        if StrLen(Body) = 0 then exit(false);
+
+        if not GetEntity(entityType, requestMethod, Body) then
+            exit(false);
+        exit(true);
+    end;
+
+    local procedure SetBodyFromSalesOrderNo(SalesOrderNo: Code[20]; var Body: Text)
+    var
+        locSalesLine: Record "Sales Line";
+        JSObjectBody: JsonArray;
+        JSObjectLine: JsonObject;
+    begin
+        locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
+        locSalesLine.SetRange("Document No.", SalesOrderNo);
+        if locSalesLine.FindSet(false, false) then begin
+            repeat
+                Clear(JSObjectLine);
+                JSObjectLine.Add('Line_No', locSalesLine."Line No.");
+                JSObjectLine.Add('CRM_ID', locSalesLine."CRM ID");
+
+                JSObjectBody.Add(JSObjectLine);
+            until locSalesLine.Next() = 0;
+
+            JSObjectLine.Add('Lines', JSObjectBody);
+            JSObjectBody.WriteTo(Body);
+        end;
     end;
 
     local procedure GetEntity(entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
@@ -604,7 +632,7 @@ codeunit 50000 "Web Service Mgt."
         end;
     end;
 
-    local procedure SendToEmail(SalesOrderNo: Code[20])
+    procedure SendToEmail(SalesOrderNo: Code[20])
     var
         recUser: Record User;
         ToAddr: List of [Text];

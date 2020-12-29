@@ -13,8 +13,10 @@ codeunit 50006 "Task Modify Order"
         SalesPostPrepm: Codeunit "Sales-Post Prepayments Sprut";
         SpecificationResponseText: Text;
         InvoicesResponseText: Text;
+        BCIdResponseText: Text;
         SpecEntityType: Label 'specification';
         InvEntityType: Label 'invoice';
+        BCIdEntityType: Label 'bcid';
         POSTrequestMethod: Label 'POST';
 
     local procedure Execute()
@@ -60,6 +62,8 @@ codeunit 50006 "Task Modify Order"
                 begin
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
+                    WebServicesMgt.SetInvoicesLineIdToCRM(recTaskModifyOrder."Order No.", BCIdEntityType, POSTrequestMethod, BCIdResponseText);
+
                     // modify task status to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnSendToEmail);
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
@@ -68,11 +72,10 @@ codeunit 50006 "Task Modify Order"
                 begin
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
-
+                    WebServicesMgt.SendToEmail(recTaskModifyOrder."Order No.");
                     // https://community.dynamics.com/business/f/dynamics-365-business-central-forum/383532/smtp-mail-setup-with-mfa-not-working-with-o365
                     // https://robertostefanettinavblog.com/2020/06/15/business-central-send-email-with-multi-attachments/
                     // https://yzhums.com/1799/
-
 
                     // modify task status to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::Done);
