@@ -41,6 +41,53 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                             RUS = 'Sprut';
                 Image = Prepayment;
 
+                // >>
+                action(OnModifyOrder)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'OnModifyOrder',
+                                RUS = 'OnModifyOrder';
+                    Image = MakeOrder;
+
+                    trigger OnAction()
+                    var
+                        TaskModifyOrder: Codeunit "Task Modify Order";
+                    begin
+                        TaskModifyOrder.OnModifyOrder(Rec."No.");
+                    end;
+                }
+
+                action(OnSendToCRM)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'OnSendToCRM',
+                                RUS = 'OnSendToCRM';
+                    Image = SendConfirmation;
+
+                    trigger OnAction()
+                    var
+                        BCIdResponseText: Text;
+                        BCIdEntityType: Label 'bcid';
+                        POSTrequestMethod: Label 'POST';
+                    begin
+                        WebServicesMgt.SetInvoicesLineIdToCRM(Rec."No.", BCIdEntityType, POSTrequestMethod, BCIdResponseText);
+                    end;
+                }
+
+                // <<
+                action(OnSendToEmail)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'OnSendToEmail',
+                                RUS = 'OnSendToEmail';
+                    Image = SendEmailPDF;
+
+                    trigger OnAction()
+                    begin
+                        WebServicesMgt.SendToEmail(Rec."No.");
+                    end;
+                }
+
                 action(PostPrepaymentInvoiceSprut)
                 {
                     ApplicationArea = All;

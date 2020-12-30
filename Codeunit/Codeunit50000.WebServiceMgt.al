@@ -95,14 +95,15 @@ codeunit 50000 "Web Service Mgt."
         if locSalesLine.FindSet(false, false) then begin
             repeat
                 Clear(JSObjectLine);
-                JSObjectLine.Add('Line_No', locSalesLine."Line No.");
-                JSObjectLine.Add('CRM_ID', locSalesLine."CRM ID");
+                JSObjectLine.Add('Line_No', Format(locSalesLine."Line No."));
+                JSObjectLine.Add('CRM_ID', DelChr(LowerCase(locSalesLine."CRM ID"), '<>', '{}'));
 
                 JSObjectBody.Add(JSObjectLine);
             until locSalesLine.Next() = 0;
 
+            Clear(JSObjectLine);
             JSObjectLine.Add('Lines', JSObjectBody);
-            JSObjectBody.WriteTo(Body);
+            JSObjectLine.WriteTo(Body);
         end;
     end;
 
@@ -395,6 +396,7 @@ codeunit 50000 "Web Service Mgt."
         // {{resource}}/api/data/v{{version}}/{{entityType}}
         webAPI_URL: Label '%1/api/data/v%2/%3';
         resource: Label 'https://org3baffe0c.crm4.dynamics.com';
+        // resource: Label 'https://sprut.crm4.dynamics.com';
         version: Label '9.1';
         Accept: Label 'Accept';
         Prefer: Label 'Prefer';
@@ -439,6 +441,7 @@ codeunit 50000 "Web Service Mgt."
         ClientId: Label 'a125243e-de60-41fb-b6f2-1795601fcea9';
         ClientSecret: Label 'A6-595SrEw0DPBT4-_1Uw-l3eL4ETar~-7';
         Resource: Label 'https://org3baffe0c.crm4.dynamics.com';
+        // Resource: Label 'https://sprut.crm4.dynamics.com';
         RequestBody: Label 'grant_type=client_credentials&client_id=%1&client_secret=%2&resource=%3';
         HttpClient: HttpClient;
         RequestMessage: HttpRequestMessage;
@@ -638,9 +641,9 @@ codeunit 50000 "Web Service Mgt."
         ToAddr: List of [Text];
         SalesHeader: Record "Sales Header";
         RecRef: RecordRef;
-        text001: Label 'Email Sended';
-        text002: Label 'Email address not present, go to User page and fill Contact Email field.';
-        text003: Label 'User not identified';
+        text001: Label 'Почта отослана';
+        text002: Label 'Почтовый адрес не заполнен, перейдите на страницу пользователя и заполните поле Почта для контакта';
+        text003: Label 'Пользователь не идентифицирован';
     begin
         //read user email config
         recUser.Reset();
@@ -652,12 +655,13 @@ codeunit 50000 "Web Service Mgt."
                 ToAddr.Add(recUser."Contact Email");   //contact email on User
                 SalesHeader.SetRange("Document Type", SalesHeader."Document Type"::Order);
                 SalesHeader.SetRange("No.", SalesOrderNo);
+                SalesHeader.FindFirst();
                 Clear(RecRef);
                 RecRef.GetTable(SalesHeader);
 
                 //send
                 // ReportSendMail(ReportToSend: Integer; Recordr: RecordRef; ToAddr: List of [Text]; Subject: Text[100]; Body: Text[100]; AttachmentName: Text[100])
-                if ReportSendMail(50000, RecRef, ToAddr, SalesHeader."No.", 'Sales Prepayment Invoices for Sales Order ' + SalesHeader."No.", SalesHeader."No." + '_' + SalesHeader."Sell-to Customer Name" + '_PrepmInv' + '.pdf') then
+                if ReportSendMail(50000, RecRef, ToAddr, SalesHeader."No.", 'Счет продажи на предоплату для заказа продажи ' + SalesHeader."No.", SalesHeader."No." + '_' + SalesHeader."Sell-to Customer Name" + '_СчетПредопл' + '.pdf') then
                     Message(text001);
             end
             else

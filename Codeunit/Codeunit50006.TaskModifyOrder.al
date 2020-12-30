@@ -28,30 +28,32 @@ codeunit 50006 "Task Modify Order"
                 begin
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
-                    // analyze need full update sales order or not
-                    if WebServicesMgt.NeedFullUpdateSalesOrder(recTaskModifyOrder."Order No.") then begin
+                    OnModifyOrder(recTaskModifyOrder."Order No.");
 
-                        // unapply prepayments
-                        PrepmMgt.UnApplyPayments(recTaskModifyOrder."Order No.");
-                        // Open Sales Order
-                        OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
-                        // create credit memo for prepayment invoice
-                        if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
-                            SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
-                        // Get Specification From CRM
-                        WebServicesMgt.GetSpecificationFromCRM(recTaskModifyOrder."Order No.", SpecEntityType, POSTrequestMethod, SpecificationResponseText);
-                        // Open Sales Order
-                        OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
-                        // delete all sales lines
-                        PrepmMgt.OnDeleteSalesOrderLine(recTaskModifyOrder."Order No.");
-                        // insert sales line
-                        PrepmMgt.InsertSalesLineFromCRM(recTaskModifyOrder."Order No.", SpecificationResponseText);
-                        // Get Invoices From CRM
-                        WebServicesMgt.GetInvoicesFromCRM(recTaskModifyOrder."Order No.", InvEntityType, POSTrequestMethod, InvoicesResponseText);
-                        // create prepayment invoice by amount
-                        PrepmMgt.CreatePrepaymentInvoicesFromCRM(recTaskModifyOrder."Order No.", InvoicesResponseText);
+                    // // analyze need full update sales order or not
+                    // if WebServicesMgt.NeedFullUpdateSalesOrder(recTaskModifyOrder."Order No.") then begin
 
-                    end;
+                    //     // unapply prepayments
+                    //     PrepmMgt.UnApplyPayments(recTaskModifyOrder."Order No.");
+                    //     // Open Sales Order
+                    //     OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
+                    //     // create credit memo for prepayment invoice
+                    //     if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
+                    //         SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
+                    //     // Get Specification From CRM
+                    //     WebServicesMgt.GetSpecificationFromCRM(recTaskModifyOrder."Order No.", SpecEntityType, POSTrequestMethod, SpecificationResponseText);
+                    //     // Open Sales Order
+                    //     OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
+                    //     // delete all sales lines
+                    //     PrepmMgt.OnDeleteSalesOrderLine(recTaskModifyOrder."Order No.");
+                    //     // insert sales line
+                    //     PrepmMgt.InsertSalesLineFromCRM(recTaskModifyOrder."Order No.", SpecificationResponseText);
+                    //     // Get Invoices From CRM
+                    //     WebServicesMgt.GetInvoicesFromCRM(recTaskModifyOrder."Order No.", InvEntityType, POSTrequestMethod, InvoicesResponseText);
+                    //     // create prepayment invoice by amount
+                    //     PrepmMgt.CreatePrepaymentInvoicesFromCRM(recTaskModifyOrder."Order No.", InvoicesResponseText);
+
+                    // end;
 
                     // modify task statuses to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnSendToCRM);
@@ -85,6 +87,36 @@ codeunit 50006 "Task Modify Order"
         end;
     end;
 
+    procedure OnModifyOrder(SalesOrderNo: Code[20])
+    var
+        SalesHeader: Record "Sales Header";
+    begin
+        // analyze need full update sales order or not
+        // if WebServicesMgt.NeedFullUpdateSalesOrder(SalesOrderNo) then begin
+
+        // unapply prepayments
+        PrepmMgt.UnApplyPayments(SalesOrderNo);
+        // Open Sales Order
+        OpenSalesOrder(SalesHeader, SalesOrderNo);
+        // create credit memo for prepayment invoice
+        if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
+            SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
+        // Get Specification From CRM
+        WebServicesMgt.GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
+        // Open Sales Order
+        OpenSalesOrder(SalesHeader, SalesOrderNo);
+        // delete all sales lines
+        PrepmMgt.OnDeleteSalesOrderLine(SalesOrderNo);
+        // insert sales line
+        PrepmMgt.InsertSalesLineFromCRM(SalesOrderNo, SpecificationResponseText);
+        // Get Invoices From CRM
+        WebServicesMgt.GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+        // create prepayment invoice by amount
+        PrepmMgt.CreatePrepaymentInvoicesFromCRM(SalesOrderNo, InvoicesResponseText);
+
+        // end;
+    end;
+
     local procedure ModifyTaskStatusToNextLevel(NextTaskStatus: Enum TaskStatus)
     begin
         recTaskModifyOrder.Status := NextTaskStatus;
@@ -93,10 +125,7 @@ codeunit 50006 "Task Modify Order"
         recTaskModifyOrder.Modify(true);
     end;
 
-    local procedure OpenSalesOrder(var SalesHeader:
-                                           Record "Sales Header";
-    SalesOrderNo:
-        Code[20])
+    local procedure OpenSalesOrder(var SalesHeader: Record "Sales Header"; SalesOrderNo: Code[20])
     begin
         SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
         if SalesHeader.Status <> SalesHeader.Status::Open then begin

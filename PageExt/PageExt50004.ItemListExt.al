@@ -101,9 +101,9 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         if _jsonErrorItemList.Count > 0 then begin
                             _jsonErrorItemList.WriteTo(_jsonText);
                             CaptionMgt.SaveStreamToFile(_jsonText, 'errorItemList.txt');
-                            Message(msgSentWithError);
+                            Message(msgSentWithError, entityType);
                         end else
-                            Message(msgSentOk);
+                            Message(msgSentOk, entityType);
                     end;
                 }
                 action(SendAll)
@@ -132,11 +132,11 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         requestMethod: Text[20];
                         entityTypeValue: Text;
                     begin
-                        CurrPage.SetSelectionFilter(_Item);
+                        // CurrPage.SetSelectionFilter(_Item);
 
-                        if Confirm(cnfUpdateExistingItems, false) then begin
+                        if not Confirm(cnfUpdateExistingItems, false) then begin
                             _Item.SetCurrentKey("CRM Item Id");
-                            _Item.SetFilter("CRM Item Id", '=%1', '');
+                            _Item.SetFilter("CRM Item Id", '=%1', '00000000-0000-0000-0000-000000000000');
                         end;
 
                         Counter := 0;
