@@ -34,6 +34,8 @@ codeunit 50001 "Prepayment Management"
                                             RUS = 'Нельзя отменить операцию книги клиентов № %1, поскольку эта операция входит в состав сторнирования.';
         CannotUnapplyExchRateErr: TextConst ENU = 'You cannot unapply the entry with the posting date %1, because the exchange rate for the additional reporting currency has been changed.',
                                             RUS = 'Нельзя отменить операцию с датой учета %1, поскольку изменился курс дополнительной отчетной валюты.';
+        NoModificationRequiredOnSalesOrderErr: TextConst ENU = 'No modification required on sales order %1',
+                                            RUS = 'Заказу продажи %1 модификация не требуется ';
 
     [EventSubscriber(ObjectType::Codeunit, Codeunit::"Payment Registration Mgt.", 'OnBeforeGenJnlLineInsert', '', false, false)]
     local procedure UpdateAgreementNo(var GenJournalLine: Record "Gen. Journal Line"; TempPaymentRegistrationBuffer: Record "Payment Registration Buffer" temporary)
@@ -66,9 +68,10 @@ codeunit 50001 "Prepayment Management"
     begin
         // Check Specification Amount
         // check modification sales order need
-        if WebServicesMgt.GetSpecificationAndInvoice(SalesOrderNo, SpecificationResponseText, InvoicesResponseText) then
-            // Create Task Modify Order
-            TaskModifyOrder.CreateTaskModifyOrder(SalesOrderNo);
+        if not WebServicesMgt.GetSpecificationAndInvoice(SalesOrderNo, SpecificationResponseText, InvoicesResponseText) then
+            Error(NoModificationRequiredOnSalesOrderErr, SalesOrderNo);
+        // Create Task Modify Order
+        TaskModifyOrder.CreateTaskModifyOrder(SalesOrderNo);
     end;
 
     procedure OnModifySalesOrderOneLine(SalesOrderNo: Code[20])
@@ -122,7 +125,6 @@ codeunit 50001 "Prepayment Management"
         LineToken: JsonToken;
         crmLineID: Guid;
     begin
-        //  to do
         // post to CRM for getting json with sales lines
         ResponceTokenLine := WebServicesMgt.GetSpecificationLinesArray(responseText);
 
@@ -152,7 +154,9 @@ codeunit 50001 "Prepayment Management"
         foreach PrepmInvToken in jsonPrepmInv do begin
             invoiceID := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
             PrepmInvAmount := Round(WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
-            crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'CRM_ID').AsValue().AsText();
+            // to do 
+            // add to https://sprutapi.azurewebsites.net/api/invoice crm_Id
+            // crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'crm_Id').AsValue().AsText();
             API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId);
             API_SalesInvoice.CreatePrepaymentInvoice(SalesOrderNo);
         end;

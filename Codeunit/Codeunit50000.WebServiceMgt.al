@@ -6,8 +6,11 @@ codeunit 50000 "Web Service Mgt."
     end;
 
     var
+        IntegrationLog: Record "Integration Log";
         errHeaderAmountNotEqualSumsLinesAmount: Label 'Sales header amount %1 not equal sums sales lines amount %2';
         errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount: Label 'Sales order amount %1 can not be less prepayment invoices amount %2';
+        errReportNotSavedToPDF: Label 'Report %1 not saved to PDF';
+
 
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]; var Body: Text): Boolean
     var
@@ -96,7 +99,7 @@ codeunit 50000 "Web Service Mgt."
             repeat
                 Clear(JSObjectLine);
                 JSObjectLine.Add('Line_No', Format(locSalesLine."Line No."));
-                JSObjectLine.Add('CRM_ID', DelChr(LowerCase(locSalesLine."CRM ID"), '<>', '{}'));
+                JSObjectLine.Add('CRM_ID', LowerCase(DelChr(locSalesLine."CRM ID", '<>', '{}')));
 
                 JSObjectBody.Add(JSObjectLine);
             until locSalesLine.Next() = 0;
@@ -114,6 +117,7 @@ codeunit 50000 "Web Service Mgt."
         ContentTypeValue: Label 'application/json';
         Client: HttpClient;
         RequestMessage: HttpRequestMessage;
+        RequestBody: Text;
         ResponseMessage: HttpResponseMessage;
         RequestHeader: HttpHeaders;
         BaseURL: Text;
@@ -135,7 +139,12 @@ codeunit 50000 "Web Service Mgt."
         end;
 
         Client.Send(RequestMessage, ResponseMessage);
+        RequestBody := Body;
         ResponseMessage.Content.ReadAs(Body);
+
+        // Insert Operation to Log
+        IntegrationLog.InsertOperationToLog('CUSTOM_CRM_API', requestMethod, BaseURL, '', RequestBody, Body, ResponseMessage.IsSuccessStatusCode());
+
         exit(ResponseMessage.IsSuccessStatusCode);
     end;
 
@@ -268,19 +277,23 @@ codeunit 50000 "Web Service Mgt."
         ItemNo: Text[20];
         Qty: Decimal;
         UnitPrice: Decimal;
+        crmLineId: Guid;
         ResponceTokenLine: Text;
         jsonLines: JsonArray;
         LineToken: JsonToken;
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
-        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
-        SalesHeader.CalcFields("Amount Including VAT");
-
-        if SpecAmount <> SalesHeader."Amount Including VAT" then
-            exit(true);
 
         ResponceTokenLine := GetSpecificationLinesArray(ResponceToken);
         jsonLines.ReadFrom(ResponceTokenLine);
+
+        SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
+        SalesLine.SetRange("Document No.", SalesOrderNo);
+        if SalesLine.FindSet(false, false) then
+            repeat
+                SalesLine.Mark(true);
+            until SalesLine.Next() = 0;
+
         foreach LineToken in jsonLines do begin
             if GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then
                 exit(true);
@@ -290,31 +303,51 @@ codeunit 50000 "Web Service Mgt."
             Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
             UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
             SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
+            crmLineId := GetJSToken(LineToken.AsObject(), 'CRM_ID').AsValue().AsText();
 
             if not SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then exit(true);
             if SalesLine."No." <> ItemNo then exit(true);
-            if SalesLine.Quantity < Qty then exit(true);
-            if SalesLine."Unit Price" < UnitPrice then exit(true);
-            if SalesLine."Line Amount" < SpecLineAmount then exit(true);
+            if SalesLine.Quantity <> Qty then exit(true);
+            if SalesLine."Unit Price" <> UnitPrice then exit(true);
+            if SalesLine."Line Amount" <> SpecLineAmount then exit(true);
+            if (UpperCase(DelChr(SalesLine."CRM ID", '<>', '{}')) <> UpperCase(crmLineId)) and not IsNullGuid(crmLineId) then begin
+                SalesLine.Validate("CRM ID", crmLineId);
+                SalesLine.Modify(true);
+            end;
+            SalesLine.Mark(false);
         end;
 
-        foreach LineToken in jsonLines do begin
-            LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
-            ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
-            Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
-            UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
-            SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
+        SalesLine.MarkedOnly(true);
+        if SalesLine.FindSet(false, false) then
+            repeat
+                if SalesLine."Prepmt. Amt. Inv." <> 0 then exit(true);
+            until SalesLine.Next() = 0;
+        SalesLine.DeleteAll(true);
 
-            SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo);
-            if SalesLine.Quantity <> Qty then
-                SalesLine.Validate(Quantity, Qty);
-            if SalesLine."Unit Price" <> UnitPrice then
-                SalesLine.Validate("Unit Price", UnitPrice);
-            if SalesLine."Line Amount" <> SpecLineAmount then
-                SalesLine.Validate("Line Amount", SpecLineAmount);
-            SalesLine.Modify(true);
-        end;
+        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
+        SalesHeader.CalcFields("Amount Including VAT");
 
+        if SpecAmount <> SalesHeader."Amount Including VAT" then
+            exit(true);
+
+        // foreach LineToken in jsonLines do begin
+        //     LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
+        //     ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+        //     Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
+        //     UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
+        //     SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
+
+        //     SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo);
+        //     if SalesLine.Quantity <> Qty then
+        //         SalesLine.Validate(Quantity, Qty);
+        //     if SalesLine."Unit Price" <> UnitPrice then
+        //         SalesLine.Validate("Unit Price", UnitPrice);
+        //     if SalesLine."Line Amount" <> SpecLineAmount then
+        //         SalesLine.Validate("Line Amount", SpecLineAmount);
+        //     if (SalesLine."CRM ID" <> crmLineId) and not IsNullGuid(crmLineId) then
+        //         SalesLine.Validate("CRM ID", crmLineId);
+        //     SalesLine.Modify(true);
+        // end;
 
         exit(false);
     end;
@@ -378,7 +411,7 @@ codeunit 50000 "Web Service Mgt."
             PrepmInvAmount := Round(GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
 
             SalesInvHeader.SetRange("CRM Invoice No.", invoiceID);
-            if SalesInvHeader.FindSet() then
+            if SalesInvHeader.FindSet(false, false) then
                 repeat
                     SalesInvHeader.CalcFields("Amount Including VAT");
                     bcPrepmInvAmount += SalesInvHeader."Amount Including VAT";
@@ -407,6 +440,7 @@ codeunit 50000 "Web Service Mgt."
         ContentTypeValue: Label 'application/json';
         Client: HttpClient;
         RequestMessage: HttpRequestMessage;
+        RequestBody: Text;
         ResponseMessage: HttpResponseMessage;
         RequestHeader: HttpHeaders;
         BaseURL: Text;
@@ -431,7 +465,11 @@ codeunit 50000 "Web Service Mgt."
         end;
 
         Client.Send(RequestMessage, ResponseMessage);
+        RequestBody := Body;
         ResponseMessage.Content.ReadAs(Body);
+
+        // Insert Operation to Log
+        IntegrationLog.InsertOperationToLog('STANDART_CRM_API', requestMethod, BaseURL, '', RequestBody, Body, ResponseMessage.IsSuccessStatusCode());
         exit(ResponseMessage.IsSuccessStatusCode);
     end;
 
@@ -455,7 +493,7 @@ codeunit 50000 "Web Service Mgt."
         webAPI_URL: Label '%1/api/data/v%2/%3';
         version: Label '9.1';
         Accept: Label 'application/json';
-        BaseURL: Text;
+        // BaseURL: Text;
         Authorization: Text;
         ErrorMessage: Text;
         MethodPOST: Label 'POST';
@@ -480,6 +518,9 @@ codeunit 50000 "Web Service Mgt."
         RequestMessage.Content(Content);
         HttpClient.Send(RequestMessage, ResponseMessage);
         ResponseMessage.Content().ReadAs(APIResult);
+
+        // Insert Operation to Log
+        IntegrationLog.InsertOperationToLog('GETAUTH_CRM_API', MethodPOST, TokenURL, Authorization, RequestBody, APIResult, ResponseMessage.IsSuccessStatusCode());
 
         if ResponseMessage.IsSuccessStatusCode() then begin
             GetTokenFromResponse(APIResult, TokenType, AccessToken);
@@ -640,10 +681,11 @@ codeunit 50000 "Web Service Mgt."
         recUser: Record User;
         ToAddr: List of [Text];
         SalesHeader: Record "Sales Header";
+        DataTypeMgt: Codeunit "Data Type Management";
         RecRef: RecordRef;
         text001: Label 'Почта отослана';
-        text002: Label 'Почтовый адрес не заполнен, перейдите на страницу пользователя и заполните поле Почта для контакта';
-        text003: Label 'Пользователь не идентифицирован';
+        text002: Label 'Почтовый адрес %1 не заполнен, перейдите на страницу пользователя и заполните поле Почта для контакта';
+        text003: Label 'Пользователь %1 не идентифицирован';
     begin
         //read user email config
         recUser.Reset();
@@ -656,19 +698,21 @@ codeunit 50000 "Web Service Mgt."
                 SalesHeader.SetRange("Document Type", SalesHeader."Document Type"::Order);
                 SalesHeader.SetRange("No.", SalesOrderNo);
                 SalesHeader.FindFirst();
-                Clear(RecRef);
-                RecRef.GetTable(SalesHeader);
+                // Clear(RecRef);
+                DataTypeMgt.GetRecordRef(SalesHeader, RecRef);
+                // RecRef.GetTable(SalesHeader);
 
                 //send
                 // ReportSendMail(ReportToSend: Integer; Recordr: RecordRef; ToAddr: List of [Text]; Subject: Text[100]; Body: Text[100]; AttachmentName: Text[100])
-                if ReportSendMail(50000, RecRef, ToAddr, SalesHeader."No.", 'Счет продажи на предоплату для заказа продажи ' + SalesHeader."No.", SalesHeader."No." + '_' + SalesHeader."Sell-to Customer Name" + '_СчетПредопл' + '.pdf') then
-                    Message(text001);
+                if ReportSendMail(12409, RecRef, ToAddr, SalesHeader."No.", 'Не примененные документы для заказа продажи ' + SalesHeader."No.", SalesHeader."No." + '_СчетПредопл' + '.pdf') then
+                    if GuiAllowed then
+                        Message(text001);
             end
             else
-                Message(text002);
+                Error(text002, UserId);
         end
         else
-            Message(text003);
+            Error(text003, UserId);
     end;
 
     local procedure ReportSendMail(ReportToSend: Integer; Recordr: RecordRef; ToAddr: List of [Text]; Subject: Text[100]; Body: Text[100]; AttachmentName: Text[100]): Boolean
@@ -677,7 +721,7 @@ codeunit 50000 "Web Service Mgt."
         inStreamReport: InStream;
         Parameters: Text;
         tempBlob: Codeunit "Temp Blob";
-        Base64EncodedString: Text;
+        Base64EncodedString: Integer;
         Mail: Codeunit "SMTP Mail";
         SmtpConf: Record "SMTP Mail Setup";
     begin
@@ -687,11 +731,13 @@ codeunit 50000 "Web Service Mgt."
         TempBlob.CreateInStream(inStreamReport);
 
         //Print Report
-        Report.SaveAs(ReportToSend, Parameters, ReportFormat::Pdf, outStreamReport, Recordr);
-
+        // if Report.SaveAs(ReportToSend, Parameters, ReportFormat::Pdf, outStreamReport, Recordr) then
+        if Report.SaveAs(ReportToSend, Parameters, ReportFormat::Pdf, outStreamReport, Recordr) then
+            Error(errReportNotSavedToPDF, ReportToSend);
+        Base64EncodedString := TempBlob.Length();
         //Create mail
-        Clear(Mail);
-        Mail.CreateMessage('Business Central Mailing System', SmtpConf."User ID", ToAddr, Subject, Body);
+        // Clear(Mail);
+        Mail.CreateMessage('Почтовая система Business Central', SmtpConf."User ID", ToAddr, Subject, Body);
         Mail.AddAttachmentStream(inStreamReport, AttachmentName);
 
         //Send mail

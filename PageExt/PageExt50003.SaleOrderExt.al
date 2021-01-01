@@ -70,7 +70,8 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         BCIdEntityType: Label 'bcid';
                         POSTrequestMethod: Label 'POST';
                     begin
-                        WebServicesMgt.SetInvoicesLineIdToCRM(Rec."No.", BCIdEntityType, POSTrequestMethod, BCIdResponseText);
+                        if not WebServicesMgt.SetInvoicesLineIdToCRM(Rec."No.", BCIdEntityType, POSTrequestMethod, BCIdResponseText) then
+                            Error(BCIdResponseText);
                     end;
                 }
 
@@ -83,8 +84,11 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     Image = SendEmailPDF;
 
                     trigger OnAction()
+                    var
+                        PDFToEmail: Codeunit "Email Invoice As PDF Method";
                     begin
                         WebServicesMgt.SendToEmail(Rec."No.");
+                        PDFToEmail.UnApplyDocToAccounter(Rec."No.");
                     end;
                 }
 

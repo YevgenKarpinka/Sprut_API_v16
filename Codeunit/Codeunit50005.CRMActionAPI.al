@@ -15,7 +15,8 @@ codeunit 50005 "CRM Action API"
         SalesHeader: Record "Sales Header";
     begin
         SalesHeader.Get(SalesHeader."Document Type"::Order, salesOrderId);
-        exit(StrSubstNo(msgSalesOrderGetIsOk, sourceType, SalesHeader."No."));
+        // for test
+        // exit(StrSubstNo(msgSalesOrderGetIsOk, sourceType, SalesHeader."No."));
 
         case sourceType of
             'Specification', 'Invoice':

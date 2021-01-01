@@ -11,6 +11,7 @@ codeunit 50006 "Task Modify Order"
         WebServicesMgt: Codeunit "Web Service Mgt.";
         PrepmMgt: Codeunit "Prepayment Management";
         SalesPostPrepm: Codeunit "Sales-Post Prepayments Sprut";
+        PDFToEmail: Codeunit "Email Invoice As PDF Method";
         SpecificationResponseText: Text;
         InvoicesResponseText: Text;
         BCIdResponseText: Text;
@@ -74,7 +75,8 @@ codeunit 50006 "Task Modify Order"
                 begin
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
-                    WebServicesMgt.SendToEmail(recTaskModifyOrder."Order No.");
+                    // WebServicesMgt.SendToEmail(recTaskModifyOrder."Order No.");
+                    PDFToEmail.UnApplyDocToAccounter(recTaskModifyOrder."Order No.");
                     // https://community.dynamics.com/business/f/dynamics-365-business-central-forum/383532/smtp-mail-setup-with-mfa-not-working-with-o365
                     // https://robertostefanettinavblog.com/2020/06/15/business-central-send-email-with-multi-attachments/
                     // https://yzhums.com/1799/
@@ -92,29 +94,29 @@ codeunit 50006 "Task Modify Order"
         SalesHeader: Record "Sales Header";
     begin
         // analyze need full update sales order or not
-        // if WebServicesMgt.NeedFullUpdateSalesOrder(SalesOrderNo) then begin
+        if WebServicesMgt.NeedFullUpdateSalesOrder(SalesOrderNo) then begin
 
-        // unapply prepayments
-        PrepmMgt.UnApplyPayments(SalesOrderNo);
-        // Open Sales Order
-        OpenSalesOrder(SalesHeader, SalesOrderNo);
-        // create credit memo for prepayment invoice
-        if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
-            SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
-        // Get Specification From CRM
-        WebServicesMgt.GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
-        // Open Sales Order
-        OpenSalesOrder(SalesHeader, SalesOrderNo);
-        // delete all sales lines
-        PrepmMgt.OnDeleteSalesOrderLine(SalesOrderNo);
-        // insert sales line
-        PrepmMgt.InsertSalesLineFromCRM(SalesOrderNo, SpecificationResponseText);
-        // Get Invoices From CRM
-        WebServicesMgt.GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
-        // create prepayment invoice by amount
-        PrepmMgt.CreatePrepaymentInvoicesFromCRM(SalesOrderNo, InvoicesResponseText);
+            // unapply prepayments
+            PrepmMgt.UnApplyPayments(SalesOrderNo);
+            // Open Sales Order
+            OpenSalesOrder(SalesHeader, SalesOrderNo);
+            // create credit memo for prepayment invoice
+            if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
+                SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
+            // Get Specification From CRM
+            WebServicesMgt.GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
+            // Open Sales Order
+            OpenSalesOrder(SalesHeader, SalesOrderNo);
+            // delete all sales lines
+            PrepmMgt.OnDeleteSalesOrderLine(SalesOrderNo);
+            // insert sales line
+            PrepmMgt.InsertSalesLineFromCRM(SalesOrderNo, SpecificationResponseText);
+            // Get Invoices From CRM
+            WebServicesMgt.GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+            // create prepayment invoice by amount
+            PrepmMgt.CreatePrepaymentInvoicesFromCRM(SalesOrderNo, InvoicesResponseText);
 
-        // end;
+        end;
     end;
 
     local procedure ModifyTaskStatusToNextLevel(NextTaskStatus: Enum TaskStatus)
