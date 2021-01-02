@@ -17,12 +17,25 @@ codeunit 50007 "Email Invoice As PDF Method"
     var
         SalesHeader: Record "Sales Header";
     begin
+        if SendEmailUnApplyDocNotAllowed() then exit;
+
         SalesHeader.SetRange("Document Type", SalesHeader."Document Type"::Order);
         SalesHeader.SetRange("No.", SalesOrderNo);
         SalesHeader.FindFirst;
+
         EmailInvoiceAsPDF(SalesHeader);
         if GuiAllowed then
             Message(msgReportSendedToUser, 50000);
+    end;
+
+    local procedure SendEmailUnApplyDocNotAllowed(): Boolean
+    var
+        CompIntegr: Record "Company Integration";
+    begin
+        CompIntegr.SetCurrentKey("Company Name", "Send Email UnApply Doc.");
+        CompIntegr.SetRange("Company Name", CompanyName);
+        CompIntegr.SetRange("Send Email UnApply Doc.", true);
+        exit(CompIntegr.IsEmpty);
     end;
 
     procedure EmailInvoiceAsPDF(var SalesHeader: Record "Sales Header");
@@ -39,7 +52,7 @@ codeunit 50007 "Email Invoice As PDF Method"
         EmailSubject: Text;
         AttachmentName: Text;
         SmtpConf: Record "SMTP Mail Setup";
-        recUser: Record User;
+        // recUser: Record User;
         ToAddr: List of [Text];
         Body: Text;
         Base64EncodedString: Integer;
@@ -47,10 +60,8 @@ codeunit 50007 "Email Invoice As PDF Method"
         //SMTP
         SmtpConf.Get();
         CompanyInformation.Get;
-        recUser.SetFilter("User Security ID", UserSecurityId());
-        recUser.FindFirst();
-        recUser.TestField("Contact Email");
-        ToAddr.Add(recUser."Contact Email");
+
+        GetToAddresses(ToAddr);
 
         Body := StrSubstNo(lblBody, SalesHeader."No.");
         EmailSubject := StrSubstNo(TxtEmailSubject, CompanyInformation.Name, SalesHeader."No.");
@@ -65,6 +76,25 @@ codeunit 50007 "Email Invoice As PDF Method"
         SMTPMail.AddAttachmentStream(VarInStream, AttachmentName);
 
         SMTPMail.Send;
+    end;
+
+    local procedure GetToAddresses(var ToAddr: List of [Text])
+    var
+        recUserSetup: Record "User Setup";
+        recUser: Record User;
+    begin
+        recUserSetup.SetCurrentKey("Send Email UnApply Doc.");
+        recUserSetup.SetRange("Send Email UnApply Doc.", true);
+        recUserSetup.FindSet(false, false);
+        repeat
+            if recUserSetup."E-Mail" = '' then begin
+                recUser.SetFilter("User Security ID", UserSecurityId());
+                recUser.FindFirst();
+                recUser.TestField("Contact Email");
+                ToAddr.Add(recUser."Contact Email");
+            end else
+                ToAddr.Add(recUserSetup."E-Mail");
+        until recUserSetup.Next() = 0;
     end;
 
     local procedure SaveDocumentAsPDFToStream(DocumentVariant: Variant; var TempBlob: Codeunit "Temp Blob"): Boolean;

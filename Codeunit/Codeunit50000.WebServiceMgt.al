@@ -115,6 +115,8 @@ codeunit 50000 "Web Service Mgt."
         webAPI_URL: Label 'https://sprutapi.azurewebsites.net/api/%1';
         ContentType: Label 'Content-Type';
         ContentTypeValue: Label 'application/json';
+        EnvironmentType: Label 'Environment';
+        EnvironmentTypeValue: Label 'Production';
         Client: HttpClient;
         RequestMessage: HttpRequestMessage;
         RequestBody: Text;
@@ -135,6 +137,8 @@ codeunit 50000 "Web Service Mgt."
                     RequestMessage.Content.GetHeaders(RequestHeader);
                     RequestHeader.Remove(ContentType);
                     RequestHeader.Add(ContentType, ContentTypeValue);
+                    if not GetResourceProductionNotAllowed() then
+                        RequestHeader.Add(EnvironmentType, EnvironmentTypeValue);
                 end;
         end;
 
@@ -428,8 +432,8 @@ codeunit 50000 "Web Service Mgt."
     var
         // {{resource}}/api/data/v{{version}}/{{entityType}}
         webAPI_URL: Label '%1/api/data/v%2/%3';
-        resource: Label 'https://org3baffe0c.crm4.dynamics.com';
-        // resource: Label 'https://sprut.crm4.dynamics.com';
+        resourceTest: Label 'https://org3baffe0c.crm4.dynamics.com';
+        resourceProd: Label 'https://sprut.crm4.dynamics.com';
         version: Label '9.1';
         Accept: Label 'Accept';
         Prefer: Label 'Prefer';
@@ -446,7 +450,10 @@ codeunit 50000 "Web Service Mgt."
         BaseURL: Text;
         AuthorizationToken: Text;
     begin
-        BaseURL := StrSubstNo(webAPI_URL, resource, version, entityType);
+        if GetResourceProductionNotAllowed() then
+            BaseURL := StrSubstNo(webAPI_URL, resourceTest, version, entityType)
+        else
+            BaseURL := StrSubstNo(webAPI_URL, resourceProd, version, entityType);
         AuthorizationToken := StrSubstNo('%1 %2', tokenType, accessToken);
 
         RequestMessage.Method := requestMethod;
@@ -478,8 +485,8 @@ codeunit 50000 "Web Service Mgt."
         TokenURL: Label 'https://login.microsoftonline.com/da79d6fc-fddb-47ae-bec3-75a8d9e1e1bb/oauth2/token';
         ClientId: Label 'a125243e-de60-41fb-b6f2-1795601fcea9';
         ClientSecret: Label 'A6-595SrEw0DPBT4-_1Uw-l3eL4ETar~-7';
-        Resource: Label 'https://org3baffe0c.crm4.dynamics.com';
-        // Resource: Label 'https://sprut.crm4.dynamics.com';
+        ResourceTest: Label 'https://org3baffe0c.crm4.dynamics.com';
+        ResourceProd: Label 'https://sprut.crm4.dynamics.com';
         RequestBody: Label 'grant_type=client_credentials&client_id=%1&client_secret=%2&resource=%3';
         HttpClient: HttpClient;
         RequestMessage: HttpRequestMessage;
@@ -500,6 +507,7 @@ codeunit 50000 "Web Service Mgt."
         ContentType: Label 'Content-Type';
         ContentTypeFormUrlencoded: Label 'application/x-www-form-urlencoded';
     begin
+
         Content.GetHeaders(RequestHeader);
         RequestHeader.Clear();
 
@@ -511,7 +519,10 @@ codeunit 50000 "Web Service Mgt."
 
         Clear(TempBlob);
         TempBlob.CreateOutStream(Outstr);
-        Outstr.WriteText(StrSubstNo(RequestBody, ClientId, ClientSecret, Resource));
+        if GetResourceProductionNotAllowed() then
+            Outstr.WriteText(StrSubstNo(RequestBody, ClientId, ClientSecret, ResourceTest))
+        else
+            Outstr.WriteText(StrSubstNo(RequestBody, ClientId, ClientSecret, ResourceProd));
         TempBlob.CreateInStream(Instr);
 
         Content.WriteFrom(Instr);
@@ -529,12 +540,16 @@ codeunit 50000 "Web Service Mgt."
         exit(false);
     end;
 
-    /// <summary> 
-    /// Description for GetTokenFromResponse.
-    /// </summary>
-    /// <param name="APIResult">Parameter of type Text.</param>
-    /// <param name="TokenType">Parameter of type Text.</param>
-    /// <param name="AccessToken">Parameter of type Text.</param>
+    local procedure GetResourceProductionNotAllowed(): Boolean
+    var
+        CompIntegr: Record "Company Integration";
+    begin
+        CompIntegr.SetCurrentKey("Company Name", "Environment Production");
+        CompIntegr.SetRange("Company Name", CompanyName);
+        CompIntegr.SetRange("Environment Production", true);
+        exit(CompIntegr.IsEmpty);
+    end;
+
     local procedure GetTokenFromResponse(APIResult: Text; var TokenType: Text; var AccessToken: Text)
     var
         jsonAPI: JsonObject;

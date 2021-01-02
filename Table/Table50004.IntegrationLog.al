@@ -1,6 +1,7 @@
 table 50004 "Integration Log"
 {
     DataClassification = ToBeClassified;
+    DataPerCompany = false;
 
     fields
     {
@@ -49,6 +50,23 @@ table 50004 "Integration Log"
         {
             DataClassification = CustomerContent;
             CaptionML = ENU = 'Autorization', RUS = 'Авторизация';
+        }
+        field(10; "Company Name"; Text[30])
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'Company Name', RUS = 'Имя компании';
+        }
+        field(11; "User Id"; Text[50])
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'User Id', RUS = 'ИД пользователя';
+        }
+        field(12; "Full Name"; Text[50])
+        {
+            CaptionML = ENU = 'Full Name', RUS = 'Имя пользователя';
+            FieldClass = FlowField;
+            CalcFormula = Lookup(User."Full Name" where("User Name" = field("User Id")));
+            Editable = false;
         }
     }
 
@@ -111,6 +129,8 @@ table 50004 "Integration Log"
         "Rest Method" := RestMethod;
         URL := _URL;
         Success := isSuccess;
+        "Company Name" := CompanyName;
+        "User Id" := UserId;
         Insert(true);
         SetRequest(_Request);
         SetResponse(_Response);

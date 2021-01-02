@@ -40,6 +40,16 @@ page 50008 "Integration Log List"
                     ApplicationArea = All;
 
                 }
+                field("Company Name"; "Company Name")
+                {
+                    ApplicationArea = All;
+
+                }
+                field("User Id"; "User Id")
+                {
+                    ApplicationArea = All;
+
+                }
             }
         }
     }

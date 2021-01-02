@@ -87,7 +87,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     var
                         PDFToEmail: Codeunit "Email Invoice As PDF Method";
                     begin
-                        WebServicesMgt.SendToEmail(Rec."No.");
+                        // WebServicesMgt.SendToEmail(Rec."No.");
                         PDFToEmail.UnApplyDocToAccounter(Rec."No.");
                     end;
                 }
