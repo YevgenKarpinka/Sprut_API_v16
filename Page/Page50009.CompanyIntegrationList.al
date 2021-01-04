@@ -1,6 +1,6 @@
 page 50009 "Company Integration List"
 {
-    CaptionML = ENU = 'Company Integration List',
+    CaptionML = ENU = 'Companies Integration List',
                 RUS = 'Список компаний интеграции';
     // InsertAllowed = false;
     SourceTable = "Company Integration";

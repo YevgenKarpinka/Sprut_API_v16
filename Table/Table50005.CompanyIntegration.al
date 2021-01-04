@@ -2,6 +2,9 @@ table 50005 "Company Integration"
 {
     DataClassification = SystemMetadata;
     DataPerCompany = false;
+    CaptionML = ENU = 'Company Integration',
+                RUS = 'Компания интеграции';
+
     fields
     {
         field(1; "Entry No."; Integer)

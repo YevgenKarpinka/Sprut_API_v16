@@ -154,9 +154,7 @@ codeunit 50001 "Prepayment Management"
         foreach PrepmInvToken in jsonPrepmInv do begin
             invoiceID := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
             PrepmInvAmount := Round(WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
-            // to do 
-            // add to https://sprutapi.azurewebsites.net/api/invoice crm_Id
-            // crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'crm_Id').AsValue().AsText();
+            crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'crm_Id').AsValue().AsText();
             API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId);
             API_SalesInvoice.CreatePrepaymentInvoice(SalesOrderNo);
         end;

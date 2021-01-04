@@ -30,6 +30,21 @@ pageextension 50004 "Item List Ext." extends "Item List"
                 CaptionML = ENU = 'CRM', RUS = 'CRM';
                 Image = SuggestCustomerPayments;
 
+                action(OnCopyItems)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'On Copy Items', RUS = 'Запуск копирования товаров';
+                    Image = CopyItem;
+
+                    trigger OnAction()
+                    var
+                        CopyItems: Codeunit "Copy Items to All Companyes";
+                    begin
+                        CopyItems.Run();
+                        Message('Copy Ok!');
+                    end;
+                }
+
                 action(Send)
                 {
                     ApplicationArea = All;

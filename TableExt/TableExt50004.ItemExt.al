@@ -18,4 +18,36 @@ tableextension 50004 "Item Ext" extends Item
             Editable = false;
         }
     }
+
+    trigger OnInsert()
+    begin
+        // check modify item allowed
+        CheckModifyItemAllowed();
+    end;
+
+    trigger OnModify()
+    begin
+        // check modify item allowed
+        CheckModifyItemAllowed();
+    end;
+
+    var
+        CopyItemFromMainCompany: Boolean;
+
+    local procedure CheckModifyItemAllowed();
+    var
+        CompIntegr: Record "Company Integration";
+    begin
+        if CopyItemFromMainCompany then exit;
+
+        CompIntegr.SetCurrentKey("Company Name", "Copy Items To");
+        CompIntegr.SetRange("Company Name", CompanyName);
+        CompIntegr.FindFirst();
+        CompIntegr.TestField("Copy Items To", false);
+    end;
+
+    procedure InitToCopyItem(xCopyItemFromMainCompany: Boolean)
+    begin
+        CopyItemFromMainCompany := xCopyItemFromMainCompany;
+    end;
 }

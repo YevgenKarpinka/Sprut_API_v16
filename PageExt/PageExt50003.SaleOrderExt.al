@@ -54,6 +54,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         TaskModifyOrder: Codeunit "Task Modify Order";
                     begin
                         TaskModifyOrder.OnModifyOrder(Rec."No.");
+                        Message('Sales Order Modified Ok!');
                     end;
                 }
 
@@ -72,6 +73,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     begin
                         if not WebServicesMgt.SetInvoicesLineIdToCRM(Rec."No.", BCIdEntityType, POSTrequestMethod, BCIdResponseText) then
                             Error(BCIdResponseText);
+                        Message('Line Id Updated Ok!');
                     end;
                 }
 
@@ -89,6 +91,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     begin
                         // WebServicesMgt.SendToEmail(Rec."No.");
                         PDFToEmail.UnApplyDocToAccounter(Rec."No.");
+                        Message('UnApply Doc Sended Mail To Accounter!');
                     end;
                 }
 
