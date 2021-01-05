@@ -38,7 +38,7 @@ pageextension 50004 "Item List Ext." extends "Item List"
 
                     trigger OnAction()
                     var
-                        CopyItems: Codeunit "Copy Items to All Companyes";
+                        CopyItems: Codeunit "Copy Items to All Companies";
                     begin
                         CopyItems.Run();
                         Message('Copy Ok!');

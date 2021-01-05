@@ -5,8 +5,9 @@ page 50004 "Task Modify Order List"
     UsageCategory = Administration;
     SourceTable = "Task Modify Order";
     // Editable = false;
+    SourceTableView = order(descending);
     CaptionML = ENU = 'Task Modify Order List',
-                RUS = 'Task Modify Order List';
+                RUS = 'Список задач модификации заказа';
 
     layout
     {

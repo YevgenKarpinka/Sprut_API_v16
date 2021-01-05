@@ -7,9 +7,10 @@ table 50004 "Integration Log"
     {
         field(1; "Entry No."; Integer)
         {
-            DataClassification = SystemMetadata;
-            AutoIncrement = true;
+            DataClassification = CustomerContent;
+            // AutoIncrement = true;
             CaptionML = ENU = 'Entry No.', RUS = 'Операция Но.';
+            Editable = false;
         }
         field(2; "Operation Date"; DateTime)
         {
@@ -87,7 +88,7 @@ table 50004 "Integration Log"
         Clear(Request);
         Request.CreateOutStream(OutStream, TEXTENCODING::UTF8);
         OutStream.WriteText(NewRequest);
-        Modify;
+        Modify();
     end;
 
     procedure GetRequest(): Text
@@ -107,7 +108,7 @@ table 50004 "Integration Log"
         Clear(Response);
         Response.CreateOutStream(OutStream, TEXTENCODING::UTF8);
         OutStream.WriteText(NewResponse);
-        Modify;
+        Modify();
     end;
 
     procedure GetResponse(): Text
@@ -121,8 +122,12 @@ table 50004 "Integration Log"
     end;
 
     procedure InsertOperationToLog(Source: Code[20]; RestMethod: Code[10]; _URL: Text; _Autorization: Text; _Request: Text; _Response: Text; isSuccess: Boolean)
+    var
+        LastEntryNo: Integer;
     begin
+        LastEntryNo := GetLastEntryNo();
         Init();
+        "Entry No." := LastEntryNo + 1;
         "Operation Date" := CurrentDateTime;
         "Source Operation" := Source;
         Autorization := CopyStr(_Autorization, 1, MaxStrLen(Autorization));
@@ -131,9 +136,17 @@ table 50004 "Integration Log"
         Success := isSuccess;
         "Company Name" := CompanyName;
         "User Id" := UserId;
-        Insert(true);
+        Insert();
         SetRequest(_Request);
         SetResponse(_Response);
         Commit();
+    end;
+
+    local procedure GetLastEntryNo(): Integer
+    var
+        LastIntegrationLog: Record "Integration Log";
+    begin
+        LastIntegrationLog.FindLast();
+        exit(LastIntegrationLog."Entry No.");
     end;
 }

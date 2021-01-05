@@ -40,6 +40,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                 CaptionML = ENU = 'Sprut',
                             RUS = 'Sprut';
                 Image = Prepayment;
+                // Visible = UserId = 'YEKAR';
 
                 // >>
                 action(OnModifyOrder)

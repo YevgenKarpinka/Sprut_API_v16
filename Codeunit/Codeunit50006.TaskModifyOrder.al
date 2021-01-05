@@ -19,6 +19,8 @@ codeunit 50006 "Task Modify Order"
         InvEntityType: Label 'invoice';
         BCIdEntityType: Label 'bcid';
         POSTrequestMethod: Label 'POST';
+        errTaskForModificationOrderNoAlreadyExist: Label 'task for modification order no. %1 already exist';
+        errTaskForModificationOrderNoAlreadyInWork: Label 'task for modification order no. %1 already in work';
 
     local procedure Execute()
     var
@@ -30,31 +32,6 @@ codeunit 50006 "Task Modify Order"
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
                     OnModifyOrder(recTaskModifyOrder."Order No.");
-
-                    // // analyze need full update sales order or not
-                    // if WebServicesMgt.NeedFullUpdateSalesOrder(recTaskModifyOrder."Order No.") then begin
-
-                    //     // unapply prepayments
-                    //     PrepmMgt.UnApplyPayments(recTaskModifyOrder."Order No.");
-                    //     // Open Sales Order
-                    //     OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
-                    //     // create credit memo for prepayment invoice
-                    //     if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
-                    //         SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
-                    //     // Get Specification From CRM
-                    //     WebServicesMgt.GetSpecificationFromCRM(recTaskModifyOrder."Order No.", SpecEntityType, POSTrequestMethod, SpecificationResponseText);
-                    //     // Open Sales Order
-                    //     OpenSalesOrder(SalesHeader, recTaskModifyOrder."Order No.");
-                    //     // delete all sales lines
-                    //     PrepmMgt.OnDeleteSalesOrderLine(recTaskModifyOrder."Order No.");
-                    //     // insert sales line
-                    //     PrepmMgt.InsertSalesLineFromCRM(recTaskModifyOrder."Order No.", SpecificationResponseText);
-                    //     // Get Invoices From CRM
-                    //     WebServicesMgt.GetInvoicesFromCRM(recTaskModifyOrder."Order No.", InvEntityType, POSTrequestMethod, InvoicesResponseText);
-                    //     // create prepayment invoice by amount
-                    //     PrepmMgt.CreatePrepaymentInvoicesFromCRM(recTaskModifyOrder."Order No.", InvoicesResponseText);
-
-                    // end;
 
                     // modify task statuses to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnSendToCRM);
@@ -157,6 +134,20 @@ codeunit 50006 "Task Modify Order"
 
     procedure CreateTaskModifyOrder(SalesOrderNo: Code[20])
     begin
+        recTaskModifyOrder.Reset();
+        recTaskModifyOrder.SetCurrentKey(Status, "Work Status", "Order No.");
+        recTaskModifyOrder.SetFilter(Status, '%1', recTaskModifyOrder.Status::OnModifyOrder);
+        recTaskModifyOrder.SetRange("Order No.", SalesOrderNo);
+        if not recTaskModifyOrder.IsEmpty then
+            Error(errTaskForModificationOrderNoAlreadyExist, SalesOrderNo);
+
+        recTaskModifyOrder.Reset();
+        recTaskModifyOrder.SetCurrentKey(Status, "Work Status", "Order No.");
+        recTaskModifyOrder.SetFilter("Work Status", '%1', recTaskModifyOrder."Work Status"::InWork);
+        recTaskModifyOrder.SetRange("Order No.", SalesOrderNo);
+        if not recTaskModifyOrder.IsEmpty then
+            Error(errTaskForModificationOrderNoAlreadyInWork, SalesOrderNo);
+
         recTaskModifyOrder.Init();
         recTaskModifyOrder."Order No." := SalesOrderNo;
         recTaskModifyOrder.Insert(true);

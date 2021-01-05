@@ -18,10 +18,11 @@ page 50006 "Task Payment Send List"
                 {
                     ApplicationArea = All;
                 }
-                field("Attempts Send"; "Attempts Send")
+                field("Entry Type"; "Entry Type")
                 {
                     ApplicationArea = All;
                 }
+
                 field(Status; Status)
                 {
                     ApplicationArea = All;
@@ -51,6 +52,10 @@ page 50006 "Task Payment Send List"
                     ApplicationArea = All;
                 }
                 field("CRM Payment Id"; "CRM Payment Id")
+                {
+                    ApplicationArea = All;
+                }
+                field("Attempts Send"; "Attempts Send")
                 {
                     ApplicationArea = All;
                 }

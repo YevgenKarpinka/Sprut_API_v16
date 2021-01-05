@@ -1,4 +1,4 @@
-codeunit 50008 "Copy Items to All Companyes"
+codeunit 50008 "Copy Items to All Companies"
 {
     trigger OnRun()
     begin

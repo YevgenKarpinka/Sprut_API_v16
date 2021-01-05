@@ -35,13 +35,7 @@ codeunit 50001 "Prepayment Management"
         CannotUnapplyExchRateErr: TextConst ENU = 'You cannot unapply the entry with the posting date %1, because the exchange rate for the additional reporting currency has been changed.',
                                             RUS = 'Нельзя отменить операцию с датой учета %1, поскольку изменился курс дополнительной отчетной валюты.';
         NoModificationRequiredOnSalesOrderErr: TextConst ENU = 'No modification required on sales order %1',
-                                            RUS = 'Заказу продажи %1 модификация не требуется ';
-
-    [EventSubscriber(ObjectType::Codeunit, Codeunit::"Payment Registration Mgt.", 'OnBeforeGenJnlLineInsert', '', false, false)]
-    local procedure UpdateAgreementNo(var GenJournalLine: Record "Gen. Journal Line"; TempPaymentRegistrationBuffer: Record "Payment Registration Buffer" temporary)
-    begin
-        GenJournalLine."Agreement No." := TempPaymentRegistrationBuffer."Agreement No.";
-    end;
+                                                        RUS = 'Заказу продажи %1 модификация не требуется ';
 
     procedure OnDeleteSalesOrderLine(SalesOrderNo: Code[20])
     var
@@ -154,7 +148,7 @@ codeunit 50001 "Prepayment Management"
         foreach PrepmInvToken in jsonPrepmInv do begin
             invoiceID := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
             PrepmInvAmount := Round(WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
-            crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'crm_Id').AsValue().AsText();
+            crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'crm_id').AsValue().AsText();
             API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId);
             API_SalesInvoice.CreatePrepaymentInvoice(SalesOrderNo);
         end;
