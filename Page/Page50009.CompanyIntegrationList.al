@@ -47,6 +47,11 @@ page 50009 "Company Integration List"
                     ApplicationArea = All;
 
                 }
+                field("Send Email Error Tasks"; "Send Email Error Tasks")
+                {
+                    ApplicationArea = All;
+
+                }
             }
         }
     }
@@ -81,8 +86,6 @@ page 50009 "Company Integration List"
                     ApplicationArea = Warehouse;
                     CaptionML = ENU = 'Set UnSelection For Copy From',
                                 RUS = 'Снять признак копирования с';
-                    // ToolTipML = ENU = 'Register package document to the next stage of processing. You must unregister the document before you can make changes to it.',
-                    //             RUS = 'Зарегистрировать документов упаковки на следующий этап обработки. Необходимо отменить регистрацию документа, чтобы в него можно было вносить изменения.';
                     Image = CopyItem;
 
                     trigger OnAction()
@@ -102,8 +105,6 @@ page 50009 "Company Integration List"
                     ApplicationArea = Warehouse;
                     CaptionML = ENU = 'Set Selection For Copy To',
                                 RUS = 'Выбрать для копирования в';
-                    // ToolTipML = ENU = 'Register package document to the next stage of processing. You must unregister the document before you can make changes to it.',
-                    //             RUS = 'Зарегистрировать документов упаковки на следующий этап обработки. Необходимо отменить регистрацию документа, чтобы в него можно было вносить изменения.';
                     Image = CopyItem;
 
                     trigger OnAction()
@@ -119,8 +120,6 @@ page 50009 "Company Integration List"
                     ApplicationArea = Warehouse;
                     CaptionML = ENU = 'Set UnSelection For Copy To',
                                 RUS = 'Снять признак копирования в';
-                    // ToolTipML = ENU = 'Register package document to the next stage of processing. You must unregister the document before you can make changes to it.',
-                    //             RUS = 'Зарегистрировать документов упаковки на следующий этап обработки. Необходимо отменить регистрацию документа, чтобы в него можно было вносить изменения.';
                     Image = CopyItem;
 
                     trigger OnAction()
@@ -140,8 +139,6 @@ page 50009 "Company Integration List"
                     ApplicationArea = Warehouse;
                     CaptionML = ENU = 'Set Selection Production',
                                 RUS = 'Установить признак производства';
-                    // ToolTipML = ENU = 'Register package document to the next stage of processing. You must unregister the document before you can make changes to it.',
-                    //             RUS = 'Зарегистрировать документов упаковки на следующий этап обработки. Необходимо отменить регистрацию документа, чтобы в него можно было вносить изменения.';
                     Image = Production;
 
                     trigger OnAction()
@@ -156,8 +153,6 @@ page 50009 "Company Integration List"
                     ApplicationArea = Warehouse;
                     CaptionML = ENU = 'Set UnSelection Production',
                                 RUS = 'Снять признак производства';
-                    // ToolTipML = ENU = 'Register package document to the next stage of processing. You must unregister the document before you can make changes to it.',
-                    //             RUS = 'Зарегистрировать документов упаковки на следующий этап обработки. Необходимо отменить регистрацию документа, чтобы в него можно было вносить изменения.';
                     Image = Production;
 
                     trigger OnAction()
@@ -177,8 +172,6 @@ page 50009 "Company Integration List"
                     ApplicationArea = Warehouse;
                     CaptionML = ENU = 'Set Selection Send Email',
                                 RUS = 'Установить отсылку почты';
-                    // ToolTipML = ENU = 'Register package document to the next stage of processing. You must unregister the document before you can make changes to it.',
-                    //             RUS = 'Зарегистрировать документов упаковки на следующий этап обработки. Необходимо отменить регистрацию документа, чтобы в него можно было вносить изменения.';
                     Image = Production;
 
                     trigger OnAction()
@@ -193,14 +186,45 @@ page 50009 "Company Integration List"
                     ApplicationArea = Warehouse;
                     CaptionML = ENU = 'Set UnSelection Send Email',
                                 RUS = 'Отменить отсылку почты';
-                    // ToolTipML = ENU = 'Register package document to the next stage of processing. You must unregister the document before you can make changes to it.',
-                    //             RUS = 'Зарегистрировать документов упаковки на следующий этап обработки. Необходимо отменить регистрацию документа, чтобы в него можно было вносить изменения.';
                     Image = Production;
 
                     trigger OnAction()
                     begin
                         CurrPage.SetSelectionFilter(CompIntegr);
                         CompIntegr.ModifyAll("Send Email UnApply Doc.", false, true);
+                        CurrPage.Update(false);
+                    end;
+                }
+            }
+            group(SendEmailErrorTasks)
+            {
+                CaptionML = ENU = 'Send Email Error Tasks',
+                            RUS = 'Отсылать почной ошибки задач';
+                action(SetSelectionSendEmailErrTask)
+                {
+                    ApplicationArea = Warehouse;
+                    CaptionML = ENU = 'Set Selection Send Email',
+                                RUS = 'Установить отсылку почты';
+                    Image = Production;
+
+                    trigger OnAction()
+                    begin
+                        CurrPage.SetSelectionFilter(CompIntegr);
+                        CompIntegr.ModifyAll("Send Email Error Tasks", true, true);
+                        CurrPage.Update(false);
+                    end;
+                }
+                action(SetUnSelectionSendEmailErrTask)
+                {
+                    ApplicationArea = Warehouse;
+                    CaptionML = ENU = 'Set UnSelection Send Email',
+                                RUS = 'Отменить отсылку почты';
+                    Image = Production;
+
+                    trigger OnAction()
+                    begin
+                        CurrPage.SetSelectionFilter(CompIntegr);
+                        CompIntegr.ModifyAll("Send Email Error Tasks", false, true);
                         CurrPage.Update(false);
                     end;
                 }

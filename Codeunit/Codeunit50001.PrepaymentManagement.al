@@ -64,6 +64,7 @@ codeunit 50001 "Prepayment Management"
         // check modification sales order need
         if not WebServicesMgt.GetSpecificationAndInvoice(SalesOrderNo, SpecificationResponseText, InvoicesResponseText) then
             Error(NoModificationRequiredOnSalesOrderErr, SalesOrderNo);
+
         // Create Task Modify Order
         TaskModifyOrder.CreateTaskModifyOrder(SalesOrderNo);
     end;

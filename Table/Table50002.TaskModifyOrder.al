@@ -36,6 +36,18 @@ table 50002 "Task Modify Order"
         field(8; "Work Status"; Enum WorkStatus)
         {
             DataClassification = CustomerContent;
+
+            trigger OnValidate()
+            begin
+                if "Work Status" <> "Work Status"::Error then exit;
+
+                "Error Text" := CopyStr(GetLastErrorText, 1, MaxStrLen("Error Text"));
+                ClearLastError();
+            end;
+        }
+        field(9; "Error Text"; Text[250])
+        {
+            DataClassification = CustomerContent;
         }
     }
 
@@ -78,19 +90,19 @@ enum 50002 TaskStatus
 
     value(0; OnModifyOrder)
     {
-        CaptionML = ENU = 'OnModifyOrder', RUS = 'OnModifyOrder';
+        CaptionML = ENU = 'OnModifyOrder', RUS = 'НаМодификациюЗаказа';
     }
     value(1; OnSendToCRM)
     {
-        CaptionML = ENU = 'OnSendToCRM', RUS = 'OnSendToCRM';
+        CaptionML = ENU = 'OnSendToCRM', RUS = 'НаОбновлениеCRM';
     }
     value(2; OnSendToEmail)
     {
-        CaptionML = ENU = 'OnSendToEmail', RUS = 'OnSendToEmail';
+        CaptionML = ENU = 'OnSendToEmail', RUS = 'НаПочтуДляCRM';
     }
     value(3; Done)
     {
-        CaptionML = ENU = 'Done', RUS = 'Done';
+        CaptionML = ENU = 'Done', RUS = 'Звершено';
     }
 }
 
@@ -100,18 +112,18 @@ enum 50003 WorkStatus
 
     value(0; WaitingForWork)
     {
-        CaptionML = ENU = 'WaitingForWork', RUS = 'WaitingForWork';
+        CaptionML = ENU = 'WaitingForWork', RUS = 'ОжиданиеОчереди';
     }
     value(1; InWork)
     {
-        CaptionML = ENU = 'InWork', RUS = 'InWork';
+        CaptionML = ENU = 'InWork', RUS = 'ВРаботе';
     }
     value(2; Error)
     {
-        CaptionML = ENU = 'Error', RUS = 'Error';
+        CaptionML = ENU = 'Error', RUS = 'Ошибка';
     }
     value(3; Done)
     {
-        CaptionML = ENU = 'Done', RUS = 'Done';
+        CaptionML = ENU = 'Done', RUS = 'Звершено';
     }
 }

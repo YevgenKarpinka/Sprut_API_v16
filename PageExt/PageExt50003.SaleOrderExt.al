@@ -42,6 +42,41 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                 Image = Prepayment;
                 // Visible = UserId = 'YEKAR';
 
+                action(CRMTaskModificationSalerOrder)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'CRMTaskModificationSalerOrder',
+                                RUS = 'CRMTaskModificationSalerOrder';
+                    Image = MakeOrder;
+
+                    trigger OnAction()
+                    var
+                        TaskModifyOrder: Codeunit "Task Modify Order";
+                    begin
+                        PrepaymentMgt.OnModifySalesOrderInTask("No.");
+                        Message('Task Modify Order Ok!')
+                    end;
+                }
+
+                action(OnTaskModificationSalerOrder)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'OnTaskModificationSalerOrder',
+                                RUS = 'OnTaskModificationSalerOrder';
+                    Image = MakeOrder;
+
+                    trigger OnAction()
+                    var
+                        TaskModifyOrder: Codeunit "Task Modify Order";
+                    begin
+                        // TaskModifyOrder.OnModifyOrder(Rec."No.");
+                        if Codeunit.Run(Codeunit::"Task Modify Order") then
+                            Message('Task Modify Order Ok!')
+                        else
+                            Error(GetLastErrorText);
+                    end;
+                }
+
                 // >>
                 action(OnModifyOrder)
                 {
@@ -54,8 +89,11 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     var
                         TaskModifyOrder: Codeunit "Task Modify Order";
                     begin
-                        TaskModifyOrder.OnModifyOrder(Rec."No.");
-                        Message('Sales Order Modified Ok!');
+                        // TaskModifyOrder.OnModifyOrder(Rec."No.");
+                        if Codeunit.Run(Codeunit::"Modification Order", Rec) then
+                            Message('Sales Order Modified Ok!')
+                        else
+                            Error(GetLastErrorText);
                     end;
                 }
 

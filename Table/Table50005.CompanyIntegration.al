@@ -43,6 +43,12 @@ table 50005 "Company Integration"
                         RUS = 'Копировать товары в';
             DataClassification = CustomerContent;
         }
+        field(7; "Send Email Error Tasks"; Boolean)
+        {
+            CaptionML = ENU = 'Send Email Error Tasks',
+                        RUS = 'Отсылать почту ошибок задач';
+            DataClassification = CustomerContent;
+        }
     }
 
     keys

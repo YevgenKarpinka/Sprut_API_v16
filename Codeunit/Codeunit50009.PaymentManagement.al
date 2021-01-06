@@ -83,10 +83,10 @@ codeunit 50009 "Payment Management"
         and (CustLedgerEntry."Document Type" = CustLedgerEntry."Document Type"::Invoice) then begin
             if SalesInvHeader.Get(CustLedgerEntry."Document No.")
             and (SalesInvHeader."CRM Invoice No." <> '') then begin
-                if CustAgreement.Get(SalesInvHeader."Sell-to Customer No.", SalesInvHeader."Agreement No.")
-                    and not IsNullGuid(CustAgreement."CRM ID") then
-                    // sent to CRM payment with amount equal 0
-                   WebServiceMgt.SendPaymentToCRM(SalesInvHeader."CRM Header ID", '', 0, SalesInvHeader."CRM Invoice No.", SalesInvHeader."CRM ID", DetailedCustLedgEntry."CRM Payment Id");
+                // if CustAgreement.Get(SalesInvHeader."Sell-to Customer No.", SalesInvHeader."Agreement No.")
+                //     and not IsNullGuid(CustAgreement."CRM ID") then
+                // sent to CRM payment with amount equal 0
+                //    WebServiceMgt.SendPaymentToCRM(SalesInvHeader."CRM Header ID", '', 0, SalesInvHeader."CRM Invoice No.", SalesInvHeader."CRM ID", DetailedCustLedgEntry."CRM Payment Id");
             end;
         end;
     end;
