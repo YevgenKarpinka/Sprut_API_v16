@@ -6,7 +6,7 @@ codeunit 50009 "Payment Management"
     end;
 
     var
-        WebServiceMgt: Codeunit "Web Service Mgt.";
+    // WebServiceMgt: Codeunit "Web Service Mgt.";
 
     [EventSubscriber(ObjectType::Codeunit, Codeunit::"Payment Registration Mgt.", 'OnBeforeGenJnlLineInsert', '', false, false)]
     local procedure UpdateAgreementNo(var GenJournalLine: Record "Gen. Journal Line"; TempPaymentRegistrationBuffer: Record "Payment Registration Buffer" temporary)
@@ -22,13 +22,10 @@ codeunit 50009 "Payment Management"
         TaskPaymentSend.Init();
         TaskPaymentSend."Invoice Entry No." := TempPaymentRegistrationBuffer."Ledger Entry No.";
         TaskPaymentSend."Invoice No." := TempPaymentRegistrationBuffer."Document No.";
-        // 
         TaskPaymentSend."Payment No." := GenJournalLine."Document No.";
         TaskPaymentSend."Payment Amount" := TempPaymentRegistrationBuffer."Remaining Amount";
         TaskPaymentSend.Insert(true);
     end;
-
-
 
     [EventSubscriber(ObjectType::Codeunit, Codeunit::"Payment Registration Mgt.", 'OnAfterPostPaymentRegistration', '', false, false)]
     local procedure OnAfterPostPaymentRegistration(TempPaymentRegistrationBuffer: Record "Payment Registration Buffer")
@@ -36,6 +33,7 @@ codeunit 50009 "Payment Management"
         TaskPaymentSend: Record "Task Payment Send";
     begin
         TaskPaymentSend.SetCurrentKey(Status, "Work Status", "Invoice Entry No.", "Invoice No.", "Payment No.", "Payment Amount");
+        TaskPaymentSend.SetRange("Entry Type", TaskPaymentSend."Entry Type"::Apply);
         TaskPaymentSend.SetRange("Invoice Entry No.", TempPaymentRegistrationBuffer."Ledger Entry No.");
         TaskPaymentSend.SetRange("Invoice No.", TempPaymentRegistrationBuffer."Document No.");
         TaskPaymentSend.SetRange("Payment Amount", TempPaymentRegistrationBuffer."Amount Received");
@@ -72,7 +70,7 @@ codeunit 50009 "Payment Management"
             until locCLE.Next() = 0;
     end;
 
-    [EventSubscriber(ObjectType::Codeunit, 226, 'OnAfterPostUnapplyCustLedgEntry', '', false, false)]
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::"CustEntry-Apply Posted Entries", 'OnAfterPostUnapplyCustLedgEntry', '', false, false)]
     local procedure OnAfterPostUnapplyCustLedgEntry(DetailedCustLedgEntry: Record "Detailed Cust. Ledg. Entry"; CustLedgerEntry: Record "Cust. Ledger Entry")
     var
         SalesInvHeader: Record "Sales Invoice Header";
