@@ -6,7 +6,7 @@ page 50006 "Task Payment Send List"
     SourceTable = "Task Payment Send";
     // Editable = false;
     CaptionML = ENU = 'Task Payment Send List',
-                RUS = 'Task Payment Send List';
+                RUS = 'Список задач передачи платежей';
 
     layout
     {

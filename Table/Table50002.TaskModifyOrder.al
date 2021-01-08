@@ -49,6 +49,12 @@ table 50002 "Task Modify Order"
         {
             DataClassification = CustomerContent;
         }
+        field(10; "Attempts Send"; Integer)
+        {
+            CaptionML = ENU = 'Attempts Send',
+                        RUS = 'Попытки отправить';
+            DataClassification = CustomerContent;
+        }
     }
 
     keys

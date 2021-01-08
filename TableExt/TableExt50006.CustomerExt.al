@@ -13,5 +13,18 @@ tableextension 50006 "Customer Ext" extends Customer
         {
             DataClassification = CustomerContent;
         }
+        field(50002; "1C Path"; Text[30])
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = '1C Path',
+                        RUS = '1C Путь';
+            Editable = false;
+        }
+        field(50003; "Certificate"; Text[20])
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'Certificate',
+                        RUS = 'Свидетельство';
+        }
     }
 }

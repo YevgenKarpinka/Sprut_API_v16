@@ -31,6 +31,10 @@ page 50004 "Task Modify Order List"
                 {
                     ApplicationArea = All;
                 }
+                field("Attempts Send"; "Attempts Send")
+                {
+                    ApplicationArea = All;
+                }
                 field("Create User Name"; "Create User Name")
                 {
                     ApplicationArea = All;

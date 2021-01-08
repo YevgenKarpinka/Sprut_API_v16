@@ -35,13 +35,16 @@ codeunit 50006 "Task Modify Order"
 
                     SalesHeader.Get(SalesHeader."Document Type"::Order, recTaskModifyOrder."Order No.");
                     if not Codeunit.Run(Codeunit::"Modification Order", SalesHeader) then begin
-                        UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error);
+                        if recTaskModifyOrder."Attempts Send" > GetJobQueueMaxAttempts then
+                            UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error)
+                        else
+                            IncTaskModifyOrderAttempt;
                         exit;
                     end;
 
                     // modify task statuses to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnSendToCRM);
-                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
+                    // UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
                 end;
 
             recTaskModifyOrder.Status::OnSendToCRM:
@@ -49,20 +52,26 @@ codeunit 50006 "Task Modify Order"
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
                     if not WebServicesMgt.SetInvoicesLineIdToCRM(recTaskModifyOrder."Order No.", BCIdEntityType, POSTrequestMethod, BCIdResponseText) then begin
-                        UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error);
+                        if recTaskModifyOrder."Attempts Send" > GetJobQueueMaxAttempts then
+                            UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error)
+                        else
+                            IncTaskModifyOrderAttempt;
                         exit;
                     end;
 
                     // modify task status to next level
                     ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnSendToEmail);
-                    UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
+                    // UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
                 end;
             recTaskModifyOrder.Status::OnSendToEmail:
                 begin
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
                     if not PDFToEmail.UnApplyDocToAccounter(recTaskModifyOrder."Order No.") then begin
-                        UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error);
+                        if recTaskModifyOrder."Attempts Send" > GetJobQueueMaxAttempts then
+                            UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error)
+                        else
+                            IncTaskModifyOrderAttempt;
                         exit;
                     end;
 
@@ -77,8 +86,14 @@ codeunit 50006 "Task Modify Order"
     begin
         recTaskModifyOrder.Status := NextTaskStatus;
         if NextTaskStatus = NextTaskStatus::Done then
-            recTaskModifyOrder."Work Status" := recTaskModifyOrder."Work Status"::Done;
+            recTaskModifyOrder."Work Status" := recTaskModifyOrder."Work Status"::Done
+        else
+            recTaskModifyOrder."Work Status" := recTaskModifyOrder."Work Status"::WaitingForWork;
+
+        ResetTaskModifyOrderAttempt();
+
         recTaskModifyOrder.Modify(true);
+        Commit();
     end;
 
     local procedure UpdateWorkStatus(newWorkStatus: Enum WorkStatus)
@@ -115,5 +130,30 @@ codeunit 50006 "Task Modify Order"
         recTaskModifyOrder.Init();
         recTaskModifyOrder."Order No." := SalesOrderNo;
         recTaskModifyOrder.Insert(true);
+    end;
+
+    local procedure GetJobQueueMaxAttempts(): Integer
+    var
+        locJobQueueEntry: Record "Job Queue Entry";
+    begin
+        locJobQueueEntry.SetCurrentKey("Object Type to Run", "Object ID to Run");
+        locJobQueueEntry.SetRange("Object Type to Run", locJobQueueEntry."Object Type to Run"::Codeunit);
+        locJobQueueEntry.SetRange("Object ID to Run", Codeunit::"Task Modify Order");
+        if locJobQueueEntry.FindFirst() then
+            exit(locJobQueueEntry."Maximum No. of Attempts to Run");
+    end;
+
+    local procedure IncTaskModifyOrderAttempt()
+    begin
+        recTaskModifyOrder."Attempts Send" += 1;
+        recTaskModifyOrder.Modify(true);
+        Commit();
+    end;
+
+    local procedure ResetTaskModifyOrderAttempt()
+    begin
+        if recTaskModifyOrder."Attempts Send" = 0 then exit;
+
+        recTaskModifyOrder."Attempts Send" := 0;
     end;
 }
