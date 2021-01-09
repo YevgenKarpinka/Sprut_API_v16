@@ -122,7 +122,7 @@ enum 50003 WorkStatus
     }
     value(1; InWork)
     {
-        CaptionML = ENU = 'InWork', RUS = 'ВРаботе';
+        CaptionML = ENU = 'InWork', RUS = 'вРаботе';
     }
     value(2; Error)
     {

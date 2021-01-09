@@ -4,12 +4,11 @@ table 50003 "Task Payment Send"
 
     fields
     {
-        field(1; "Entry No."; Integer)
+        field(1; "Entry Type"; Enum EntryType)
         {
-            CaptionML = ENU = 'Entry No.',
-                        RUS = 'Номер операции';
+            CaptionML = ENU = 'Entry Type',
+                        RUS = 'Тип операции';
             DataClassification = CustomerContent;
-            AutoIncrement = true;
         }
         field(2; Status; Enum TaskPaymentStatus)
         {
@@ -17,10 +16,10 @@ table 50003 "Task Payment Send"
                         RUS = 'Статус ';
             DataClassification = CustomerContent;
         }
-        field(3; "Dtld. Cust. Ledg. Entry No."; Integer)
+        field(3; "Work Status"; Enum WorkStatus)
         {
-            CaptionML = ENU = 'Dtld. Cust. Ledg. Entry No.',
-                        RUS = 'Номер операции подробной книги клиента';
+            CaptionML = ENU = 'Work Status',
+                        RUS = 'Сатату работы';
             DataClassification = CustomerContent;
         }
         field(4; "Invoice Entry No."; Integer)
@@ -29,87 +28,90 @@ table 50003 "Task Payment Send"
                         RUS = 'Номер операции счета';
             DataClassification = CustomerContent;
         }
-        field(5; "Invoice No."; Code[20])
+        field(5; "Invoice Date"; Date)
+        {
+            CaptionML = ENU = 'Invoice Date',
+                        RUS = 'Дата счета';
+            DataClassification = CustomerContent;
+        }
+        field(6; "Invoice No."; Code[20])
         {
             CaptionML = ENU = 'Invoice No.',
                         RUS = 'Номер счета';
             DataClassification = CustomerContent;
         }
-        field(6; "Payment Entry No."; Integer)
+        field(7; "Payment Entry No."; Integer)
         {
             CaptionML = ENU = 'Payment Entry No.',
                         RUS = 'Номер операции платежа';
             DataClassification = CustomerContent;
         }
-        field(7; "Payment No."; Code[20])
+        field(8; "Payment Date"; Date)
+        {
+            CaptionML = ENU = 'Payment Date',
+                        RUS = 'Дата платежа';
+            DataClassification = CustomerContent;
+        }
+        field(9; "Payment No."; Code[20])
         {
             CaptionML = ENU = 'Payment No.',
                         RUS = 'Номер платежа';
             DataClassification = CustomerContent;
         }
-        field(8; "Payment Amount"; Decimal)
+        field(10; "Payment Amount"; Decimal)
         {
             CaptionML = ENU = 'Payment Amount',
                         RUS = 'Сумма платежа';
             DataClassification = CustomerContent;
         }
-        field(9; "CRM Payment Id"; Guid)
+        field(11; "CRM Payment Id"; Guid)
         {
             CaptionML = ENU = 'CRM Payment Id',
                         RUS = 'Id платежа в CRM';
             DataClassification = CustomerContent;
         }
-        field(10; "Create User Name"; Code[50])
+        field(12; "Create User Name"; Code[50])
         {
             CaptionML = ENU = 'Create User Name',
                         RUS = 'Имя пользователя создания';
             DataClassification = CustomerContent;
         }
-        field(11; "Create Date Time"; DateTime)
+        field(13; "Create Date Time"; DateTime)
         {
             CaptionML = ENU = 'Create Date Time',
                         RUS = 'Дата и время создания';
             DataClassification = CustomerContent;
         }
-        field(12; "Modify User Name"; Code[50])
+        field(14; "Modify User Name"; Code[50])
         {
             CaptionML = ENU = 'Modify User Name',
                         RUS = 'Имя пользователя модификации';
             DataClassification = CustomerContent;
         }
-        field(13; "Modify Date Time"; DateTime)
+        field(15; "Modify Date Time"; DateTime)
         {
             CaptionML = ENU = 'Modify Date Time',
                         RUS = 'Дата и время модификации';
             DataClassification = CustomerContent;
         }
-        field(14; "Work Status"; Enum WorkStatus)
-        {
-            CaptionML = ENU = 'Work Status',
-                        RUS = 'Сатату работы';
-            DataClassification = CustomerContent;
-        }
-        field(15; "Attempts Send"; Integer)
+
+        field(16; "Attempts Send"; Integer)
         {
             CaptionML = ENU = 'Attempts Send',
                         RUS = 'Попытки отправить';
             DataClassification = CustomerContent;
         }
-        field(16; "Entry Type"; Enum EntryType)
-        {
-            CaptionML = ENU = 'Entry Type',
-                        RUS = 'Тип операции';
-            DataClassification = CustomerContent;
-        }
+
+
     }
 
     keys
     {
-        key(PK; "Entry No.")
+        key(PK; "Entry Type", Status, "Invoice Entry No.", "Payment Entry No.")
         {
             Clustered = true;
         }
-        key(SK; Status) { }
+        key(SK; "Work Status", "Invoice No.", "Payment No.") { }
     }
 
     trigger OnInsert()

@@ -14,10 +14,6 @@ page 50006 "Task Payment Send List"
         {
             repeater(ItemsTransferSite)
             {
-                field("Entry No."; "Entry No.")
-                {
-                    ApplicationArea = All;
-                }
                 field("Entry Type"; "Entry Type")
                 {
                     ApplicationArea = All;
@@ -31,15 +27,23 @@ page 50006 "Task Payment Send List"
                 {
                     ApplicationArea = All;
                 }
-                field("Dtld. Cust. Ledg. Entry No."; "Dtld. Cust. Ledg. Entry No.")
-                {
-                    ApplicationArea = All;
-                }
                 field("Invoice Entry No."; "Invoice Entry No.")
                 {
                     ApplicationArea = All;
                 }
+                field("Invoice Date"; "Invoice Date")
+                {
+                    ApplicationArea = All;
+                }
+                field("Invoice No."; "Invoice No.")
+                {
+                    ApplicationArea = All;
+                }
                 field("Payment Entry No."; "Payment Entry No.")
+                {
+                    ApplicationArea = All;
+                }
+                field("Payment Date"; "Payment Date")
                 {
                     ApplicationArea = All;
                 }

@@ -7,5 +7,9 @@ tableextension 50008 "Payment Reg. Buffer Ext" extends "Payment Registration Buf
         {
             DataClassification = CustomerContent;
         }
+        field(50001; "Posting Date"; Date)
+        {
+            DataClassification = CustomerContent;
+        }
     }
 }

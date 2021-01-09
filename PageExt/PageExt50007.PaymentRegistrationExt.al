@@ -25,6 +25,7 @@ pageextension 50007 "Payment Registration Ext" extends "Payment Registration"
     begin
         CustLedgerEntry.Get("Ledger Entry No.");
         "Agreement No." := CustLedgerEntry."Agreement No.";
+        "Posting Date" := CustLedgerEntry."Posting Date";
         Modify();
     end;
 }

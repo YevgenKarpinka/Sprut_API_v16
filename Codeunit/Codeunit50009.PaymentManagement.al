@@ -16,14 +16,43 @@ codeunit 50009 "Payment Management"
 
     [EventSubscriber(ObjectType::Codeunit, Codeunit::"Payment Registration Mgt.", 'OnBeforeGenJnlLineInsert', '', false, false)]
     local procedure OnBeforeGenJournalLineInsert(TempPaymentRegistrationBuffer: Record "Payment Registration Buffer"; var GenJournalLine: Record "Gen. Journal Line")
+    begin
+        if GenJournalLine."Applies-to ID" = '' then
+            InsertTaskPaymentFromPaymentRegistration(TempPaymentRegistrationBuffer, GenJournalLine)
+        else
+            InsertTaskPaymentFromRegistrationLump(GenJournalLine."Posting Date", GenJournalLine."Applies-to ID", GenJournalLine."Account No.");
+    end;
+
+    local procedure InsertTaskPaymentFromRegistrationLump(PostingDate: Date; CustEntryApplID: Code[20]; CustomerNo: Code[20])
+    var
+        AppliedCustLedgEntry: Record "Cust. Ledger Entry";
+    begin
+        AppliedCustLedgEntry.SetCurrentKey("Customer No.", Open, Positive);
+        AppliedCustLedgEntry.SetRange("Customer No.", CustomerNo);
+        AppliedCustLedgEntry.SetRange(Open, true);
+        AppliedCustLedgEntry.SetRange("Applies-to ID", CustEntryApplID);
+        AppliedCustLedgEntry.SetRange("Document Type", AppliedCustLedgEntry."Document Type"::Invoice);
+        AppliedCustLedgEntry.LockTable();
+        if AppliedCustLedgEntry.FindSet(false, false) then begin
+            repeat
+                InsertTaskPaymentSendFromAppliedCustLedgEntry(AppliedCustLedgEntry."Entry No.", AppliedCustLedgEntry."Posting Date",
+                                                            AppliedCustLedgEntry."Document No.", PostingDate, AppliedCustLedgEntry."Applies-to ID",
+                                                            AppliedCustLedgEntry."Amount to Apply");
+            until AppliedCustLedgEntry.Next() = 0;
+        end;
+    end;
+
+    local procedure InsertTaskPaymentSendFromAppliedCustLedgEntry(InvoiceEntryNo: Integer; InvoiceDate: Date; InvoiceNo: Code[20]; PostingDate: Date; AppliesToID: Code[50]; AmountToApply: Decimal)
     var
         TaskPaymentSend: Record "Task Payment Send";
     begin
         TaskPaymentSend.Init();
-        TaskPaymentSend."Invoice Entry No." := TempPaymentRegistrationBuffer."Ledger Entry No.";
-        TaskPaymentSend."Invoice No." := TempPaymentRegistrationBuffer."Document No.";
-        TaskPaymentSend."Payment No." := GenJournalLine."Document No.";
-        TaskPaymentSend."Payment Amount" := TempPaymentRegistrationBuffer."Remaining Amount";
+        TaskPaymentSend."Invoice Entry No." := InvoiceEntryNo;
+        TaskPaymentSend."Invoice Date" := InvoiceDate;
+        TaskPaymentSend."Invoice No." := InvoiceNo;
+        TaskPaymentSend."Payment Date" := PostingDate;
+        TaskPaymentSend."Payment No." := AppliesToID;
+        TaskPaymentSend."Payment Amount" := Abs(AmountToApply);
         TaskPaymentSend.Insert(true);
     end;
 
@@ -31,43 +60,62 @@ codeunit 50009 "Payment Management"
     local procedure OnAfterPostPaymentRegistration(TempPaymentRegistrationBuffer: Record "Payment Registration Buffer")
     var
         TaskPaymentSend: Record "Task Payment Send";
+        CustLedgEntry: Record "Cust. Ledger Entry";
     begin
-        TaskPaymentSend.SetCurrentKey(Status, "Work Status", "Invoice Entry No.", "Invoice No.", "Payment No.", "Payment Amount");
-        TaskPaymentSend.SetRange("Entry Type", TaskPaymentSend."Entry Type"::Apply);
-        TaskPaymentSend.SetRange("Invoice Entry No.", TempPaymentRegistrationBuffer."Ledger Entry No.");
-        TaskPaymentSend.SetRange("Invoice No.", TempPaymentRegistrationBuffer."Document No.");
-        TaskPaymentSend.SetRange("Payment Amount", TempPaymentRegistrationBuffer."Amount Received");
-        // to do
-        TaskPaymentSend."Payment Entry No." := 0;
-        TaskPaymentSend.Modify(true);
+        TempPaymentRegistrationBuffer.SetCurrentKey("Payment Made", "Document Type");
+        TempPaymentRegistrationBuffer.SetRange("Payment Made", true);
+        TempPaymentRegistrationBuffer.SetRange("Document Type", TempPaymentRegistrationBuffer."Document Type"::Invoice);
+        if TempPaymentRegistrationBuffer.FindSet(false, false) then
+            repeat
+                TaskPaymentSend.SetCurrentKey("Entry Type", "Invoice Entry No.", "Invoice Date", "Invoice No.");
+                TaskPaymentSend.SetRange("Entry Type", TaskPaymentSend."Entry Type"::Apply);
+                TaskPaymentSend.SetRange("Work Status", TaskPaymentSend."Work Status"::WaitingForWork);
+                TaskPaymentSend.SetRange("Invoice Entry No.", TempPaymentRegistrationBuffer."Ledger Entry No.");
+                TaskPaymentSend.SetRange("Invoice Date", TempPaymentRegistrationBuffer."Posting Date");
+                TaskPaymentSend.SetRange("Invoice No.", TempPaymentRegistrationBuffer."Document No.");
+                if TaskPaymentSend.FindSet(false, true) then begin
+                    CustLedgEntry.SetCurrentKey("Posting Date", "Document No.");
+                    CustLedgEntry.SetRange("Posting Date", TempPaymentRegistrationBuffer."Date Received");
+                    CustLedgEntry.SetRange("Document No.", TaskPaymentSend."Payment No.");
+                    if CustLedgEntry.FindFirst() then
+                        repeat
+                            if TaskPaymentSend."Payment Entry No." = 0 then begin
+                                TaskPaymentSend."Payment Entry No." := CustLedgEntry."Entry No.";
+                                TaskPaymentSend.Modify(true);
+                            end;
+                        until TaskPaymentSend.Next() = 0;
+                end;
+            until TempPaymentRegistrationBuffer.Next() = 0;
     end;
 
     [EventSubscriber(ObjectType::Codeunit, Codeunit::"CustEntry-Apply Posted Entries", 'OnBeforePostApplyCustLedgEntry', '', false, false)]
     local procedure OnBeforePostApplyCustLedgEntry(CustLedgerEntry: Record "Cust. Ledger Entry")
     begin
         if CustLedgerEntry."Document Type" <> CustLedgerEntry."Document Type"::Invoice then exit;
-        InsertTaskPaymentSend(CustLedgerEntry."Entry No.", CustLedgerEntry."Document No.", CustLedgerEntry."Customer No.", CustLedgerEntry."Applies-to ID");
+        InsertTaskPaymentSendFromCustEntryApply(CustLedgerEntry."Entry No.", CustLedgerEntry."Posting Date", CustLedgerEntry."Document No.", CustLedgerEntry."Customer No.", CustLedgerEntry."Applies-to ID");
     end;
 
-    local procedure InsertTaskPaymentSend(InvoiceEntryNo: Integer; InvoiceNo: Code[20]; CustomerNo: Code[20]; AppliesToID: Code[50])
+    local procedure InsertTaskPaymentSendFromCustEntryApply(InvoiceEntryNo: Integer; InvoiceDate: Date; InvoiceNo: Code[20]; CustomerNo: Code[20]; AppliesToID: Code[50])
     var
-        locCLE: Record "Cust. Ledger Entry";
+        locCustLedgEntry: Record "Cust. Ledger Entry";
         TaskPaymentSend: Record "Task Payment Send";
     begin
-        locCLE.SetCurrentKey("Customer No.", "Applies-to ID", "Document Type");
-        locCLE.SetRange("Customer No.", CustomerNo);
-        locCLE.SetRange("Applies-to ID", AppliestoID);
-        locCLE.SetRange("Document Type", locCLE."Document Type"::Payment);
-        if locCLE.FindSet(false, false) then
+        locCustLedgEntry.SetCurrentKey("Customer No.", "Applies-to ID", "Document Type");
+        locCustLedgEntry.SetRange("Customer No.", CustomerNo);
+        locCustLedgEntry.SetRange("Applies-to ID", AppliestoID);
+        locCustLedgEntry.SetRange("Document Type", locCustLedgEntry."Document Type"::Payment);
+        if locCustLedgEntry.FindSet(false, false) then
             repeat
                 TaskPaymentSend.Init();
                 TaskPaymentSend."Invoice Entry No." := InvoiceEntryNo;
+                TaskPaymentSend."Invoice Date" := InvoiceDate;
                 TaskPaymentSend."Invoice No." := InvoiceNo;
-                TaskPaymentSend."Payment Entry No." := locCLE."Entry No.";
-                TaskPaymentSend."Payment No." := locCLE."Document No.";
-                TaskPaymentSend."Payment Amount" := Abs(locCLE."Amount to Apply");
+                TaskPaymentSend."Payment Entry No." := locCustLedgEntry."Entry No.";
+                TaskPaymentSend."Payment Date" := locCustLedgEntry."Posting Date";
+                TaskPaymentSend."Payment No." := locCustLedgEntry."Document No.";
+                TaskPaymentSend."Payment Amount" := Abs(locCustLedgEntry."Amount to Apply");
                 TaskPaymentSend.Insert(true);
-            until locCLE.Next() = 0;
+            until locCustLedgEntry.Next() = 0;
     end;
 
     [EventSubscriber(ObjectType::Codeunit, Codeunit::"CustEntry-Apply Posted Entries", 'OnAfterPostUnapplyCustLedgEntry', '', false, false)]
@@ -87,6 +135,20 @@ codeunit 50009 "Payment Management"
                 //    WebServiceMgt.SendPaymentToCRM(SalesInvHeader."CRM Header ID", '', 0, SalesInvHeader."CRM Invoice No.", SalesInvHeader."CRM ID", DetailedCustLedgEntry."CRM Payment Id");
             end;
         end;
+    end;
+
+    local procedure InsertTaskPaymentFromPaymentRegistration(TempPaymentRegistrationBuffer: Record "Payment Registration Buffer"; GenJournalLine: Record "Gen. Journal Line");
+    var
+        TaskPaymentSend: Record "Task Payment Send";
+    begin
+        TaskPaymentSend.Init();
+        TaskPaymentSend."Invoice Entry No." := TempPaymentRegistrationBuffer."Ledger Entry No.";
+        TaskPaymentSend."Invoice Date" := TempPaymentRegistrationBuffer."Posting Date";
+        TaskPaymentSend."Invoice No." := TempPaymentRegistrationBuffer."Document No.";
+        TaskPaymentSend."Payment Date" := GenJournalLine."Posting Date";
+        TaskPaymentSend."Payment No." := GenJournalLine."Document No.";
+        TaskPaymentSend."Payment Amount" := TempPaymentRegistrationBuffer."Amount Received";
+        TaskPaymentSend.Insert(true);
     end;
 
 }

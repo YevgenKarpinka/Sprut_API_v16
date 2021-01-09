@@ -9,7 +9,7 @@
             "port": 16049,
             "serverInstance": "BC160",
             "authentication": "UserPassword",
-            "startupObjectId": 31,
+            "startupObjectId": 981,
             "startupObjectType": "Page",
             "breakOnError": true,
             "launchBrowser": true,
