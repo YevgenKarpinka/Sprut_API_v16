@@ -10,6 +10,7 @@ codeunit 50000 "Web Service Mgt."
         errHeaderAmountNotEqualSumsLinesAmount: Label 'Sales header amount %1 not equal sums sales lines amount %2';
         errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount: Label 'Sales order amount %1 can not be less prepayment invoices amount %2';
         errReportNotSavedToPDF: Label 'Report %1 not saved to PDF';
+        errWrong_CRM_Id: Label 'Wrong CRM Id %1';
 
 
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]; var Body: Text): Boolean
@@ -173,11 +174,28 @@ codeunit 50000 "Web Service Mgt."
         PrepmInvToken: JsonToken;
     begin
         jsonPrepmInv.ReadFrom(ResponceTokenLines);
-        foreach PrepmInvToken in jsonPrepmInv do
+        foreach PrepmInvToken in jsonPrepmInv do begin
+            CheckPrepmtInvoiceToken(PrepmInvToken);
             PrepmInvAmount += GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal();
+        end;
 
         PrepmInvAmount := Round(PrepmInvAmount, 0.01);
         exit(PrepmInvAmount);
+    end;
+
+    local procedure CheckPrepmtInvoiceToken(LineToken: JsonToken)
+    var
+        document_no: Text[20];
+        invoice_id: Text[30];
+        prepayment_percent: Decimal;
+        crm_id: Guid;
+    begin
+        document_no := GetJSToken(LineToken.AsObject(), 'document_no').AsValue().AsText();
+        invoice_id := GetJSToken(LineToken.AsObject(), 'invoice_id').AsValue().AsText();
+        prepayment_percent := GetJSToken(LineToken.AsObject(), 'prepayment_percent').AsValue().AsDecimal();
+        crm_id := GetJSToken(LineToken.AsObject(), 'crm_id').AsValue().AsText();
+        if not IsNullGuid(crm_id) then
+            Error(errWrong_CRM_Id, crm_id);
     end;
 
     local procedure GetSpecificationLinesAmount(ResponceTokenLines: Text): Decimal
@@ -187,11 +205,28 @@ codeunit 50000 "Web Service Mgt."
         LineToken: JsonToken;
     begin
         jsonLines.ReadFrom(ResponceTokenLines);
-        foreach LineToken in jsonLines do
+        foreach LineToken in jsonLines do begin
+            CheckSalesLineToken(LineToken);
             SpecLineAmount += GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal();
+        end;
 
         SpecLineAmount := Round(SpecLineAmount, 0.01);
         exit(SpecLineAmount);
+    end;
+
+    local procedure CheckSalesLineToken(LineToken: JsonToken)
+    var
+        ItemNo: Code[20];
+        Qty: Decimal;
+        UnitPrice: Decimal;
+        LineAmount: Decimal;
+        crmLineID: Guid;
+    begin
+        ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+        Qty := GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal();
+        UnitPrice := GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal();
+        LineAmount := GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal();
+        crmLineID := GetJSToken(LineToken.AsObject(), 'CRM_ID').AsValue().AsText();
     end;
 
     local procedure CheckSpecificationAmount(ResponceToken: Text): Decimal

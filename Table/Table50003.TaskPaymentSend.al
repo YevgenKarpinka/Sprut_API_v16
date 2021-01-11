@@ -107,11 +107,11 @@ table 50003 "Task Payment Send"
 
     keys
     {
-        key(PK; "Entry Type", Status, "Invoice Entry No.", "Payment Entry No.")
+        key(PK; "Entry Type", Status, "Work Status", "Invoice No.", "Payment No.")
         {
             Clustered = true;
         }
-        key(SK; "Work Status", "Invoice No.", "Payment No.") { }
+        key(SK; "Invoice Entry No.", "Payment Entry No.") { }
     }
 
     trigger OnInsert()
@@ -142,7 +142,7 @@ enum 50004 TaskPaymentStatus
 {
     Extensible = true;
 
-    value(0; OnModifyOrder)
+    value(0; OnPaymentSend)
     {
         CaptionML = ENU = 'OnPaymentSend',
                     RUS = 'ПлатежОтсылается';

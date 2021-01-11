@@ -35,10 +35,12 @@ codeunit 50006 "Task Modify Order"
 
                     SalesHeader.Get(SalesHeader."Document Type"::Order, recTaskModifyOrder."Order No.");
                     if not Codeunit.Run(Codeunit::"Modification Order", SalesHeader) then begin
-                        if recTaskModifyOrder."Attempts Send" > GetJobQueueMaxAttempts then
+                        if recTaskModifyOrder."Attempts Send" >= GetJobQueueMaxAttempts then begin
                             UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error)
-                        else
+                        end else begin
                             IncTaskModifyOrderAttempt;
+                            UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
+                        end;
                         exit;
                     end;
 
@@ -52,10 +54,12 @@ codeunit 50006 "Task Modify Order"
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
                     if not WebServicesMgt.SetInvoicesLineIdToCRM(recTaskModifyOrder."Order No.", BCIdEntityType, POSTrequestMethod, BCIdResponseText) then begin
-                        if recTaskModifyOrder."Attempts Send" > GetJobQueueMaxAttempts then
+                        if recTaskModifyOrder."Attempts Send" >= GetJobQueueMaxAttempts then
                             UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error)
-                        else
+                        else begin
                             IncTaskModifyOrderAttempt;
+                            UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
+                        end;
                         exit;
                     end;
 
@@ -68,10 +72,12 @@ codeunit 50006 "Task Modify Order"
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
                     if not PDFToEmail.UnApplyDocToAccounter(recTaskModifyOrder."Order No.") then begin
-                        if recTaskModifyOrder."Attempts Send" > GetJobQueueMaxAttempts then
+                        if recTaskModifyOrder."Attempts Send" >= GetJobQueueMaxAttempts then
                             UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error)
-                        else
+                        else begin
                             IncTaskModifyOrderAttempt;
+                            UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
+                        end;
                         exit;
                     end;
 
@@ -116,7 +122,7 @@ codeunit 50006 "Task Modify Order"
     procedure CreateTaskModifyOrder(SalesOrderNo: Code[20])
     begin
         recTaskModifyOrder.Reset();
-        recTaskModifyOrder.SetCurrentKey(Status, "Work Status", "Order No.");
+        recTaskModifyOrder.SetCurrentKey("Work Status", "Order No.");
         recTaskModifyOrder.SetRange("Order No.", SalesOrderNo);
         recTaskModifyOrder.SetFilter(Status, '<>%1', recTaskModifyOrder.Status::Done);
         if recTaskModifyOrder.FindFirst() then begin

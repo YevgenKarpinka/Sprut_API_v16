@@ -69,7 +69,6 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     var
                         TaskModifyOrder: Codeunit "Task Modify Order";
                     begin
-                        // TaskModifyOrder.OnModifyOrder(Rec."No.");
                         if Codeunit.Run(Codeunit::"Task Modify Order") then
                             Message('Task Modify Order Ok!')
                         else
@@ -89,11 +88,11 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     var
                         TaskModifyOrder: Codeunit "Task Modify Order";
                     begin
-                        // TaskModifyOrder.OnModifyOrder(Rec."No.");
-                        if Codeunit.Run(Codeunit::"Modification Order", Rec) then
-                            Message('Sales Order Modified Ok!')
-                        else
-                            Error(GetLastErrorText);
+                        Codeunit.Run(Codeunit::"Modification Order", Rec);
+                        // if Codeunit.Run(Codeunit::"Modification Order", Rec) then
+                        Message('Sales Order Modified Ok!')
+                        //     else
+                        //         Error(GetLastErrorText);
                     end;
                 }
 
