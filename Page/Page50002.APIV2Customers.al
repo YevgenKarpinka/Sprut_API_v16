@@ -266,6 +266,17 @@ page 50002 "APIV2 - Customers"
                 }
 
                 // >>
+                field(deduplicateId; "Deduplicate Id")
+                {
+                    ApplicationArea = All;
+                    Caption = 'deduplicateId', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(FIELDNO("Deduplicate Id"));
+                    end;
+                }
+
                 field(codeOKPO; Rec."OKPO Code")
                 {
                     ApplicationArea = All;

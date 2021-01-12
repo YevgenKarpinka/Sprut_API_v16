@@ -19,7 +19,7 @@ table 50003 "Task Payment Send"
         field(3; "Work Status"; Enum WorkStatus)
         {
             CaptionML = ENU = 'Work Status',
-                        RUS = 'Сатату работы';
+                        RUS = 'Статус работы';
             DataClassification = CustomerContent;
         }
         field(4; "Invoice Entry No."; Integer)
@@ -107,11 +107,11 @@ table 50003 "Task Payment Send"
 
     keys
     {
-        key(PK; "Entry Type", Status, "Work Status", "Invoice No.", "Payment No.")
+        key(PK; "Entry Type", "Invoice Entry No.", "Payment Entry No.", "Payment Amount")
         {
             Clustered = true;
         }
-        key(SK; "Invoice Entry No.", "Payment Entry No.") { }
+        key(SK; "Invoice No.", "Payment No.") { }
     }
 
     trigger OnInsert()

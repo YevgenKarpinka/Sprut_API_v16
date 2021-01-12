@@ -29,6 +29,12 @@ pageextension 50005 "Customer Card Ext" extends "Customer Card"
                 ToolTipML = ENU = 'Specifies the display name of the CRM Id.',
                             RUS = 'Указывает на CRM Id.';
             }
+            field("Deduplicate Id"; "Deduplicate Id")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies the display name of the Deduplicate Id.',
+                            RUS = 'Указывает на Дедубликат ИД.';
+            }
         }
     }
 }

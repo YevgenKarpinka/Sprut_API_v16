@@ -26,5 +26,11 @@ tableextension 50006 "Customer Ext" extends Customer
             CaptionML = ENU = 'Certificate',
                         RUS = 'Свидетельство';
         }
+        field(50004; "Deduplicate Id"; Guid)
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'Deduplicate Id',
+                        RUS = 'Дедубликат ИД';
+        }
     }
 }

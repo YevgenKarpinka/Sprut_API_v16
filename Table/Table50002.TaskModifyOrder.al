@@ -122,18 +122,22 @@ enum 50003 WorkStatus
 
     value(0; WaitingForWork)
     {
-        CaptionML = ENU = 'WaitingForWork', RUS = 'ОжиданиеОчереди';
+        CaptionML = ENU = 'WaitingForWork',
+                    RUS = 'ОжиданиеОчереди';
     }
     value(1; InWork)
     {
-        CaptionML = ENU = 'InWork', RUS = 'вРаботе';
+        CaptionML = ENU = 'InWork',
+                    RUS = 'вРаботе';
     }
     value(2; Error)
     {
-        CaptionML = ENU = 'Error', RUS = 'Ошибка';
+        CaptionML = ENU = 'Error',
+                    RUS = 'Ошибка';
     }
     value(3; Done)
     {
-        CaptionML = ENU = 'Done', RUS = 'Звершено';
+        CaptionML = ENU = 'Done',
+                    RUS = 'Звершено';
     }
 }
