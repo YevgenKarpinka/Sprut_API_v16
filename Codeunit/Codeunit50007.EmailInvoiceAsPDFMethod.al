@@ -16,7 +16,7 @@ codeunit 50007 "Email Invoice As PDF Method"
         lblBody: Label 'Не примененные документы для заказа продажи %1';
         lblBodyErrorTasks: Label 'Ошибка(и) очереди задач модификации заказа продажи';
 
-    procedure ErrorTasksToAdministrator(): Boolean
+    procedure ErrorTasksModifyOrderToAdministrator(): Boolean
     begin
         if SendEmailErrorTasks() then exit;
 
@@ -24,7 +24,20 @@ codeunit 50007 "Email Invoice As PDF Method"
             exit(false);
 
         if GuiAllowed then
-            Message(msgEmailErrorTasksSentToUser, 50000);
+            Message(msgEmailErrorTasksSentToUser, 50006);
+
+        exit(true);
+    end;
+
+    procedure ErrorTasksPaymentSendToAdministrator(): Boolean
+    begin
+        if SendEmailErrorTasks() then exit;
+
+        if not DoEmailErrorTasksPaymentSend() then
+            exit(false);
+
+        if GuiAllowed then
+            Message(msgEmailErrorTasksSentToUser, 50012);
 
         exit(true);
     end;
@@ -44,7 +57,7 @@ codeunit 50007 "Email Invoice As PDF Method"
 
         GetToAdminAddresses(ToAddr);
 
-        Body := GetBodyErrorTasks();
+        Body := GetBodyErrorTasksModifyOrder();
         if StrLen(Body) = 0 then exit(false);
 
         EmailSubject := StrSubstNo(TxtEmailErrorTasksSubject, CompanyInformation.Name);
@@ -53,7 +66,31 @@ codeunit 50007 "Email Invoice As PDF Method"
         exit(SMTPMail.Send);
     end;
 
-    local procedure GetBodyErrorTasks(): Text
+    local procedure DoEmailErrorTasksPaymentSend(): Boolean
+    var
+        SMTPMail: Codeunit "SMTP Mail";
+        CompanyInformation: Record "Company Information";
+        EmailSubject: Text;
+        SmtpConf: Record "SMTP Mail Setup";
+        ToAddr: List of [Text];
+        Body: Text;
+    begin
+        //SMTP
+        SmtpConf.Get();
+        CompanyInformation.Get;
+
+        GetToAdminAddresses(ToAddr);
+
+        Body := GetBodyErrorTasksPaymentSend();
+        if StrLen(Body) = 0 then exit(false);
+
+        EmailSubject := StrSubstNo(TxtEmailErrorTasksSubject, CompanyInformation.Name);
+        SMTPMail.CreateMessage(CompanyInformation.Name, SmtpConf."User ID", ToAddr, EmailSubject, Body);
+
+        exit(SMTPMail.Send);
+    end;
+
+    local procedure GetBodyErrorTasksModifyOrder(): Text
     var
         locTaskModifyOrder: Record "Task Modify Order";
         locBody: Text;
@@ -77,6 +114,37 @@ codeunit 50007 "Email Invoice As PDF Method"
                                 Format(locTaskModifyOrder."Create Date Time") + ' ' +
                                 Format(locTaskModifyOrder."Modify Date Time");
             until locTaskModifyOrder.Next() = 0;
+        end;
+
+        exit(locBody);
+    end;
+
+    local procedure GetBodyErrorTasksPaymentSend(): Text
+    var
+        locTaskPaymentSend: Record "Task Payment Send";
+        locBody: Text;
+        char13: Char;
+        char10: Char;
+    begin
+        char13 := 13;
+        char10 := 10;
+
+        locTaskPaymentSend.SetCurrentKey("Work Status");
+        locTaskPaymentSend.SetFilter("Work Status", '%1', locTaskPaymentSend."Work Status"::Error);
+        if locTaskPaymentSend.IsEmpty then exit('');
+
+        if locTaskPaymentSend.FindSet(false, false) then begin
+            locBody := lblBodyErrorTasks;
+            repeat
+                locBody += Format(char13) + Format(char10);
+                locBody += locTaskPaymentSend."Error Text" + ' ' +
+                                Format(locTaskPaymentSend.Status) + ' ' +
+                                locTaskPaymentSend."Invoice No." + ' ' +
+                                locTaskPaymentSend."Payment No." + ' ' +
+                                Format(locTaskPaymentSend."Payment Amount") + ' ' +
+                                Format(locTaskPaymentSend."Create Date Time") + ' ' +
+                                Format(locTaskPaymentSend."Modify Date Time");
+            until locTaskPaymentSend.Next() = 0;
         end;
 
         exit(locBody);

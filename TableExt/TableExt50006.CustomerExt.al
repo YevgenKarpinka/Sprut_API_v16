@@ -32,5 +32,11 @@ tableextension 50006 "Customer Ext" extends Customer
             CaptionML = ENU = 'Deduplicate Id',
                         RUS = 'Дедубликат ИД';
         }
+        field(50005; Status; Text[20])
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'Status CRM',
+                        RUS = 'Статус CRM';
+        }
     }
 }

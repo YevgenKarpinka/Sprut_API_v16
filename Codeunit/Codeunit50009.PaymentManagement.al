@@ -5,86 +5,10 @@ codeunit 50009 "Payment Management"
 
     end;
 
-    // [EventSubscriber(ObjectType::Codeunit, Codeunit::"Payment Registration Mgt.", 'OnBeforeGenJnlLineInsert', '', false, false)]
-    // local procedure OnBeforeGenJournalLineInsert(var GenJournalLine: Record "Gen. Journal Line"; TempPaymentRegistrationBuffer: Record "Payment Registration Buffer")
-    // begin
-    //     GenJournalLine."Agreement No." := TempPaymentRegistrationBuffer."Agreement No.";
-
-    //     if GenJournalLine."Applies-to ID" = '' then
-    //         CreateApplyTaskForSendingToCRM(TempPaymentRegistrationBuffer."Ledger Entry No.", TempPaymentRegistrationBuffer."Pmt. Discount Date",
-    //                                        TempPaymentRegistrationBuffer."Document No.", 0, GenJournalLine."Posting Date",
-    //                                        GenJournalLine."Document No.", TempPaymentRegistrationBuffer."Amount Received")
-    //     else
-    //         InsertTaskPaymentFromRegistrationLump(GenJournalLine."Posting Date", GenJournalLine."Applies-to ID", GenJournalLine."Account No.");
-    // end;
-
-    local procedure InsertTaskPaymentFromRegistrationLump(PostingDate: Date; CustEntryApplID: Code[20]; CustomerNo: Code[20])
     var
-        AppliedCustLedgEntry: Record "Cust. Ledger Entry";
-    begin
-        AppliedCustLedgEntry.SetCurrentKey("Customer No.", Open, Positive);
-        AppliedCustLedgEntry.SetRange("Customer No.", CustomerNo);
-        AppliedCustLedgEntry.SetRange(Open, true);
-        AppliedCustLedgEntry.SetRange("Applies-to ID", CustEntryApplID);
-        AppliedCustLedgEntry.SetRange("Document Type", AppliedCustLedgEntry."Document Type"::Invoice);
-        AppliedCustLedgEntry.LockTable();
-        if AppliedCustLedgEntry.FindSet(false, false) then begin
-            repeat
-                CreateApplyTaskForSendingToCRM(AppliedCustLedgEntry."Entry No.", AppliedCustLedgEntry."Posting Date",
-                                               AppliedCustLedgEntry."Document No.", 0, PostingDate,
-                                               AppliedCustLedgEntry."Applies-to ID", AppliedCustLedgEntry."Amount to Apply");
-            until AppliedCustLedgEntry.Next() = 0;
-        end;
-    end;
+        WebServiceMgt: Codeunit "Web Service Mgt.";
+        IsSuccessStatusCode: Boolean;
 
-    // [EventSubscriber(ObjectType::Codeunit, Codeunit::"Payment Registration Mgt.", 'OnAfterPostPaymentRegistration', '', false, false)]
-    // local procedure OnAfterPostPaymentRegistration()
-    // var
-    //     TaskPaymentSend: Record "Task Payment Send";
-    //     UpdateTaskPaymentSend: Record "Task Payment Send";
-    //     CustLedgEntry: Record "Cust. Ledger Entry";
-    // begin
-    //     TaskPaymentSend.SetCurrentKey("Payment Entry No.");
-    //     TaskPaymentSend.SetRange("Payment Entry No.", 0);
-    //     if TaskPaymentSend.FindSet(false, true) then
-    //         repeat
-    //             CustLedgEntry.SetCurrentKey("Document Type", "Posting Date", "Document No.");
-    //             CustLedgEntry.SetRange("Document Type", CustLedgEntry."Document Type"::Payment);
-    //             CustLedgEntry.SetRange("Posting Date", TaskPaymentSend."Payment Date");
-    //             CustLedgEntry.SetRange("Document No.", TaskPaymentSend."Payment No.");
-    //             if CustLedgEntry.FindFirst() then begin
-    //                 UpdateTaskPaymentSend.SetRange("Payment Date", TaskPaymentSend."Payment Date");
-    //                 UpdateTaskPaymentSend.SetRange("Payment No.", TaskPaymentSend."Payment No.");
-    //                 UpdateTaskPaymentSend.ModifyAll("Payment Entry No.", CustLedgEntry."Entry No.", true);
-    //             end;
-    //         until TaskPaymentSend.Next() = 0;
-    // end;
-
-    // [EventSubscriber(ObjectType::Codeunit, Codeunit::"CustEntry-Apply Posted Entries", 'OnBeforePostApplyCustLedgEntry', '', false, false)]
-    // local procedure OnBeforePostApplyCustLedgEntry(CustLedgerEntry: Record "Cust. Ledger Entry")
-    // begin
-    //     if CustLedgerEntry."Document Type" <> CustLedgerEntry."Document Type"::Invoice then exit;
-    //     InsertTaskPaymentSendFromCustEntryApply(CustLedgerEntry."Entry No.", CustLedgerEntry."Posting Date",
-    //                                             CustLedgerEntry."Document No.", CustLedgerEntry."Customer No.",
-    //                                             CustLedgerEntry."Applies-to ID");
-    // end;
-
-    local procedure InsertTaskPaymentSendFromCustEntryApply(InvoiceEntryNo: Integer; InvoiceDate: Date; InvoiceNo: Code[20]; CustomerNo: Code[20]; AppliesToID: Code[50])
-    var
-        locCustLedgEntry: Record "Cust. Ledger Entry";
-        TaskPaymentSend: Record "Task Payment Send";
-    begin
-        locCustLedgEntry.SetCurrentKey("Customer No.", "Applies-to ID", "Document Type");
-        locCustLedgEntry.SetRange("Customer No.", CustomerNo);
-        locCustLedgEntry.SetRange("Applies-to ID", AppliestoID);
-        locCustLedgEntry.SetRange("Document Type", locCustLedgEntry."Document Type"::Payment);
-        if locCustLedgEntry.FindSet(false, false) then
-            repeat
-                CreateApplyTaskForSendingToCRM(InvoiceEntryNo, InvoiceDate, InvoiceNo,
-                        locCustLedgEntry."Entry No.", locCustLedgEntry."Posting Date",
-                        locCustLedgEntry."Document No.", Abs(locCustLedgEntry."Amount to Apply"));
-            until locCustLedgEntry.Next() = 0;
-    end;
 
     [EventSubscriber(ObjectType::Codeunit, Codeunit::"Gen. Jnl.-Post Line", 'OnBeforePostDtldCVLedgEntry', '', false, false)]
     local procedure OnBeforePostDtldCVLedgEntry(var DetailedCVLedgEntryBuffer: Record "Detailed CV Ledg. Entry Buffer")
@@ -168,7 +92,6 @@ codeunit 50009 "Payment Management"
     var
         TaskPaymentSend: Record "Task Payment Send";
     begin
-        // TaskPaymentSend.SetCurrentKey("Invoice Entry No.", "Payment Entry No.");
         TaskPaymentSend.SetRange("Entry Type", TaskPaymentSend."Entry Type"::Apply);
         TaskPaymentSend.SetRange("Invoice Entry No.", InvoiceEntryNo);
         TaskPaymentSend.SetRange("Payment Entry No.", PaymentEntryNo);
@@ -196,7 +119,6 @@ codeunit 50009 "Payment Management"
     var
         TaskPaymentSend: Record "Task Payment Send";
     begin
-        // TaskPaymentSend.SetCurrentKey("Invoice Entry No.", "Payment Entry No.");
         TaskPaymentSend.SetRange("Entry Type", TaskPaymentSend."Entry Type"::UnApply);
         TaskPaymentSend.SetRange("Invoice Entry No.", InvoiceEntryNo);
         TaskPaymentSend.SetRange("Payment Entry No.", PaymentEntryNo);
@@ -204,7 +126,7 @@ codeunit 50009 "Payment Management"
         if TaskPaymentSend.FindFirst() then begin
             TaskPaymentSend.Status := TaskPaymentSend.Status::OnPaymentSend;
             TaskPaymentSend."Work Status" := TaskPaymentSend."Work Status"::WaitingForWork;
-            TaskPaymentSend."CRM Payment Id" := GetCRMPaymentId(InvoiceNo, PaymentNo, PaymentAmount);
+            TaskPaymentSend."CRM Payment Id" := GetCRMPaymentId(InvoiceEntryNo, PaymentEntryNo, PaymentAmount);
             TaskPaymentSend.Modify(true);
         end else begin
             TaskPaymentSend.Init();
@@ -216,20 +138,162 @@ codeunit 50009 "Payment Management"
             TaskPaymentSend."Payment Date" := PaymentDate;
             TaskPaymentSend."Payment No." := PaymentNo;
             TaskPaymentSend."Payment Amount" := PaymentAmount;
-            TaskPaymentSend."CRM Payment Id" := GetCRMPaymentId(InvoiceNo, PaymentNo, PaymentAmount);
+            TaskPaymentSend."CRM Payment Id" := GetCRMPaymentId(InvoiceEntryNo, PaymentEntryNo, PaymentAmount);
             TaskPaymentSend.Insert(true);
         end;
     end;
 
-    local procedure GetCRMPaymentId(InvoiceNo: Code[20]; PaymentNo: Code[20]; PaymentAmount: Decimal): Guid
+    local procedure GetCRMPaymentId(InvoiceEntryNo: Integer; PaymentEntryNo: Integer; PaymentAmount: Decimal): Guid
     var
         TaskPaymentSend: Record "Task Payment Send";
     begin
         TaskPaymentSend.SetRange("Entry Type", TaskPaymentSend."Entry Type"::Apply);
-        TaskPaymentSend.SetRange("Invoice No.", InvoiceNo);
-        TaskPaymentSend.SetRange("Payment No.", PaymentNo);
+        TaskPaymentSend.SetRange("Invoice Entry No.", InvoiceEntryNo);
+        TaskPaymentSend.SetRange("Payment Entry No.", PaymentEntryNo);
         TaskPaymentSend.SetRange("Payment Amount", PaymentAmount);
         if TaskPaymentSend.FindLast() then;
         exit(TaskPaymentSend."CRM Payment Id");
+    end;
+
+    procedure OnProcessPaymentSendToCRM(EntryType: Enum EntryType; InvoiceEntryNo: Integer; PaymentEntryNo: Integer; PaymentAmount: Decimal): Boolean
+    var
+        recTaskPaymentSend: Record "Task Payment Send";
+    begin
+        recTaskPaymentSend.SetRange("Entry Type", EntryType);
+        recTaskPaymentSend.SetRange("Invoice Entry No.", InvoiceEntryNo);
+        recTaskPaymentSend.SetRange("Payment Entry No.", PaymentEntryNo);
+        if not recTaskPaymentSend.FindFirst() then
+            exit(false);
+
+        case recTaskPaymentSend."Entry Type" of
+            recTaskPaymentSend."Entry Type"::Apply:
+                begin
+                    exit(OnProcessApplyPaymentSendToCRM(recTaskPaymentSend));
+                end;
+            recTaskPaymentSend."Entry Type"::UnApply:
+                begin
+                    exit(OnProcessUnApplyPaymentSendToCRM(recTaskPaymentSend));
+                end;
+            else
+                exit(false);
+        end;
+
+        exit(true);
+    end;
+
+    local procedure OnProcessApplyPaymentSendToCRM(recTaskPaymentSend: Record "Task Payment Send"): Boolean
+    begin
+        exit(SendPaymentToApplyPost(recTaskPaymentSend."CRM Payment Id", recTaskPaymentSend."Invoice Entry No.", recTaskPaymentSend."Payment Entry No.", recTaskPaymentSend."Payment Amount"));
+    end;
+
+    local procedure OnProcessUnApplyPaymentSendToCRM(recTaskPaymentSend: Record "Task Payment Send"): Boolean
+    begin
+        if IsNullGuid(recTaskPaymentSend."CRM Payment Id") then exit(false);
+        exit(SendPaymentToUnApplyPatch(recTaskPaymentSend."CRM Payment Id"));
+    end;
+
+    local procedure SendPaymentToUnApplyPatch(CRMPaymentId: Guid): Boolean
+    var
+        _jsonPayment: JsonObject;
+        _jsonText: Text;
+        entityType: Label 'tct_payments';
+        PATCHrequestMethod: Label 'PATCH';
+        TokenType: Text;
+        AccessToken: Text;
+        APIResult: Text;
+        requestMethod: Text[20];
+        entityTypeValue: Text;
+    begin
+        if not WebServiceMgt.GetOauthToken(TokenType, AccessToken, APIResult) then
+            exit(false);
+
+        // Create JSON for CRM
+        if IsNullGuid(CRMPaymentId) then begin
+            exit(false);
+        end else begin
+            requestMethod := PATCHrequestMethod;
+            entityTypeValue := StrSubstNo('%1(%2)', entityType, CRMPaymentId);
+            _jsonPayment := WebServiceMgt.jsonUnApplyPaymentToPatch();
+        end;
+
+        _jsonPayment.WriteTo(_jsonText);
+        // try send to CRM
+        exit(WebServiceMgt.CreatePaymentInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText));
+    end;
+
+    local procedure SendPaymentToApplyPost(CRMPaymentId: Guid; InvoiceEntryNo: Integer; PaymentEntryNo: Integer; PaymentAmount: Decimal): Boolean
+    var
+        _jsonPayment: JsonObject;
+        _jsonText: Text;
+        connectorCode: Label 'CRM';
+        entityType: Label 'tct_payments';
+        POSTrequestMethod: Label 'POST';
+        PATCHrequestMethod: Label 'PATCH';
+        TokenType: Text;
+        AccessToken: Text;
+        APIResult: Text;
+        requestMethod: Text[20];
+        entityTypeValue: Text;
+        payerDetails: Text[100];
+        custAgreementId: Guid;
+        crmId: Guid;
+    begin
+
+        // >> init for test
+        // custAgreementId := '446e2ca1-35a6-ea11-a812-000d3aba77ea';
+        // crmId := '93dd43f3-e5a3-ea11-a812-000d3abaae50';
+        // payerDetails := 'test payment from BC';
+        // <<
+
+        custAgreementId := GetAgreementIdByDocumentNo(InvoiceEntryNo);
+        crmId := GetCRMInvoiceIdByDocumentNo(InvoiceEntryNo);
+        payerDetails := '';
+
+        if not WebServiceMgt.GetOauthToken(TokenType, AccessToken, APIResult) then
+            exit(false);
+
+        // Create JSON for CRM
+        if IsNullGuid(CRMPaymentId) then begin
+            requestMethod := POSTrequestMethod;
+            entityTypeValue := entityType;
+            _jsonPayment := WebServiceMgt.jsonPaymentToPost(custAgreementId, crmId, payerDetails, paymentAmount);
+        end else begin
+            requestMethod := PATCHrequestMethod;
+            entityTypeValue := StrSubstNo('%1(%2)', entityType, CRMPaymentId);
+            _jsonPayment := WebServiceMgt.jsonApplyPaymentToPatch();
+        end;
+
+        _jsonPayment.WriteTo(_jsonText);
+        // try send to CRM
+        if not WebServiceMgt.CreatePaymentInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText) then
+            exit(false)
+        else
+            // add CRM product ID to Item
+            exit(WebServiceMgt.AddCRMpaymentIdToPayment(_jsonText, InvoiceEntryNo, PaymentEntryNo, PaymentAmount));
+    end;
+
+    local procedure GetAgreementIdByDocumentNo(InvoiceEntryNo: Integer): Guid
+    var
+        CustLedgEntry: Record "Cust. Ledger Entry";
+        SalesInvHeader: Record "Sales Invoice Header";
+        CustAgreement: Record "Customer Agreement";
+    begin
+        if CustLedgEntry.Get(InvoiceEntryNo)
+        and SalesInvHeader.Get(CustLedgEntry."Document No.")
+        and CustAgreement.Get(SalesInvHeader."Sell-to Customer No.", SalesInvHeader."Agreement No.") then
+            ;
+        exit(CustAgreement."CRM ID");
+    end;
+
+    local procedure GetCRMInvoiceIdByDocumentNo(InvoiceEntryNo: Integer): Guid
+    var
+        CustLedgEntry: Record "Cust. Ledger Entry";
+        SalesInvHeader: Record "Sales Invoice Header";
+        CustAgreement: Record "Customer Agreement";
+    begin
+        if CustLedgEntry.Get(InvoiceEntryNo)
+        and SalesInvHeader.Get(CustLedgEntry."Document No.") then
+            ;
+        exit(SalesInvHeader."CRM ID");
     end;
 }

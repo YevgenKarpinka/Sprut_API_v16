@@ -17,7 +17,7 @@ codeunit 50011 "Notification Task Error"
                 begin
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 
-                    PDFToEmail.ErrorTasksToAdministrator();
+                    PDFToEmail.ErrorTasksModifyOrderToAdministrator();
 
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::Done);
                 end;

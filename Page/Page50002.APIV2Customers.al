@@ -276,6 +276,16 @@ page 50002 "APIV2 - Customers"
                         RegisterFieldSet(FIELDNO("Deduplicate Id"));
                     end;
                 }
+                field(status; Status)
+                {
+                    ApplicationArea = All;
+                    Caption = 'status', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(FIELDNO(Status));
+                    end;
+                }
 
                 field(codeOKPO; Rec."OKPO Code")
                 {

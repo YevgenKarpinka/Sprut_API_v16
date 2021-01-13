@@ -38,7 +38,7 @@ codeunit 50006 "Task Modify Order"
                         if recTaskModifyOrder."Attempts Send" >= GetJobQueueMaxAttempts then begin
                             UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error)
                         end else begin
-                            IncTaskModifyOrderAttempt;
+                            IncTaskModifyOrderAttempt();
                             UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
                         end;
                         exit;
@@ -57,7 +57,7 @@ codeunit 50006 "Task Modify Order"
                         if recTaskModifyOrder."Attempts Send" >= GetJobQueueMaxAttempts then
                             UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error)
                         else begin
-                            IncTaskModifyOrderAttempt;
+                            IncTaskModifyOrderAttempt();
                             UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
                         end;
                         exit;
@@ -75,7 +75,7 @@ codeunit 50006 "Task Modify Order"
                         if recTaskModifyOrder."Attempts Send" >= GetJobQueueMaxAttempts then
                             UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error)
                         else begin
-                            IncTaskModifyOrderAttempt;
+                            IncTaskModifyOrderAttempt();
                             UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
                         end;
                         exit;
@@ -151,7 +151,7 @@ codeunit 50006 "Task Modify Order"
 
     local procedure IncTaskModifyOrderAttempt()
     begin
-        recTaskModifyOrder."Attempts Send" += 1;
+        recTaskModifyOrder.Validate("Attempts Send", recTaskModifyOrder."Attempts Send" + 1);
         recTaskModifyOrder.Modify(true);
         Commit();
     end;

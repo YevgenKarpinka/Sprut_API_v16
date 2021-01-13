@@ -100,8 +100,18 @@ table 50003 "Task Payment Send"
             CaptionML = ENU = 'Attempts Send',
                         RUS = 'Попытки отправить';
             DataClassification = CustomerContent;
-        }
+            trigger OnValidate()
+            begin
+                if xRec."Attempts Send" >= Rec."Attempts Send" then exit;
 
+                "Error Text" := CopyStr(GetLastErrorText, 1, MaxStrLen("Error Text"));
+                ClearLastError();
+            end;
+        }
+        field(17; "Error Text"; Text[250])
+        {
+            DataClassification = CustomerContent;
+        }
 
     }
 

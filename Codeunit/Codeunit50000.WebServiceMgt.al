@@ -194,7 +194,7 @@ codeunit 50000 "Web Service Mgt."
         invoice_id := GetJSToken(LineToken.AsObject(), 'invoice_id').AsValue().AsText();
         prepayment_percent := GetJSToken(LineToken.AsObject(), 'prepayment_percent').AsValue().AsDecimal();
         crm_id := GetJSToken(LineToken.AsObject(), 'crm_id').AsValue().AsText();
-        if not IsNullGuid(crm_id) then
+        if IsNullGuid(crm_id) then
             Error(errWrong_CRM_Id, crm_id);
     end;
 
@@ -657,33 +657,6 @@ codeunit 50000 "Web Service Mgt."
         exit(JSObjectLine);
     end;
 
-    procedure jsonPaymentToPost(salesOrderId: Text[50]; invoiceId: Text[50]; payerDetails: Text[100]; paymentAmount: Decimal): JsonObject
-    var
-        JSObjectLine: JsonObject;
-        lblSalesOrderId: Label '/salesorders(%1)';
-        lblInvoiceId: Label '/invoices(%1)';
-        lblTransactionCurrencyId: Label '/transactioncurrencies(d8b0ca73-7060-ea11-a811-000d3ab9be86)';
-    begin
-        salesOrderId := StrSubstNo(lblSalesOrderId, salesOrderId);
-        invoiceId := StrSubstNo(lblInvoiceId, invoiceId);
-
-        JSObjectLine.Add('tct_salesorderid@odata.bind', salesOrderId);
-        JSObjectLine.Add('tct_payerdetails', payerDetails);
-        JSObjectLine.Add('tct_amount', paymentAmount);
-        JSObjectLine.Add('tct_invoiceid@odata.bind', invoiceId);
-        JSObjectLine.Add('transactioncurrencyid@odata.bind', lblTransactionCurrencyId);
-
-        exit(JSObjectLine);
-    end;
-
-    procedure jsonPaymentToPatch(): JsonObject
-    var
-        JSObjectLine: JsonObject;
-    begin
-        JSObjectLine.Add('statuscode', 0);
-        exit(JSObjectLine);
-    end;
-
     procedure AddCRMproductIdToItem(jsonText: Text)
     var
         locItem: Record Item;
@@ -703,22 +676,100 @@ codeunit 50000 "Web Service Mgt."
         end;
     end;
 
-    procedure AddCRMpaymentIdToPayment(jsonText: Text; crmInvoiceNo: Code[50])
+    procedure jsonPaymentToPost(salesOrderId: Text[50]; invoiceId: Text[50]; payerDetails: Text[100]; paymentAmount: Decimal): JsonObject
     var
-        locDtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
+        JSObjectLine: JsonObject;
+        lblSalesOrderId: Label '/salesorders(%1)';
+        lblInvoiceId: Label '/invoices(%1)';
+        lblTransactionCurrencyId: Label '/transactioncurrencies(d8b0ca73-7060-ea11-a811-000d3ab9be86)';
+    begin
+        salesOrderId := StrSubstNo(lblSalesOrderId, salesOrderId);
+        invoiceId := StrSubstNo(lblInvoiceId, invoiceId);
+
+        JSObjectLine.Add('tct_salesorderid@odata.bind', salesOrderId);
+        JSObjectLine.Add('tct_payerdetails', payerDetails);
+        JSObjectLine.Add('tct_amount', paymentAmount);
+        JSObjectLine.Add('tct_invoiceid@odata.bind', invoiceId);
+        JSObjectLine.Add('transactioncurrencyid@odata.bind', lblTransactionCurrencyId);
+
+        exit(JSObjectLine);
+    end;
+
+    procedure jsonApplyPaymentToPatch(): JsonObject
+    var
+        JSObjectLine: JsonObject;
+    begin
+        JSObjectLine.Add('statuscode', 1);
+        exit(JSObjectLine);
+    end;
+
+    procedure jsonUnApplyPaymentToPatch(): JsonObject
+    var
+        JSObjectLine: JsonObject;
+    begin
+        JSObjectLine.Add('statuscode', 0);
+        exit(JSObjectLine);
+    end;
+
+    // procedure AddCRMproductIdToItem(jsonText: Text)
+    // var
+    //     locItem: Record Item;
+    //     ItemToken: JsonToken;
+    //     ItemToken2: JsonToken;
+    //     ItemNo: Text[20];
+    //     CRMproductId: Text[50];
+    // begin
+    //     ItemToken.ReadFrom(jsonText);
+    //     if ItemToken.AsObject().Get('tct_bc_product_number', ItemToken2) then begin
+    //         ItemNo := GetJSToken(ItemToken.AsObject(), 'tct_bc_product_number').AsValue().AsText();
+    //         CRMproductId := GetJSToken(ItemToken.AsObject(), 'productid').AsValue().AsText();
+    //         if locItem.Get(ItemNo) then begin
+    //             locItem."CRM Item Id" := CRMproductId;
+    //             locItem.Modify();
+    //         end;
+    //     end;
+    // end;
+
+    procedure AddCRMpaymentIdToPayment(jsonText: Text; InvoiceEntryNo: Integer; PaymentEntryNo: Integer; PaymentAmount: Decimal): Boolean
+    var
+        locTaskPaymentSend: Record "Task Payment Send";
         PaymentToken: JsonToken;
         PaymentToken2: JsonToken;
-        ItemNo: Text[20];
         CRMpaymentId: Text[50];
     begin
         PaymentToken.ReadFrom(jsonText);
         if PaymentToken.AsObject().Get('tct_paymentid', PaymentToken2) then begin
             CRMpaymentId := GetJSToken(PaymentToken.AsObject(), 'tct_paymentid').AsValue().AsText();
 
-            locDtldCustLedgEntry.SetCurrentKey("CRM Invoice No.");
-            locDtldCustLedgEntry.SetRange("CRM Invoice No.", crmInvoiceNo);
-            locDtldCustLedgEntry.ModifyAll("CRM Payment Id", CRMpaymentId);
+            locTaskPaymentSend.SetRange("Invoice Entry No.", InvoiceEntryNo);
+            locTaskPaymentSend.SetRange("Payment Entry No.", PaymentEntryNo);
+            locTaskPaymentSend.SetRange("Payment Amount", PaymentAmount);
+            locTaskPaymentSend.ModifyAll("CRM Payment Id", CRMpaymentId);
+        end else
+            exit(false);
+
+        exit(true);
+    end;
+
+    local procedure GetDocumentNoByEntryNoCustLedgEntry(DocumentType: Enum "Gen. Journal Document Type"; DocumentNo: Code[20]): Code[20]
+    var
+        CustLedgEntry: Record "Cust. Ledger Entry";
+    begin
+        case DocumentType of
+            DocumentType::Invoice:
+                begin
+                    CustLedgEntry.SetRange("Document Type", CustLedgEntry."Document Type"::Invoice);
+                end;
+            DocumentType::Payment:
+                begin
+                    CustLedgEntry.SetRange("Document Type", CustLedgEntry."Document Type"::Payment);
+
+                end;
         end;
+        CustLedgEntry.SetRange("Document No.", DocumentNo);
+        if CustLedgEntry.FindFirst() then
+            exit(CustLedgEntry."Document No.");
+        exit('');
     end;
 
     procedure SendPaymentToCRM(custAgreementId: Guid; PayerDetails: Text[100]; paymentAmount: Decimal; crmInvoiceNo: Text[50]; crmId: Guid; crmPaymentId: Guid)
@@ -767,7 +818,7 @@ codeunit 50000 "Web Service Mgt."
             end else begin
                 requestMethod := PATCHrequestMethod;
                 entityTypeValue := StrSubstNo('%1(%2)', entityType, crmPaymentId);
-                _jsonPayment := jsonPaymentToPatch();
+                _jsonPayment := jsonApplyPaymentToPatch();
             end;
 
             _jsonPayment.WriteTo(_jsonText);
@@ -778,27 +829,11 @@ codeunit 50000 "Web Service Mgt."
                 _jsonErrorItemList.Add(_jsonPayment);
                 _jsonPayment.ReadFrom(_jsonText);
                 _jsonErrorItemList.Add(_jsonPayment);
-            end else
+            end;// else
                 // add CRM product ID to Item
-                AddCRMpaymentIdToPayment(_jsonText, crmInvoiceNo);
+                // AddCRMpaymentIdToPayment(_jsonText, crmInvoiceNo);
         end;
         if _jsonErrorItemList.Count > 0 then;
     end;
 
-    // procedure InsertOperationToLog(Source: Code[20]; RestMethod: Code[10]; _URL: Text; _Autorization: Text; _Request: Text; _Response: Text; isSuccess: Boolean)
-    // begin
-    //     IntegrationLog.Init();
-    //     IntegrationLog."Operation Date" := CurrentDateTime;
-    //     IntegrationLog."Source Operation" := Source;
-    //     IntegrationLog.Autorization := CopyStr(_Autorization, 1, MaxStrLen(IntegrationLog.Autorization));
-    //     IntegrationLog."Rest Method" := RestMethod;
-    //     IntegrationLog.URL := _URL;
-    //     IntegrationLog.Success := isSuccess;
-    //     IntegrationLog."Company Name" := CompanyName;
-    //     IntegrationLog."User Id" := UserId;
-    //     IntegrationLog.Insert();
-    //     IntegrationLog.SetRequest(_Request);
-    //     IntegrationLog.SetResponse(_Response);
-    //     Commit();
-    // end;
 }
