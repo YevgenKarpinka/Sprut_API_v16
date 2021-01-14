@@ -676,15 +676,15 @@ codeunit 50000 "Web Service Mgt."
         end;
     end;
 
-    procedure jsonPaymentToPost(salesOrderId: Text[50]; invoiceId: Text[50]; payerDetails: Text[100]; paymentAmount: Decimal): JsonObject
+    procedure jsonPaymentToPost(salesOrderId: Text[100]; invoiceId: Text[100]; payerDetails: Text[100]; paymentAmount: Decimal): JsonObject
     var
         JSObjectLine: JsonObject;
         lblSalesOrderId: Label '/salesorders(%1)';
         lblInvoiceId: Label '/invoices(%1)';
         lblTransactionCurrencyId: Label '/transactioncurrencies(d8b0ca73-7060-ea11-a811-000d3ab9be86)';
     begin
-        salesOrderId := StrSubstNo(lblSalesOrderId, salesOrderId);
-        invoiceId := StrSubstNo(lblInvoiceId, invoiceId);
+        salesOrderId := StrSubstNo(lblSalesOrderId, LowerCase(DelChr(salesOrderId, '<>', '{}')));
+        invoiceId := StrSubstNo(lblInvoiceId, LowerCase(DelChr(invoiceId, '<>', '{}')));
 
         JSObjectLine.Add('tct_salesorderid@odata.bind', salesOrderId);
         JSObjectLine.Add('tct_payerdetails', payerDetails);
@@ -699,7 +699,7 @@ codeunit 50000 "Web Service Mgt."
     var
         JSObjectLine: JsonObject;
     begin
-        JSObjectLine.Add('statuscode', 1);
+        JSObjectLine.Add('statecode', 0);
         exit(JSObjectLine);
     end;
 
@@ -707,28 +707,9 @@ codeunit 50000 "Web Service Mgt."
     var
         JSObjectLine: JsonObject;
     begin
-        JSObjectLine.Add('statuscode', 0);
+        JSObjectLine.Add('statecode', 1);
         exit(JSObjectLine);
     end;
-
-    // procedure AddCRMproductIdToItem(jsonText: Text)
-    // var
-    //     locItem: Record Item;
-    //     ItemToken: JsonToken;
-    //     ItemToken2: JsonToken;
-    //     ItemNo: Text[20];
-    //     CRMproductId: Text[50];
-    // begin
-    //     ItemToken.ReadFrom(jsonText);
-    //     if ItemToken.AsObject().Get('tct_bc_product_number', ItemToken2) then begin
-    //         ItemNo := GetJSToken(ItemToken.AsObject(), 'tct_bc_product_number').AsValue().AsText();
-    //         CRMproductId := GetJSToken(ItemToken.AsObject(), 'productid').AsValue().AsText();
-    //         if locItem.Get(ItemNo) then begin
-    //             locItem."CRM Item Id" := CRMproductId;
-    //             locItem.Modify();
-    //         end;
-    //     end;
-    // end;
 
     procedure AddCRMpaymentIdToPayment(jsonText: Text; InvoiceEntryNo: Integer; PaymentEntryNo: Integer; PaymentAmount: Decimal): Boolean
     var
@@ -744,7 +725,11 @@ codeunit 50000 "Web Service Mgt."
             locTaskPaymentSend.SetRange("Invoice Entry No.", InvoiceEntryNo);
             locTaskPaymentSend.SetRange("Payment Entry No.", PaymentEntryNo);
             locTaskPaymentSend.SetRange("Payment Amount", PaymentAmount);
-            locTaskPaymentSend.ModifyAll("CRM Payment Id", CRMpaymentId);
+            if locTaskPaymentSend.FindSet(true) then
+                repeat
+                    locTaskPaymentSend."CRM Payment Id" := CRMpaymentId;
+                    locTaskPaymentSend.Modify();
+                until locTaskPaymentSend.Next() = 0;
         end else
             exit(false);
 

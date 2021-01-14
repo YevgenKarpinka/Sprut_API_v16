@@ -354,6 +354,20 @@ pageextension 50004 "Item List Ext." extends "Item List"
                             Message(msgSentOk, entityType);
                     end;
                 }
+                action(OnTaskPaymentSend)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'On Task Payment Send', RUS = 'Запуск очереди отправки платежей';
+                    Image = SuggestCustomerPayments;
+
+                    trigger OnAction()
+                    begin
+                        if Codeunit.Run(Codeunit::"Task Payment To CRM") then
+                            Message(msgSentOk, 'payment')
+                        else
+                            Message(msgSentWithError, 'payment');
+                    end;
+                }
             }
         }
     }

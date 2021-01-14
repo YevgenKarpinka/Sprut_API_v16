@@ -54,20 +54,27 @@ codeunit 50012 "Task Payment To CRM"
     end;
 
     local procedure ModifyTaskStatusToNextLevel(NextTaskStatus: Enum TaskPaymentStatus)
+    var
+        locTaskPaymentSend: Record "Task Payment Send";
     begin
-        recTaskPaymentSend.Status := NextTaskStatus;
+        locTaskPaymentSend.SetRange("Entry Type", recTaskPaymentSend."Entry Type");
+        locTaskPaymentSend.SetRange("Invoice Entry No.", recTaskPaymentSend."Invoice Entry No.");
+        locTaskPaymentSend.SetRange("Payment Entry No.", recTaskPaymentSend."Payment Entry No.");
+        locTaskPaymentSend.SetRange("Payment Amount", recTaskPaymentSend."Payment Amount");
+        locTaskPaymentSend.FindFirst();
+        locTaskPaymentSend.Status := NextTaskStatus;
         if NextTaskStatus = NextTaskStatus::Done then
-            recTaskPaymentSend."Work Status" := recTaskPaymentSend."Work Status"::Done
+            locTaskPaymentSend."Work Status" := locTaskPaymentSend."Work Status"::Done
         else
-            recTaskPaymentSend."Work Status" := recTaskPaymentSend."Work Status"::WaitingForWork;
-        ResetTaskModifyOrderAttempt();
-        recTaskPaymentSend.Modify(true);
+            locTaskPaymentSend."Work Status" := locTaskPaymentSend."Work Status"::WaitingForWork;
+        ResetTaskModifyOrderAttempt(locTaskPaymentSend);
+        locTaskPaymentSend.Modify(true);
         Commit();
     end;
 
     local procedure UpdateWorkStatus(newWorkStatus: Enum WorkStatus)
     begin
-        recTaskPaymentSend.LockTable();
+        // recTaskPaymentSend.LockTable();
         recTaskPaymentSend.Validate("Work Status", newWorkStatus);
         recTaskPaymentSend.Modify(true);
         Commit();
@@ -76,7 +83,7 @@ codeunit 50012 "Task Payment To CRM"
     local procedure GetFirstRecordForExecute(): Boolean
     begin
         recTaskPaymentSend.Reset();
-        recTaskPaymentSend.SetCurrentKey(Status, "Work Status");
+        recTaskPaymentSend.SetCurrentKey(Status, "Work Status", "Create Date Time");
         recTaskPaymentSend.SetFilter(Status, '%1', recTaskPaymentSend.Status::OnPaymentSend);
         recTaskPaymentSend.SetFilter("Work Status", '%1|%2', recTaskPaymentSend."Work Status"::WaitingForWork,
                                                              recTaskPaymentSend."Work Status"::Error);
@@ -101,9 +108,9 @@ codeunit 50012 "Task Payment To CRM"
         Commit();
     end;
 
-    local procedure ResetTaskModifyOrderAttempt()
+    local procedure ResetTaskModifyOrderAttempt(var TaskPaymentSend: Record "Task Payment Send")
     begin
-        if recTaskPaymentSend."Attempts Send" = 0 then exit;
-        recTaskPaymentSend."Attempts Send" := 0;
+        if TaskPaymentSend."Attempts Send" = 0 then exit;
+        TaskPaymentSend."Attempts Send" := 0;
     end;
 }

@@ -7,12 +7,23 @@ codeunit 50009 "Payment Management"
 
     var
         WebServiceMgt: Codeunit "Web Service Mgt.";
-        IsSuccessStatusCode: Boolean;
+        OnUnApplyFlag: Boolean;
+        UnApplyInvoiceEntryNo: Integer;
+        UnApplyPaymentEntryNo: Integer;
+        UnApplyPaymentAmount: Decimal;
+
+
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::"Payment Registration Mgt.", 'OnBeforeGenJnlLineInsert', '', false, false)]
+    local procedure OnBeforeGenJnlLineInsert(var GenJournalLine: Record "Gen. Journal Line"; TempPaymentRegistrationBuffer: Record "Payment Registration Buffer")
+    begin
+        GenJournalLine."Agreement No." := TempPaymentRegistrationBuffer."Agreement No.";
+    end;
 
 
     [EventSubscriber(ObjectType::Codeunit, Codeunit::"Gen. Jnl.-Post Line", 'OnBeforePostDtldCVLedgEntry', '', false, false)]
-    local procedure OnBeforePostDtldCVLedgEntry(var DetailedCVLedgEntryBuffer: Record "Detailed CV Ledg. Entry Buffer")
+    local procedure OnBeforePostDtldCVLedgEntry(var DetailedCVLedgEntryBuffer: Record "Detailed CV Ledg. Entry Buffer"; Unapply: Boolean)
     begin
+        if Unapply then exit;
         if DetailedCVLedgEntryBuffer."CV Ledger Entry No." = DetailedCVLedgEntryBuffer."Applied CV Ledger Entry No." then exit;
 
         if not (CheckUnAppliedEntryPaymentOrInvoice(DetailedCVLedgEntryBuffer."CV Ledger Entry No.")
@@ -192,7 +203,7 @@ codeunit 50009 "Payment Management"
         exit(SendPaymentToUnApplyPatch(recTaskPaymentSend."CRM Payment Id"));
     end;
 
-    local procedure SendPaymentToUnApplyPatch(CRMPaymentId: Guid): Boolean
+    local procedure SendPaymentToUnApplyPatch(CRMPaymentId: Text): Boolean
     var
         _jsonPayment: JsonObject;
         _jsonText: Text;
@@ -212,7 +223,7 @@ codeunit 50009 "Payment Management"
             exit(false);
         end else begin
             requestMethod := PATCHrequestMethod;
-            entityTypeValue := StrSubstNo('%1(%2)', entityType, CRMPaymentId);
+            entityTypeValue := StrSubstNo('%1(%2)', entityType, LowerCase(DelChr(CRMPaymentId, '<>', '{}')));
             _jsonPayment := WebServiceMgt.jsonUnApplyPaymentToPatch();
         end;
 
@@ -221,7 +232,7 @@ codeunit 50009 "Payment Management"
         exit(WebServiceMgt.CreatePaymentInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText));
     end;
 
-    local procedure SendPaymentToApplyPost(CRMPaymentId: Guid; InvoiceEntryNo: Integer; PaymentEntryNo: Integer; PaymentAmount: Decimal): Boolean
+    local procedure SendPaymentToApplyPost(CRMPaymentId: Text; InvoiceEntryNo: Integer; PaymentEntryNo: Integer; PaymentAmount: Decimal): Boolean
     var
         _jsonPayment: JsonObject;
         _jsonText: Text;
@@ -238,13 +249,6 @@ codeunit 50009 "Payment Management"
         custAgreementId: Guid;
         crmId: Guid;
     begin
-
-        // >> init for test
-        // custAgreementId := '446e2ca1-35a6-ea11-a812-000d3aba77ea';
-        // crmId := '93dd43f3-e5a3-ea11-a812-000d3abaae50';
-        // payerDetails := 'test payment from BC';
-        // <<
-
         custAgreementId := GetAgreementIdByDocumentNo(InvoiceEntryNo);
         crmId := GetCRMInvoiceIdByDocumentNo(InvoiceEntryNo);
         payerDetails := '';
@@ -259,7 +263,7 @@ codeunit 50009 "Payment Management"
             _jsonPayment := WebServiceMgt.jsonPaymentToPost(custAgreementId, crmId, payerDetails, paymentAmount);
         end else begin
             requestMethod := PATCHrequestMethod;
-            entityTypeValue := StrSubstNo('%1(%2)', entityType, CRMPaymentId);
+            entityTypeValue := StrSubstNo('%1(%2)', entityType, LowerCase(DelChr(CRMPaymentId, '<>', '{}')));
             _jsonPayment := WebServiceMgt.jsonApplyPaymentToPatch();
         end;
 
