@@ -7,7 +7,7 @@ page 50005 "UnApplied Prepm. Cust. Entry"
     SourceTableView = where(Open = filter(true), Prepayment = filter(true));
     Editable = false;
     CaptionML = ENU = 'UnApplied Prepm. Cust. Entry',
-                RUS = 'Не примененные предоплаты клиентов';
+                RUS = 'Непримененные операции предоплаты';
 
     layout
     {

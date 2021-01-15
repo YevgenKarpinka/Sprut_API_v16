@@ -7,11 +7,14 @@ pageextension 50008 "Accountant Role Center Ext" extends "Accountant Role Center
         {
             part(UnAppliedPrepCustEntryes; "UnApplied Prepm. Cust. Entry")
             {
-                CaptionML = ENU = 'UnApplied Prepm. Cust. Entry',
-                            RUS = 'Не примененные документы по предоплате клиента';
+                ApplicationArea = All;
+            }
+            part(CustomersDeduplicateList; "Customers Deduplicate List")
+            {
                 ApplicationArea = All;
             }
         }
+
         modify(Control103)
         {
             Visible = true;
