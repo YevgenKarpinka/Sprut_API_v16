@@ -122,6 +122,7 @@ table 50003 "Task Payment Send"
             Clustered = true;
         }
         key(SK; "Invoice No.", "Payment No.") { }
+        key(SK1; "Create Date Time") { }
     }
 
     trigger OnInsert()

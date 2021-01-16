@@ -1,13 +1,13 @@
-page 50006 "Task Payment Send List"
+page 50013 "Task Payment Send Archive List"
 {
     PageType = List;
     ApplicationArea = All;
     UsageCategory = Administration;
     SourceTable = "Task Payment Send";
-    SourceTableView = sorting("Create Date Time") order(descending) where(Status = filter(<> Done));
+    SourceTableView = sorting("Create Date Time") order(descending) where(Status = filter(Done));
     // Editable = false;
-    CaptionML = ENU = 'Task Payment Send List',
-                RUS = 'Список задач передачи платежей';
+    CaptionML = ENU = 'Task Payment Send Archive List',
+                RUS = 'Архив списка задач передачи платежей';
 
     layout
     {
