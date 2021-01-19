@@ -273,6 +273,8 @@ page 50002 "APIV2 - Customers"
 
                     trigger OnValidate()
                     begin
+                        if IsNullGuid("Deduplicate Id") then
+                            Error(errDeduplicateIdIsNullNotAllowed, "Deduplicate Id");
                         RegisterFieldSet(FIELDNO("Deduplicate Id"));
                     end;
                 }
@@ -421,11 +423,9 @@ page 50002 "APIV2 - Customers"
         BlankGUID: Guid;
         NotProvidedCustomerNameErr: Label 'A "displayName" must be provided.', Locked = true;
         BlankCustomerNameErr: Label 'The blank "displayName" is not allowed.', Locked = true;
+        errDeduplicateIdIsNullNotAllowed: Label 'The "deduplicateId" %1 is not allowed.', Locked = true;
         PostalAddressSet: Boolean;
 
-    /// <summary> 
-    /// Description for RegisterIBAN.
-    /// </summary>
     local procedure RegisterIBAN()
     var
         CustBankAccount: Record "Customer Bank Account";

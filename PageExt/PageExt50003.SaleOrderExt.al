@@ -286,7 +286,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     var
                         cmrAction: Codeunit "CRM Action API";
                     begin
-                        cmrAction.OnPostSalesOrder(Rec."No.", 'Test01', 21.07);
+                        cmrAction.OnPostSalesOrder(Rec."No.", 'Test01', '00000000-0000-0000-0000-000000000000', 21.07);
                     end;
                 }
             }

@@ -47,7 +47,7 @@ page 50012 "Customers Deduplicate List"
         exit('');
     end;
 
-    local procedure GetDeduplicatName(): Code[20]
+    local procedure GetDeduplicatName(): Text[100]
     var
         Customer: Record Customer;
     begin

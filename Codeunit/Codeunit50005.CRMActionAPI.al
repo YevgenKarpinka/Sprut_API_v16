@@ -7,6 +7,7 @@ codeunit 50005 "CRM Action API"
         msgSalesOrderGetIsOk: Label 'the processed from %1 sales order %2 is ok';
         errUndefinedSourceType: Label 'undefined "sourceType" %1';
         errCRMInvoiceAmountMustBeEqualBCInvoiceAmount: Label 'CRM invoice amount %1 must be equal BC invoice amount %2';
+        errCRM_IdNotAllowed: Label 'CRM Id is Null not allowed %1';
 
 
 
@@ -32,12 +33,13 @@ codeunit 50005 "CRM Action API"
         // exit(GetJsonSalesOrderLines(SalesHeader."No."));
     end;
 
-    procedure OnPostSalesOrder(salesOrderId: Text[50]; crmInvoiceId: Text[50]; crmInvoiceAmount: Decimal): Text
+    procedure OnPostSalesOrder(salesOrderId: Text[50]; crmInvoiceId: Text[50]; crmId: Text[50]; crmInvoiceAmount: Decimal): Text
     var
         SalesHeader: Record "Sales Header";
         Location: Record Location;
     begin
         CheckCRMInvoiceAmount(salesOrderId, crmInvoiceAmount);
+        CheckCRM_Id(crmId);
 
         SalesHeader.SetRange("Document Type", SalesHeader."Document Type"::Order);
         SalesHeader.SetRange("No.", salesOrderId);
@@ -53,6 +55,7 @@ codeunit 50005 "CRM Action API"
             WhsePostShipment.RUN(recWhseShipmentLine);
         end else begin
             SalesHeader."CRM Invoice No." := crmInvoiceId;
+            SalesHeader."CRM ID" := crmId;
             SalesHeader.Modify();
             SalesHeader.Invoice := true;
             SalesHeader.Ship := true;
@@ -60,6 +63,12 @@ codeunit 50005 "CRM Action API"
         end;
 
         exit(StrSubstNo(msgSalesOrderGetIsOk, '', salesOrderId));
+    end;
+
+    local procedure CheckCRM_Id(crmId: Text[50])
+    begin
+        if IsNullGuid(crmId) then
+            Error(errCRM_IdNotAllowed, crmId);
     end;
 
     local procedure CheckCRMInvoiceAmount(salesOrderId: Text[50]; crmInvoiceAmount: Decimal)
