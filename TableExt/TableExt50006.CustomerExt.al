@@ -12,6 +12,9 @@ tableextension 50006 "Customer Ext" extends Customer
         field(50001; "CRM ID"; Guid)
         {
             DataClassification = CustomerContent;
+            CaptionML = ENU = 'CRM ID',
+                        RUS = 'CRM ID';
+            Editable = false;
         }
         field(50002; "1C Path"; Text[30])
         {
@@ -31,12 +34,14 @@ tableextension 50006 "Customer Ext" extends Customer
             DataClassification = CustomerContent;
             CaptionML = ENU = 'Deduplicate Id',
                         RUS = 'Дедубликат ИД';
+            Editable = false;
         }
         field(50005; Status; Text[20])
         {
             DataClassification = CustomerContent;
             CaptionML = ENU = 'Status CRM',
                         RUS = 'Статус CRM';
+            Editable = false;
         }
     }
 }
