@@ -7,18 +7,20 @@ codeunit 50014 "Transfer Order Mgt."
 
     procedure CreateTransferOrderFromSalesOrder(SalesLine: Record "Sales Line";
                                                 TransferFromCode: Code[20];
-                                                TransferToCode: Code[20])
+                                                TransferToCode: Code[20];
+                                                DirectTransfer: Boolean)
     var
         TransferHeader: Record "Transfer Header";
         TransferLine: Record "Transfer Line";
         LineNo: Integer;
     begin
         TransferHeader.Init();
-        TransferHeader.Validate("Direct Transfer", true);
+        TransferHeader.Insert(true);
+        TransferHeader.Validate("Direct Transfer", DirectTransfer);
         TransferHeader.Validate("Transfer-from Code", TransferFromCode);
         TransferHeader.Validate("Transfer-to Code", TransferToCode);
         TransferHeader.Validate("Order No.", SalesLine."Document No.");
-        TransferHeader.Insert(true);
+        TransferHeader.Modify(true);
 
         SalesLine.FindSet(false, false);
         repeat

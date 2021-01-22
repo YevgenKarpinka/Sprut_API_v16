@@ -4,7 +4,7 @@ page 50014 "Create Direct Transfer"
     ApplicationArea = All;
     UsageCategory = Tasks;
     SourceTable = "Sales Line";
-    Editable = false;
+
     CaptionML = ENU = 'Create Direct Transfer',
                 RUS = 'Создание прямого перемещения';
 
@@ -14,25 +14,35 @@ page 50014 "Create Direct Transfer"
         {
             group(SelectLocation)
             {
+                CaptionML = ENU = 'SelectLocation',
+                            RUS = 'Выбор складов';
+
                 field(TransferFromCode; TransferFromCode)
                 {
                     ApplicationArea = All;
                     CaptionML = ENU = 'Transfer-from Code',
                                 RUS = 'Код склада-источника';
-                    TableRelation = Location.Code;
+                    TableRelation = Location where("Use As In-Transit" = filter(false));
                 }
                 field(TransferToCode; TransferToCode)
                 {
                     ApplicationArea = All;
                     CaptionML = ENU = 'Transfer-to Code',
                                 RUS = 'Код склада-назначения';
-                    TableRelation = Location.Code;
+                    TableRelation = Location where("Use As In-Transit" = filter(false));
+                }
+                field(DirectTransfer; DirectTransfer)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'DirectTransfer',
+                                RUS = 'Прямое перемещение';
                 }
             }
             repeater(SelectItemsForTransfer)
             {
                 CaptionML = ENU = 'Select Items For Transfer',
                             RUS = 'Выберите строки для перемещения';
+                Editable = false;
 
                 field("No."; "No.")
                 {
@@ -44,7 +54,7 @@ page 50014 "Create Direct Transfer"
                     ApplicationArea = All;
 
                 }
-                field("Unit of Measure"; "Unit of Measure")
+                field("Unit of Measure Code"; "Unit of Measure Code")
                 {
                     ApplicationArea = All;
 
@@ -67,35 +77,22 @@ page 50014 "Create Direct Transfer"
     {
         area(Processing)
         {
-            action(Select)
+            group(TransferOrder)
             {
-                ApplicationArea = All;
+                action(CreateTransferOrder)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Create',
+                                RUS = 'Создать';
 
-                trigger OnAction()
-                begin
-                    CurrPage.SetSelectionFilter(glSalesLine);
-                    TransferOrderMgt.CreateTransferOrderFromSalesOrder(glSalesLine, TransferFromCode, TransferToCode);
-                end;
-            }
-            action(SelectAll)
-            {
-                ApplicationArea = All;
-
-                trigger OnAction()
-                begin
-                    CurrPage.SetSelectionFilter(glSalesLine);
-                    TransferOrderMgt.CreateTransferOrderFromSalesOrder(glSalesLine, TransferFromCode, TransferToCode);
-                end;
-            }
-            action(UnSelectAll)
-            {
-                ApplicationArea = All;
-
-                trigger OnAction()
-                begin
-                    CurrPage.SetSelectionFilter(glSalesLine);
-                    TransferOrderMgt.CreateTransferOrderFromSalesOrder(glSalesLine, TransferFromCode, TransferToCode);
-                end;
+                    trigger OnAction()
+                    begin
+                        // glSalesLine := Rec;
+                        CurrPage.SetSelectionFilter(glSalesLine);
+                        glSalesLine.FindSet();
+                        TransferOrderMgt.CreateTransferOrderFromSalesOrder(glSalesLine, TransferFromCode, TransferToCode, DirectTransfer);
+                    end;
+                }
             }
         }
     }
@@ -105,4 +102,5 @@ page 50014 "Create Direct Transfer"
         TransferOrderMgt: Codeunit "Transfer Order Mgt.";
         TransferFromCode: Code[20];
         TransferToCode: Code[20];
+        DirectTransfer: Boolean;
 }

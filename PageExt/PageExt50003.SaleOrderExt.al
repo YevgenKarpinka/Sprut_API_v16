@@ -289,6 +289,22 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         cmrAction.OnPostSalesOrder(Rec."No.", 'Test01', '00000000-0000-0000-0000-000000000000', 21.07);
                     end;
                 }
+                action(CreateTransferOrder)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'CreateTransferOrder',
+                                RUS = 'Создать перемещение';
+                    Image = TransferOrder;
+
+                    trigger OnAction()
+                    var
+                        locSalesLine: Record "Sales Line";
+                    begin
+                        locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
+                        locSalesLine.SetRange("Document No.", "No.");
+                        Page.Run(Page::"Create Direct Transfer", locSalesLine);
+                    end;
+                }
             }
         }
     }
