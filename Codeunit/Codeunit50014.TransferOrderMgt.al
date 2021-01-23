@@ -5,12 +5,12 @@ codeunit 50014 "Transfer Order Mgt."
 
     end;
 
-    procedure CreateTransferOrderFromSalesOrder(SalesLine: Record "Sales Line";
+    procedure CreateTransferOrderFromSalesOrder(var SalesLine: Record "Sales Line";
+                                                var TransferHeader: Record "Transfer Header";
                                                 TransferFromCode: Code[20];
                                                 TransferToCode: Code[20];
                                                 DirectTransfer: Boolean)
     var
-        TransferHeader: Record "Transfer Header";
         TransferLine: Record "Transfer Line";
         LineNo: Integer;
     begin
@@ -24,10 +24,9 @@ codeunit 50014 "Transfer Order Mgt."
 
         SalesLine.FindSet(false, false);
         repeat
-            if LineNo = 0 then LineNo += 10000;
             TransferLine.Init();
             TransferLine.Validate("Document No.", TransferHeader."No.");
-            TransferLine.Validate("Line No.", LineNo);
+            TransferLine.Validate("Line No.", LineNo + 10000);
             TransferLine.Validate("Item No.", SalesLine."No.");
             TransferLine.Validate("Unit of Measure Code", SalesLine."Unit of Measure Code");
             TransferLine.Validate(Quantity, SalesLine.Quantity);
