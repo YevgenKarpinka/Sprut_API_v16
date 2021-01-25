@@ -1,4 +1,4 @@
-page 50014 "Create Direct Transfer"
+page 50014 "Create Transfer"
 {
     PageType = Worksheet;
     ApplicationArea = Basic, Suite;
