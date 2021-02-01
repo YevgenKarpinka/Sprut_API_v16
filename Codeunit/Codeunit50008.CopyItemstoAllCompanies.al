@@ -24,6 +24,8 @@ codeunit 50008 "Copy Items to All Companies"
         CompIntegrTo: Record "Company Integration";
         ItemFrom: Record Item;
         ItemTo: Record Item;
+        ItemUoMFrom: Record "Item Unit of Measure";
+        ItemUoMTo: Record "Item Unit of Measure";
     begin
         CompIntegrTo.SetCurrentKey("Copy Items To");
         CompIntegrTo.SetRange("Copy Items To", true);
@@ -35,13 +37,29 @@ codeunit 50008 "Copy Items to All Companies"
                 if CompIntegrTo.FindSet(false, false) then
                     repeat
                         ItemTo.ChangeCompany(CompIntegrTo."Company Name");
+                        ItemUoMTo.ChangeCompany(CompIntegrTo."Company Name");
                         ItemTo.SetRange("No.", ItemFrom."No.");
                         if not ItemTo.FindFirst() then begin
+                            if ItemFrom."Sales Unit of Measure" <> '' then begin
+                                ItemUoMFrom.Get(ItemFrom."No.", ItemFrom."Sales Unit of Measure");
+                                ItemUoMTo.Init();
+                                ItemUoMTo.TransferFields(ItemUoMFrom);
+                                if ItemUoMTo.Insert() then;
+                            end;
+
                             ItemTo.Init();
                             ItemTo.TransferFields(ItemFrom);
                             ItemTo.Insert();
                         end else begin
                             if (ItemFrom."Last DateTime Modified" <> ItemTo."Last DateTime Modified") then begin
+                                if (ItemFrom."Sales Unit of Measure" <> '')
+                                    and not ItemUoMTo.Get(ItemFrom."No.", ItemFrom."Sales Unit of Measure") then begin
+                                    ItemUoMFrom.Get(ItemFrom."No.", ItemFrom."Sales Unit of Measure");
+                                    ItemUoMTo.Init();
+                                    ItemUoMTo.TransferFields(ItemUoMFrom);
+                                    if ItemUoMTo.Insert() then;
+                                end;
+
                                 ItemTo.TransferFields(ItemFrom);
                                 ItemTo.Modify();
                             end;

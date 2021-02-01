@@ -146,7 +146,8 @@ table 50004 "Integration Log"
     var
         LastIntegrationLog: Record "Integration Log";
     begin
-        LastIntegrationLog.FindLast();
-        exit(LastIntegrationLog."Entry No.");
+        if LastIntegrationLog.FindLast() then
+            exit(LastIntegrationLog."Entry No.");
+        exit(0);
     end;
 }

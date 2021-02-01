@@ -39,9 +39,10 @@ pageextension 50004 "Item List Ext." extends "Item List"
                     trigger OnAction()
                     var
                         CopyItems: Codeunit "Copy Items to All Companies";
+                        msgOk: Label 'Товары скопированы во все компании';
                     begin
                         CopyItems.Run();
-                        Message('Copy Ok!');
+                        Message(msgOk);
                     end;
                 }
 
@@ -63,6 +64,7 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         responseText: Text;
                         connectorCode: Label 'CRM';
                         entityType: Label 'products';
+                        msgEntityType: Label 'Товары';
                         POSTrequestMethod: Label 'POST';
                         PATCHrequestMethod: Label 'PATCH';
                         TokenType: Text;
@@ -116,9 +118,9 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         if _jsonErrorItemList.Count > 0 then begin
                             _jsonErrorItemList.WriteTo(_jsonText);
                             CaptionMgt.SaveStreamToFile(_jsonText, 'errorItemList.txt');
-                            Message(msgSentWithError, entityType);
+                            Message(msgSentWithError, msgEntityType);
                         end else
-                            Message(msgSentOk, entityType);
+                            Message(msgSentOk, msgEntityType);
                     end;
                 }
                 action(SendAll)
@@ -139,6 +141,7 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         responseText: Text;
                         connectorCode: Label 'CRM';
                         entityType: Label 'products';
+                        msgEntityType: Label 'Товары';
                         POSTrequestMethod: Label 'POST';
                         PATCHrequestMethod: Label 'PATCH';
                         TokenType: Text;
