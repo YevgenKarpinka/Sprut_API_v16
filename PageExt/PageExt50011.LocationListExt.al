@@ -90,14 +90,34 @@ pageextension 50011 "Location List Ext." extends "Location List"
                 ApplicationArea = All;
                 Visible = false;
             }
+            field("Last Modified Date Time"; "Last Modified Date Time")
+            {
+                ApplicationArea = All;
+                Visible = false;
+            }
         }
     }
 
     actions
     {
         // Add changes to page actions here
+        addafter("Create Warehouse location")
+        {
+            action(CopyLocationsToCompanies)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Copy Locations To Companies',
+                            RUS = 'Копировать склады по организациям';
+                // Visible = false;
+
+                trigger OnAction()
+                begin
+                    Codeunit.Run(Codeunit::"Copy Whses. to All Companies");
+                end;
+            }
+        }
     }
 
     var
-        myInt: Integer;
+        CopyWhse: Codeunit "Copy Whses. to All Companies";
 }
