@@ -24,6 +24,17 @@ table 50005 "Company Integration"
             CaptionML = ENU = 'Copy Items From',
                         RUS = 'Копировать товары с';
             DataClassification = CustomerContent;
+
+            trigger OnValidate()
+            begin
+                if not "Copy Items From" then exit;
+
+                ComIntegr.Reset();
+                ComIntegr.SetCurrentKey("Copy Items From");
+                ComIntegr.SetRange("Copy Items From", true);
+                if ComIntegr.Count > 1 then
+                    Error(errCompanyForCopyItemsFromCountMoreOneNotAllowed);
+            end;
         }
         field(4; "Environment Production"; Boolean)
         {
@@ -42,6 +53,18 @@ table 50005 "Company Integration"
             CaptionML = ENU = 'Copy Items To',
                         RUS = 'Копировать товары в';
             DataClassification = CustomerContent;
+
+            trigger OnValidate()
+            begin
+                if not "Copy Items To" then exit;
+
+                ComIntegr.Reset();
+                TotalCount := ComIntegr.Count;
+
+                ComIntegr.SetRange("Copy Items To", true);
+                if ComIntegr.Count = TotalCount then
+                    Error(errAllCompanyForCopyItemsToNotAllowed);
+            end;
         }
         field(7; "Send Email Error Tasks"; Boolean)
         {
@@ -74,17 +97,7 @@ table 50005 "Company Integration"
 
     trigger OnModify()
     begin
-        ComIntegr.Reset();
-        TotalCount := ComIntegr.Count;
 
-        ComIntegr.SetRange("Copy Items From", true);
-        if ComIntegr.Count > 1 then
-            Error(errCompanyForCopyItemsFromCountMoreOneNotAllowed);
-
-        ComIntegr.Reset();
-        ComIntegr.SetRange("Copy Items To", true);
-        if ComIntegr.Count = TotalCount then
-            Error(errAllCompanyForCopyItemsToNotAllowed);
     end;
 
     trigger OnDelete()
