@@ -4,6 +4,7 @@ page 50014 "Create Transfer"
     ApplicationArea = Basic, Suite;
     UsageCategory = Tasks;
     SourceTable = "Sales Line";
+    SourceTableTemporary = true;
     DeleteAllowed = false;
 
     CaptionML = ENU = 'Create Direct Transfer',

@@ -303,10 +303,21 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                 trigger OnAction()
                 var
                     locSalesLine: Record "Sales Line";
+                    tempSalesLine: Record "Sales Line" temporary;
+                    locItem: Record Item;
                 begin
                     locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
                     locSalesLine.SetRange("Document No.", "No.");
-                    Page.Run(Page::"Create Transfer", locSalesLine);
+                    if locSalesLine.FindSet(false, false) then
+                        repeat
+                            if locItem.Get(locSalesLine."No.")
+                            and (locItem.Type in [locItem.Type::Inventory]) then begin
+                                tempSalesLine := locSalesLine;
+                                tempSalesLine.Insert();
+                            end;
+                        until locSalesLine.Next() = 0;
+
+                    Page.Run(Page::"Create Transfer", tempSalesLine);
                 end;
             }
         }
