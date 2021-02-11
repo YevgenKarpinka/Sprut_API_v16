@@ -30,6 +30,10 @@ codeunit 50009 "Payment Management"
         and CheckUnAppliedEntryPaymentOrInvoice(DetailedCVLedgEntryBuffer."Applied CV Ledger Entry No.")) then
             exit;
 
+        if not (isInvoiceFromCRM(DetailedCVLedgEntryBuffer."CV Ledger Entry No.")
+        and isInvoiceFromCRM(DetailedCVLedgEntryBuffer."Applied CV Ledger Entry No.")) then
+            exit;
+
         if isPayment(DetailedCVLedgEntryBuffer."Applied CV Ledger Entry No.") then
             // create task for sending to CRM
             CreateApplyTaskForSendingToCRM(DetailedCVLedgEntryBuffer."CV Ledger Entry No.", GetCustLedgEntrtyPostingDate(DetailedCVLedgEntryBuffer."CV Ledger Entry No."), GetCustLedgEntrtyDocumentNo(DetailedCVLedgEntryBuffer."CV Ledger Entry No."),
@@ -50,6 +54,10 @@ codeunit 50009 "Payment Management"
         and CheckUnAppliedEntryPaymentOrInvoice(OldDtldCustLedgEntry."Applied Cust. Ledger Entry No.")) then
             exit;
 
+        if not (isInvoiceFromCRM(OldDtldCustLedgEntry."Cust. Ledger Entry No.")
+                and isInvoiceFromCRM(OldDtldCustLedgEntry."Applied Cust. Ledger Entry No.")) then
+            exit;
+
         if isPayment(OldDtldCustLedgEntry."Applied Cust. Ledger Entry No.") then
             // create task for sending to CRM
             CreateUnApplyTaskForSendingToCRM(OldDtldCustLedgEntry."Cust. Ledger Entry No.", GetCustLedgEntrtyPostingDate(OldDtldCustLedgEntry."Cust. Ledger Entry No."), GetCustLedgEntrtyDocumentNo(OldDtldCustLedgEntry."Cust. Ledger Entry No."),
@@ -68,6 +76,22 @@ codeunit 50009 "Payment Management"
         if CustLedgEntry.Get(EntryNo)
         and (CustLedgEntry."Document Type" in [CustLedgEntry."Document Type"::Invoice, CustLedgEntry."Document Type"::Payment]) then
             exit(true);
+        exit(false);
+    end;
+
+    local procedure isInvoiceFromCRM(EntryNo: Integer): Boolean
+    var
+        CustLedgEntry: Record "Cust. Ledger Entry";
+        SalesInvoiceHeader: Record "Sales Invoice Header";
+    begin
+        if CustLedgEntry.Get(EntryNo)
+        and (CustLedgEntry."Document Type" in [CustLedgEntry."Document Type"::Invoice]) then begin
+            if SalesInvoiceHeader.Get(CustLedgEntry."Document No.")
+            and not IsNullGuid(SalesInvoiceHeader."CRM ID") then
+                exit(true);
+        end else
+            exit(true);
+
         exit(false);
     end;
 
@@ -250,7 +274,9 @@ codeunit 50009 "Payment Management"
         crmId: Guid;
     begin
         custAgreementId := GetAgreementIdByDocumentNo(InvoiceEntryNo);
+        // if IsNullGuid(custAgreementId) then exit(false);
         crmId := GetCRMInvoiceIdByDocumentNo(InvoiceEntryNo);
+        // if IsNullGuid(crmId) then exit(false);
         payerDetails := '';
 
         if not WebServiceMgt.GetOauthToken(TokenType, AccessToken, APIResult) then

@@ -18,6 +18,14 @@ pageextension 50004 "Item List Ext." extends "Item List"
                             RUS = 'Определяет путь в 1C.';
             }
         }
+        addafter("Last Date Modified")
+        {
+            field("Last DateTime Modified"; "Last DateTime Modified")
+            {
+                ApplicationArea = All;
+                // Visible = false;
+            }
+        }
     }
 
     actions
