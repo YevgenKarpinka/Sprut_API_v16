@@ -129,6 +129,7 @@ codeunit 50006 "Task Modify Order"
             if recTaskModifyOrder."Work Status" = recTaskModifyOrder."Work Status"::InWork then
                 Error(errTaskForModificationOrderNoAlreadyInWork, SalesOrderNo);
             recTaskModifyOrder.Status := recTaskModifyOrder.Status::OnModifyOrder;
+            ResetTaskModifyOrderAttempt();
             recTaskModifyOrder.Modify(true);
             exit;
         end;
@@ -161,5 +162,6 @@ codeunit 50006 "Task Modify Order"
         if recTaskModifyOrder."Attempts Send" = 0 then exit;
 
         recTaskModifyOrder."Attempts Send" := 0;
+        recTaskModifyOrder."Error Text" := '';
     end;
 }
