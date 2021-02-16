@@ -21,36 +21,7 @@ codeunit 50017 "Match Contragent"
             GenJournalLine."Account No." := GetContragentByVATRegNo(GenJournalLine."Account Type"::Vendor,
                                                     BankAccReconciliationLine."Sender VAT Reg. No.");
         end;
-    end;
-
-    procedure SetBankAccRecon(var UseBankAccRecon: Record "Bank Acc. Reconciliation")
-    begin
-        BankAccRecon := UseBankAccRecon;
-    end;
-
-    local procedure SetBankAccReconLine()
-    begin
-        BankAccReconLine.SetRange("Statement Type", BankAccRecon."Statement Type");
-        BankAccReconLine.SetRange("Bank Account No.", BankAccRecon."Bank Account No.");
-        BankAccReconLine.SetRange("Statement No.", BankAccRecon."Statement No.");
-    end;
-
-    procedure OnMatchContragent()
-    begin
-        SetBankAccReconLine();
-        if BankAccReconLine.FindSet(true, false) then
-            repeat
-                if BankAccReconLine."Statement Amount" < 0 then begin
-                    BankAccReconLine."Account Type" := BankAccReconLine."Account Type"::Customer;
-                    BankAccReconLine."Account No." := GetContragentByVATRegNo(BankAccReconLine."Account Type"::Customer,
-                                                            BankAccReconLine."Recipient VAT Reg. No.");
-                end else begin
-                    BankAccReconLine."Account Type" := BankAccReconLine."Account Type"::Vendor;
-                    BankAccReconLine."Account No." := GetContragentByVATRegNo(BankAccReconLine."Account Type"::Vendor,
-                                                            BankAccReconLine."Sender VAT Reg. No.");
-                end;
-                BankAccReconLine.Modify();
-            until BankAccReconLine.Next() = 0;
+        GenJournalLine."Document Type" := GenJournalLine."Document Type"::Payment;
     end;
 
     local procedure GetContragentByVATRegNo(AccountType: Enum "Gen. Journal Account Type"; VATRegNo: Text[20]): Code[20]
