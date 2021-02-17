@@ -36,15 +36,15 @@ codeunit 50017 "Match Contragent"
         case AccountType of
             AccountType::Customer:
                 begin
-                    Customer.SetCurrentKey("TAX Registration No.");
-                    Customer.SetRange("TAX Registration No.", VATRegNo);
+                    Customer.SetCurrentKey("OKPO Code");
+                    Customer.SetRange("OKPO Code", VATRegNo);
                     if Customer.FindFirst() then
                         exit(Customer."No.");
                 end;
             AccountType::Vendor:
                 begin
-                    Vendor.SetCurrentKey("VAT Registration No.");
-                    Vendor.SetRange("VAT Registration No.", VATRegNo);
+                    Vendor.SetCurrentKey("OKPO Code");
+                    Vendor.SetRange("OKPO Code", VATRegNo);
                     if Vendor.FindFirst() then
                         exit(Vendor."No.");
                 end;
