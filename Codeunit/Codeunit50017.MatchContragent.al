@@ -13,15 +13,19 @@ codeunit 50017 "Match Contragent"
     procedure OnBeforeGenJnlLineInsert(var GenJournalLine: Record "Gen. Journal Line"; BankAccReconciliationLine: Record "Bank Acc. Reconciliation Line")
     begin
         if BankAccReconciliationLine."Statement Amount" > 0 then begin
-            GenJournalLine."Account Type" := GenJournalLine."Account Type"::Customer;
-            GenJournalLine."Account No." := GetContragentByVATRegNo(GenJournalLine."Account Type"::Customer,
-                                                    BankAccReconciliationLine."Recipient VAT Reg. No.");
+            GenJournalLine.Validate("Account Type", GenJournalLine."Account Type"::Customer);
+            if BankAccReconciliationLine."Bank Account No." = 'ОСНОВНОЙ' then
+                GenJournalLine.Validate("Account No.", GetContragentByVATRegNo(GenJournalLine."Account Type"::Customer,
+                                                        BankAccReconciliationLine."Recipient VAT Reg. No."))
+            else
+                GenJournalLine.Validate("Account No.", GetContragentByVATRegNo(GenJournalLine."Account Type"::Customer,
+                                                        BankAccReconciliationLine."Sender VAT Reg. No."));
         end else begin
-            GenJournalLine."Account Type" := GenJournalLine."Account Type"::Vendor;
-            GenJournalLine."Account No." := GetContragentByVATRegNo(GenJournalLine."Account Type"::Vendor,
-                                                    BankAccReconciliationLine."Sender VAT Reg. No.");
+            GenJournalLine.Validate("Account Type", GenJournalLine."Account Type"::Vendor);
+            GenJournalLine.Validate("Account No.", GetContragentByVATRegNo(GenJournalLine."Account Type"::Vendor,
+                                                    BankAccReconciliationLine."Recipient VAT Reg. No."));
         end;
-        GenJournalLine."Document Type" := GenJournalLine."Document Type"::Payment;
+        GenJournalLine.Validate("Document Type", GenJournalLine."Document Type"::Payment);
     end;
 
     local procedure GetContragentByVATRegNo(AccountType: Enum "Gen. Journal Account Type"; VATRegNo: Text[20]): Code[20]
@@ -32,8 +36,8 @@ codeunit 50017 "Match Contragent"
         case AccountType of
             AccountType::Customer:
                 begin
-                    Customer.SetCurrentKey("VAT Registration No.");
-                    Customer.SetRange("VAT Registration No.", VATRegNo);
+                    Customer.SetCurrentKey("TAX Registration No.");
+                    Customer.SetRange("TAX Registration No.", VATRegNo);
                     if Customer.FindFirst() then
                         exit(Customer."No.");
                 end;
