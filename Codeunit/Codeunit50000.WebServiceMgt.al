@@ -12,6 +12,82 @@ codeunit 50000 "Web Service Mgt."
         errReportNotSavedToPDF: Label 'Report %1 not saved to PDF';
         errWrong_CRM_Id: Label 'Wrong CRM Id %1';
 
+    procedure Get1CItems()
+    var
+        entityType: Label 'Catalog_Номенклатура';
+        requestMethod: Label 'GET';
+    begin
+        ConnectTo1C(entityType, requestMethod, '');
+    end;
+
+    procedure Get1CRoot()
+    var
+        requestMethod: Label 'GET';
+    begin
+        ConnectTo1C('', requestMethod, '');
+    end;
+
+    procedure ConnectTo1C(entityType: Text; requestMethod: Code[20]; Body: Text): Boolean
+    var
+        Base64Convert: Codeunit "Base64 Convert";
+        ClientId: Label 'Марина Кващук';
+        ClientSecret: Label '888';
+        ResourceTest: Label 'http://20.67.250.23/conf/odata/standard.odata';
+        ResourceProd: Label 'http://20.67.250.23/conf/odata/standard.odata';
+        HttpClient: HttpClient;
+        RequestMessage: HttpRequestMessage;
+        ResponseMessage: HttpResponseMessage;
+        RequestHeader: HttpHeaders;
+        // Content: HttpContent;
+        webAPI_URL: Label '%1/%2?%3';
+        Accept: Label 'application/json';
+        ParameterAuthorization: Label 'Authorization';
+        Authorization: Text;
+        MethodGET: Label 'GET';
+        MethodPOST: Label 'POST';
+        ContentType: Label 'Content-Type';
+        ContentTypeFormUrlencoded: Label 'application/x-www-form-urlencoded';
+        ParameterFormat: Label '$format';
+        ParameterFormatValue: Label 'json';
+        API_URL: Text;
+        APIResult: Text;
+        Basic: Label 'Basic %1';
+        ClientIdSecretBase64: Label '%1:%2';
+        ParameterBody: Label '%1=%2';
+    begin
+        if GetResourceProductionNotAllowed() then
+            API_URL := StrSubstNo(webAPI_URL, ResourceTest, entityType,
+                            StrSubstNo(ParameterBody, ParameterFormat, ParameterFormatValue))
+        else
+            API_URL := StrSubstNo(webAPI_URL, ResourceProd, entityType,
+                            StrSubstNo(ParameterBody, ParameterFormat, ParameterFormatValue));
+
+        RequestMessage.Method := requestMethod;
+        RequestMessage.SetRequestUri(API_URL);
+        RequestMessage.GetHeaders(RequestHeader);
+        Authorization := StrSubstNo(Basic,
+                Base64Convert.ToBase64(StrSubstNo(ClientIdSecretBase64, ClientId, ClientSecret)));
+        RequestHeader.Add(ParameterAuthorization, Authorization);
+
+        if requestMethod = 'POST' then begin
+            RequestMessage.Content.WriteFrom(Body);
+            RequestMessage.Content.GetHeaders(RequestHeader);
+            RequestHeader.Remove(ContentType);
+            RequestHeader.Add(ContentType, Accept);
+        end;
+
+        HttpClient.Send(RequestMessage, ResponseMessage);
+        ResponseMessage.Content().ReadAs(APIResult);
+
+        // Insert Operation to Log
+        IntegrationLog.InsertOperationToLog('STANDART_1C_API', requestMethod, API_URL, '', Body, APIResult, ResponseMessage.IsSuccessStatusCode());
+
+        // for testing
+        Message(APIResult);
+
+        exit(ResponseMessage.IsSuccessStatusCode);
+    end;
+
 
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]; var Body: Text): Boolean
     var

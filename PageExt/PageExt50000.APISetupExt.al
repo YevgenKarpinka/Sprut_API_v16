@@ -49,6 +49,32 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                     Message(requestBody);
                 end;
             }
+            action(Get1CRoot)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get 1CRoot', RUS = 'Get 1CRoot';
+                ToolTipML = ENU = 'Get 1CRoot.',
+                            RUS = 'Get 1CRoot.';
+                Image = GetBinContent;
+
+                trigger OnAction()
+                begin
+                    WebServiceMgt.Get1CRoot();
+                end;
+            }
+            action(Get1CItems)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get 1CItems', RUS = 'Get 1CItems';
+                ToolTipML = ENU = 'Get 1CItems.',
+                            RUS = 'Get 1CItems.';
+                Image = GetBinContent;
+
+                trigger OnAction()
+                begin
+                    WebServiceMgt.Get1CItems();
+                end;
+            }
         }
     }
 
