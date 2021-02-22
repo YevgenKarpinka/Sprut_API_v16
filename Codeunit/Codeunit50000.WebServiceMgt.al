@@ -12,22 +12,73 @@ codeunit 50000 "Web Service Mgt."
         errReportNotSavedToPDF: Label 'Report %1 not saved to PDF';
         errWrong_CRM_Id: Label 'Wrong CRM Id %1';
 
-    procedure Get1CItems()
+    procedure GetBankIdFrom1C()
+    var
+        entityType: Label 'Catalog_Банки';
+        requestMethod: Label 'GET';
+        Body: Text;
+    begin
+        ConnectTo1C(entityType, requestMethod, Body);
+
+    end;
+
+    procedure GetUoMIdFrom1C()
+    var
+        entityType: Label 'Catalog_КлассификаторЕдиницИзмерения';
+        requestMethod: Label 'GET';
+        Body: Text;
+        lblSystemCode: Label '1C';
+        lblName: Label 'UnitOfMeasure';
+        UnitOfMeasure: Record "Unit of Measure";
+        tempUnitOfMeasure: Record "Unit of Measure" temporary;
+        IntegrationEntity: Record "Integration Entity";
+        ResponceTokenLine: Text;
+        jsonLines: JsonArray;
+        LineToken: JsonToken;
+    begin
+        // create UoMs list for getting id from 1C
+        if UnitOfMeasure.FindSet(false, false) then
+            repeat
+                if not IntegrationEntity.Get(lblSystemCode, lblName, UnitOfMeasure.Code, '', '') then begin
+                    tempUnitOfMeasure := UnitOfMeasure;
+                    tempUnitOfMeasure.Insert();
+                end;
+            until UnitOfMeasure.Next() = 0;
+
+        // link between BC and 1C by Code and Description
+        // get body  
+        ConnectTo1C(entityType, requestMethod, Body);
+        jsonLines.ReadFrom(Body);
+        if tempUnitOfMeasure.FindSet(false, false) then
+            repeat
+                foreach LineToken in jsonLines do begin
+                    if GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then
+                        exit(true);
+                end;
+            until tempUnitOfMeasure.Next() = 0;
+
+
+    end;
+
+    procedure GetItemsIdFrom1C()
     var
         entityType: Label 'Catalog_Номенклатура';
         requestMethod: Label 'GET';
+        Body: Text;
     begin
-        ConnectTo1C(entityType, requestMethod, '');
+        ConnectTo1C(entityType, requestMethod, Body);
     end;
 
     procedure Get1CRoot()
     var
+        entityType: Text;
         requestMethod: Label 'GET';
+        Body: Text;
     begin
-        ConnectTo1C('', requestMethod, '');
+        ConnectTo1C(entityType, requestMethod, Body);
     end;
 
-    procedure ConnectTo1C(entityType: Text; requestMethod: Code[20]; Body: Text): Boolean
+    procedure ConnectTo1C(entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
     var
         Base64Convert: Codeunit "Base64 Convert";
         ClientId: Label 'Марина Кващук';
@@ -38,7 +89,6 @@ codeunit 50000 "Web Service Mgt."
         RequestMessage: HttpRequestMessage;
         ResponseMessage: HttpResponseMessage;
         RequestHeader: HttpHeaders;
-        // Content: HttpContent;
         webAPI_URL: Label '%1/%2?%3';
         Accept: Label 'application/json';
         ParameterAuthorization: Label 'Authorization';
@@ -84,6 +134,9 @@ codeunit 50000 "Web Service Mgt."
 
         // for testing
         Message(APIResult);
+
+        // response body
+        Body := APIResult;
 
         exit(ResponseMessage.IsSuccessStatusCode);
     end;

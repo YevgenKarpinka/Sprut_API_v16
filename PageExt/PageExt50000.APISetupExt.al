@@ -72,7 +72,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    WebServiceMgt.Get1CItems();
+                    WebServiceMgt.GetItemsIdFrom1C();
                 end;
             }
         }
