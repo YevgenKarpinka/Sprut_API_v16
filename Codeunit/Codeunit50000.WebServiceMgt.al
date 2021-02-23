@@ -46,14 +46,16 @@ codeunit 50000 "Web Service Mgt."
             until UnitOfMeasure.Next() = 0;
 
         // link between BC and 1C by Code and Description
+
         // get body  
         ConnectTo1C(entityType, requestMethod, Body);
+
         jsonLines.ReadFrom(Body);
         if tempUnitOfMeasure.FindSet(false, false) then
             repeat
                 foreach LineToken in jsonLines do begin
-                    if GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then
-                        exit(true);
+                    // if GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then
+                    // exit(true);
                 end;
             until tempUnitOfMeasure.Next() = 0;
 

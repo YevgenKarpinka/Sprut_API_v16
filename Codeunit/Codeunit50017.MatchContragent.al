@@ -52,4 +52,22 @@ codeunit 50017 "Match Contragent"
 
         exit('');
     end;
+
+    procedure GetCustomerCRMID(customerNo: Code[20]): Text
+    var
+        Customer: Record Customer;
+    begin
+        if Customer.Get(customerNo) then
+            exit(LowerCase(DelChr(Customer."CRM ID", '<>', '{}')));
+        exit('');
+    end;
+
+    procedure GetVATPercent(VATBusPostingGroup: Code[20]; VATProdPostingGroup: Code[20]): Integer
+    var
+        VATPostingSetup: Record "VAT Posting Setup";
+    begin
+        if VATPostingSetup.Get(VATBusPostingGroup, VATProdPostingGroup) then
+            exit(VATPostingSetup."VAT %");
+        exit(0);
+    end;
 }

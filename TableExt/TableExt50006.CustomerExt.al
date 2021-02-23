@@ -44,4 +44,5 @@ tableextension 50006 "Customer Ext" extends Customer
             Editable = false;
         }
     }
+
 }

@@ -266,6 +266,18 @@ page 50002 "APIV2 - Customers"
                 }
 
                 // >>
+                field(crmID; "CRM ID")
+                {
+                    ApplicationArea = All;
+                    Caption = 'CRM ID', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        if IsNullGuid("CRM ID") then
+                            Error(errCRMIdIsNullNotAllowed, "CRM ID");
+                        RegisterFieldSet(FIELDNO("CRM ID"));
+                    end;
+                }
                 field(deduplicateId; "Deduplicate Id")
                 {
                     ApplicationArea = All;
@@ -424,6 +436,7 @@ page 50002 "APIV2 - Customers"
         NotProvidedCustomerNameErr: Label 'A "displayName" must be provided.', Locked = true;
         BlankCustomerNameErr: Label 'The blank "displayName" is not allowed.', Locked = true;
         errDeduplicateIdIsNullNotAllowed: Label 'The "deduplicateId" %1 is not allowed.', Locked = true;
+        errCRMIdIsNullNotAllowed: Label 'The "crmID" %1 is not allowed.', Locked = true;
         PostalAddressSet: Boolean;
 
     local procedure RegisterIBAN()
