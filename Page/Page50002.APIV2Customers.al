@@ -266,31 +266,31 @@ page 50002 "APIV2 - Customers"
                 }
 
                 // >>
-                field(crmID; "CRM ID")
+                field(crmID; Rec."CRM ID")
                 {
                     ApplicationArea = All;
-                    Caption = 'CRM ID', Locked = true;
+                    Caption = 'crmID', Locked = true;
 
                     trigger OnValidate()
                     begin
-                        if IsNullGuid("CRM ID") then
-                            Error(errCRMIdIsNullNotAllowed, "CRM ID");
+                        // if "CRM ID" = BlankGUID then
+                        //     Error(errCRMIdIsNullNotAllowed, "CRM ID");
                         RegisterFieldSet(FIELDNO("CRM ID"));
                     end;
                 }
-                field(deduplicateId; "Deduplicate Id")
+                field(deduplicateId; Rec."Deduplicate Id")
                 {
                     ApplicationArea = All;
                     Caption = 'deduplicateId', Locked = true;
 
                     trigger OnValidate()
                     begin
-                        if IsNullGuid("Deduplicate Id") then
-                            Error(errDeduplicateIdIsNullNotAllowed, "Deduplicate Id");
+                        // if "Deduplicate Id" = BlankGUID then
+                        //     Error(errDeduplicateIdIsNullNotAllowed, "Deduplicate Id");
                         RegisterFieldSet(FIELDNO("Deduplicate Id"));
                     end;
                 }
-                field(status; Status)
+                field(status; Rec.Status)
                 {
                     ApplicationArea = All;
                     Caption = 'status', Locked = true;
