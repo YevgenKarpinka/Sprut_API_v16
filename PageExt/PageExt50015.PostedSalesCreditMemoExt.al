@@ -13,6 +13,18 @@ pageextension 50015 "Posted Sales Credit Memo Ext" extends "Posted Sales Credit 
             {
                 Visible = false;
             }
+            field("Currency ISO Code"; MatchContragent.GetCurrencyISONumericCode("Currency Code"))
+            {
+                Visible = false;
+            }
+            field(Amount; Amount)
+            {
+                Visible = false;
+            }
+            field("Amount Including VAT"; "Amount Including VAT")
+            {
+                Visible = false;
+            }
         }
     }
 

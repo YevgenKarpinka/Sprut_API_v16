@@ -70,4 +70,13 @@ codeunit 50017 "Match Contragent"
             exit(VATPostingSetup."VAT %");
         exit(0);
     end;
+
+    procedure GetCurrencyISONumericCode(CurrenceCode: Code[10]): Code[5]
+    var
+        Currency: Record Currency;
+    begin
+        if Currency.Get(CurrenceCode) then
+            exit(Currency."ISO Numeric Code");
+        exit('');
+    end;
 }

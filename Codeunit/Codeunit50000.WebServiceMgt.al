@@ -12,136 +12,7 @@ codeunit 50000 "Web Service Mgt."
         errReportNotSavedToPDF: Label 'Report %1 not saved to PDF';
         errWrong_CRM_Id: Label 'Wrong CRM Id %1';
 
-    procedure GetBankIdFrom1C()
-    var
-        entityType: Label 'Catalog_Банки';
-        requestMethod: Label 'GET';
-        Body: Text;
-    begin
-        ConnectTo1C(entityType, requestMethod, Body);
 
-    end;
-
-    procedure GetUoMIdFrom1C()
-    var
-        entityType: Label 'Catalog_КлассификаторЕдиницИзмерения';
-        requestMethod: Label 'GET';
-        Body: Text;
-        lblSystemCode: Label '1C';
-        lblName: Label 'UnitOfMeasure';
-        UnitOfMeasure: Record "Unit of Measure";
-        tempUnitOfMeasure: Record "Unit of Measure" temporary;
-        IntegrationEntity: Record "Integration Entity";
-        ResponceTokenLine: Text;
-        jsonLines: JsonArray;
-        LineToken: JsonToken;
-    begin
-        // create UoMs list for getting id from 1C
-        if UnitOfMeasure.FindSet(false, false) then
-            repeat
-                if not IntegrationEntity.Get(lblSystemCode, lblName, UnitOfMeasure.Code, '', '') then begin
-                    tempUnitOfMeasure := UnitOfMeasure;
-                    tempUnitOfMeasure.Insert();
-                end;
-            until UnitOfMeasure.Next() = 0;
-
-        // link between BC and 1C by Code and Description
-
-        // get body  
-        ConnectTo1C(entityType, requestMethod, Body);
-
-        jsonLines.ReadFrom(Body);
-        if tempUnitOfMeasure.FindSet(false, false) then
-            repeat
-                foreach LineToken in jsonLines do begin
-                    // if GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then
-                    // exit(true);
-                end;
-            until tempUnitOfMeasure.Next() = 0;
-
-
-    end;
-
-    procedure GetItemsIdFrom1C()
-    var
-        entityType: Label 'Catalog_Номенклатура';
-        requestMethod: Label 'GET';
-        Body: Text;
-    begin
-        ConnectTo1C(entityType, requestMethod, Body);
-    end;
-
-    procedure Get1CRoot()
-    var
-        entityType: Text;
-        requestMethod: Label 'GET';
-        Body: Text;
-    begin
-        ConnectTo1C(entityType, requestMethod, Body);
-    end;
-
-    procedure ConnectTo1C(entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
-    var
-        Base64Convert: Codeunit "Base64 Convert";
-        ClientId: Label 'Марина Кващук';
-        ClientSecret: Label '888';
-        ResourceTest: Label 'http://20.67.250.23/conf/odata/standard.odata';
-        ResourceProd: Label 'http://20.67.250.23/conf/odata/standard.odata';
-        HttpClient: HttpClient;
-        RequestMessage: HttpRequestMessage;
-        ResponseMessage: HttpResponseMessage;
-        RequestHeader: HttpHeaders;
-        webAPI_URL: Label '%1/%2?%3';
-        Accept: Label 'application/json';
-        ParameterAuthorization: Label 'Authorization';
-        Authorization: Text;
-        MethodGET: Label 'GET';
-        MethodPOST: Label 'POST';
-        ContentType: Label 'Content-Type';
-        ContentTypeFormUrlencoded: Label 'application/x-www-form-urlencoded';
-        ParameterFormat: Label '$format';
-        ParameterFormatValue: Label 'json';
-        API_URL: Text;
-        APIResult: Text;
-        Basic: Label 'Basic %1';
-        ClientIdSecretBase64: Label '%1:%2';
-        ParameterBody: Label '%1=%2';
-    begin
-        if GetResourceProductionNotAllowed() then
-            API_URL := StrSubstNo(webAPI_URL, ResourceTest, entityType,
-                            StrSubstNo(ParameterBody, ParameterFormat, ParameterFormatValue))
-        else
-            API_URL := StrSubstNo(webAPI_URL, ResourceProd, entityType,
-                            StrSubstNo(ParameterBody, ParameterFormat, ParameterFormatValue));
-
-        RequestMessage.Method := requestMethod;
-        RequestMessage.SetRequestUri(API_URL);
-        RequestMessage.GetHeaders(RequestHeader);
-        Authorization := StrSubstNo(Basic,
-                Base64Convert.ToBase64(StrSubstNo(ClientIdSecretBase64, ClientId, ClientSecret)));
-        RequestHeader.Add(ParameterAuthorization, Authorization);
-
-        if requestMethod = 'POST' then begin
-            RequestMessage.Content.WriteFrom(Body);
-            RequestMessage.Content.GetHeaders(RequestHeader);
-            RequestHeader.Remove(ContentType);
-            RequestHeader.Add(ContentType, Accept);
-        end;
-
-        HttpClient.Send(RequestMessage, ResponseMessage);
-        ResponseMessage.Content().ReadAs(APIResult);
-
-        // Insert Operation to Log
-        IntegrationLog.InsertOperationToLog('STANDART_1C_API', requestMethod, API_URL, '', Body, APIResult, ResponseMessage.IsSuccessStatusCode());
-
-        // for testing
-        Message(APIResult);
-
-        // response body
-        Body := APIResult;
-
-        exit(ResponseMessage.IsSuccessStatusCode);
-    end;
 
 
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]; var Body: Text): Boolean
@@ -701,7 +572,7 @@ codeunit 50000 "Web Service Mgt."
         exit(false);
     end;
 
-    local procedure GetResourceProductionNotAllowed(): Boolean
+    procedure GetResourceProductionNotAllowed(): Boolean
     var
         CompIntegr: Record "Company Integration";
     begin

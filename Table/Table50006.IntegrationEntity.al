@@ -12,11 +12,11 @@ table 50006 "Integration Entity"
                         RUS = 'Код системы';
 
         }
-        field(2; "Name"; code[20])
+        field(2; "Table ID"; Integer)
         {
             DataClassification = ToBeClassified;
-            CaptionML = ENU = 'Name',
-                        RUS = 'Имя';
+            CaptionML = ENU = 'Table ID',
+                        RUS = 'ИД таблицы';
         }
         field(3; "Code 1"; code[20])
         {
@@ -55,11 +55,19 @@ table 50006 "Integration Entity"
             DataClassification = CustomerContent;
             TableRelation = Company.Name;
         }
+        field(9; "Table Name"; Text[30])
+        {
+            CaptionML = ENU = 'Table Name',
+                        RUS = 'Имя таблицы';
+            FieldClass = FlowField;
+            CalcFormula = Lookup(AllObjWithCaption."Object Name" where("Object Type" = const(Table), "Object ID" = field("Table ID")));
+            Editable = false;
+        }
     }
 
     keys
     {
-        key(PK; "System Code", Name, "Code 1", "Code 2", "Company Name")
+        key(PK; "System Code", "Table ID", "Code 1", "Code 2", "Company Name")
         {
             Clustered = true;
         }

@@ -5,7 +5,7 @@ page 50015 "Integration Entity List"
     InsertAllowed = false;
     SourceTable = "Integration Entity";
     // SourceTableView = sorting("Entry No.") order(Descending);
-    DataCaptionFields = "System Code", Name, "Code 1", "Code 2";
+    DataCaptionFields = "System Code", "Table Name", "Code 1", "Code 2";
     ApplicationArea = All;
     Editable = false;
     PageType = List;
@@ -24,7 +24,12 @@ page 50015 "Integration Entity List"
                     ApplicationArea = All;
 
                 }
-                field(Name; Name)
+                field("Table ID"; "Table ID")
+                {
+                    ApplicationArea = All;
+
+                }
+                field("Table Name"; "Table Name")
                 {
                     ApplicationArea = All;
 

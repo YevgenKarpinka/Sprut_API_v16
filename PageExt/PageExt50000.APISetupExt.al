@@ -59,7 +59,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    WebServiceMgt.Get1CRoot();
+                    Integration1C.Get1CRoot();
                 end;
             }
             action(Get1CItems)
@@ -72,7 +72,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    WebServiceMgt.GetItemsIdFrom1C();
+                    Integration1C.GetItemsIdFrom1C();
                 end;
             }
         }
@@ -80,6 +80,8 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
     var
         WebServiceMgt: Codeunit "Web Service Mgt.";
+
+        Integration1C: Codeunit "Integration 1C";
 
         TokenTypeAccessToken: Label 'Token Type: %1\\AccessToken:\\%2';
 }
