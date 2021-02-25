@@ -75,6 +75,22 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                     Integration1C.GetItemsIdFrom1C();
                 end;
             }
+            action(TestSalesInv)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'TestSalesInv', RUS = 'TestSalesInv';
+                ToolTipML = ENU = 'TestSalesInv',
+                            RUS = 'TestSalesInv';
+                Image = TeamSales;
+
+                trigger OnAction()
+                var
+                    SIH: Record "Sales Invoice Header";
+                begin
+                    SIH.SetRange("Order No.", 'ПРЗК-21-00030');
+                    Page.Run(Page::"Posted Sales Inv.", SIH);
+                end;
+            }
         }
     }
 

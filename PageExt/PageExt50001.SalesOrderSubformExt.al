@@ -31,13 +31,19 @@ pageextension 50001 "Sales Order Subform Ext" extends "Sales Order Subform"
                 Visible = false;
             }
         }
+        addbefore("Line Amount")
+        {
+            field("VATPercent"; MatchContragent.GetVATPercent("VAT Bus. Posting Group", "VAT Prod. Posting Group"))
+            {
+                Visible = false;
+            }
+        }
     }
-
     actions
     {
         // Add changes to page actions here
     }
 
     var
-        myInt: Integer;
+        MatchContragent: Codeunit "Match Contragent";
 }

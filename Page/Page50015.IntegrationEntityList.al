@@ -4,7 +4,6 @@ page 50015 "Integration Entity List"
                 RUS = 'Список сущностей интеграции';
     InsertAllowed = false;
     SourceTable = "Integration Entity";
-    // SourceTableView = sorting("Entry No.") order(Descending);
     DataCaptionFields = "System Code", "Table Name", "Code 1", "Code 2";
     ApplicationArea = All;
     Editable = false;

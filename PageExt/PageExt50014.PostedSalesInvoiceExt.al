@@ -25,6 +25,18 @@ pageextension 50014 "Posted Sales Invoice Ext" extends "Posted Sales Invoice"
             {
                 Visible = false;
             }
+            field("CRM Invoice No."; "CRM Invoice No.")
+            {
+                Visible = false;
+            }
+            field("CRM ID"; "CRM ID")
+            {
+                Visible = false;
+            }
+            field("Prepayment Order No."; "Prepayment Order No.")
+            {
+                Visible = false;
+            }
         }
     }
 
@@ -35,4 +47,10 @@ pageextension 50014 "Posted Sales Invoice Ext" extends "Posted Sales Invoice"
 
     var
         MatchContragent: Codeunit "Match Contragent";
+
+    // trigger OnAfterGetRecord()
+    // begin
+    //     if GetCustomerLedgerEntry() then
+
+    //     end;
 }

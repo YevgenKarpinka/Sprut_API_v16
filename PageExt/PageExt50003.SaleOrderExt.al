@@ -26,6 +26,22 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                 ApplicationArea = All;
                 Visible = false;
             }
+            field("Customer CRM ID"; MatchContragent.GetCustomerCRMID("Sell-to Customer No."))
+            {
+                Visible = false;
+            }
+            field("Currency ISO Code"; MatchContragent.GetCurrencyISONumericCode("Currency Code"))
+            {
+                Visible = false;
+            }
+            field(Amount; Amount)
+            {
+                Visible = false;
+            }
+            field("Amount Including VAT"; "Amount Including VAT")
+            {
+                Visible = false;
+            }
         }
 
     }
@@ -327,4 +343,5 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
         PrepaymentMgt: Codeunit "Prepayment Management";
         WebServicesMgt: Codeunit "Web Service Mgt.";
+        MatchContragent: Codeunit "Match Contragent";
 }
