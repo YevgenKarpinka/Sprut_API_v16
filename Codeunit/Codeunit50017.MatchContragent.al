@@ -79,4 +79,13 @@ codeunit 50017 "Match Contragent"
             exit(Currency."ISO Numeric Code");
         exit('');
     end;
+
+    procedure GetAgreementCRMID(customerNo: Code[20]; customerAgreementNo: Code[20]): Text
+    var
+        CustAgreement: Record "Customer Agreement";
+    begin
+        if CustAgreement.Get(customerNo, customerAgreementNo) then
+            exit(LowerCase(DelChr(CustAgreement."CRM ID", '<>', '{}')));
+        exit('');
+    end;
 }

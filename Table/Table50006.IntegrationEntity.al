@@ -80,6 +80,7 @@ table 50006 "Integration Entity"
     begin
         "Company Name" := CompanyName;
         "Create Date Time" := CurrentDateTime;
+        "Last Modify Date Time" := CurrentDateTime;
     end;
 
     trigger OnModify()
