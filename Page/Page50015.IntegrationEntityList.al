@@ -2,14 +2,14 @@ page 50015 "Integration Entity List"
 {
     CaptionML = ENU = 'Integration Entity List',
                 RUS = 'Список сущностей интеграции';
-    InsertAllowed = false;
+    // InsertAllowed = false;
     SourceTable = "Integration Entity";
     DataCaptionFields = "System Code", "Table Name", "Code 1", "Code 2";
     ApplicationArea = All;
-    Editable = false;
+    // Editable = false;
     PageType = List;
     UsageCategory = History;
-    AccessByPermission = tabledata "Integration Entity" = r;
+    // AccessByPermission = tabledata "Integration Entity" = r;
 
     layout
     {

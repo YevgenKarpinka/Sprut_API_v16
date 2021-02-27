@@ -75,7 +75,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                     Integration1C.GetItemsIdFrom1C();
                 end;
             }
-            action(TestSalesInv)
+            action(GetUoMIdFrom1C)
             {
                 ApplicationArea = All;
                 CaptionML = ENU = 'Get UoM Id From 1C', RUS = 'Get UoM Id From 1C';
@@ -85,7 +85,42 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    Integration1C.GetUoMIdFrom1C();
+                    if Integration1C.GetUoMIdFrom1C() then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
+            action(GetBankIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get Bank Id From 1C', RUS = 'Get Bank Id From 1C';
+                ToolTipML = ENU = 'Get Bank Id From 1C',
+                            RUS = 'Get Bank Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.GetBankIdFrom1C() then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
+            action(GetItemsIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get Items Id From 1C', RUS = 'Get Items Id From 1C';
+                ToolTipML = ENU = 'Get Items Id From 1C',
+                            RUS = 'Get Items Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.GetItemsIdFrom1C() then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
                 end;
             }
         }

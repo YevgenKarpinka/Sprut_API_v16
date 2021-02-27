@@ -90,7 +90,7 @@ table 50006 "Integration Entity"
 
     trigger OnDelete()
     begin
-        Error(errDeleteNotAllowed);
+        // Error(errDeleteNotAllowed);
     end;
 
     trigger OnRename()
