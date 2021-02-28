@@ -9,15 +9,115 @@ codeunit 50018 "Integration 1C"
         IntegrationLog: Record "Integration Log";
         WebServiceMgt: Codeunit "Web Service Mgt.";
 
+    procedure GetCurrencyIdFrom1C(): Boolean
+    var
+        entityType: Label 'Catalog_Валюты';
+        entityTypePATCH: Label 'Catalog_Валюты(%1)';
+        entityTypePATCHValue: Text;
+        requestMethodGET: Label 'GET';
+        requestMethodPOST: Label 'POST';
+        requestMethodPATCH: Label 'PATCH';
+        Body: Text;
+        filterValue: Text;
+        lblfilter: Label '&$filter=%1 eq ''%2''';
+        lblSystemCode: Label '1C';
+        Currency: Record Currency;
+        tempCurrency: Record Currency temporary;
+        IntegrationEntity: Record "Integration Entity";
+        ResponceTokenLine: Text;
+        jsonLines: JsonArray;
+        jsonBody: JsonObject;
+        LineToken: JsonToken;
+        codeISO: Code[10];
+    begin
+        // create Currency list for getting id from 1C
+        if Currency.FindSet(false, false) then
+            repeat
+                if not IntegrationEntity.Get(lblSystemCode, Database::Currency, Currency."ISO Numeric Code", '', CompanyName) then begin
+                    tempCurrency := Currency;
+                    tempCurrency.Insert();
+                end;
+            until Currency.Next() = 0;
+
+        // link between 1C and BC
+        // create entity in 1C or get it
+        if tempCurrency.FindSet(false, false) then
+            repeat
+                filterValue := StrSubstNo(lblfilter, 'Code', tempCurrency."ISO Numeric Code");
+                if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
+                jsonBody.ReadFrom(Body);
+                jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
+                if jsonLines.Count <> 0 then begin
+                    foreach LineToken in jsonLines do
+                        AddIDToIntegrationEntity(lblSystemCode, Database::Currency, tempCurrency."ISO Numeric Code", '',
+                                            WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
+                end else begin
+                    // create request body
+                    CreateRequestBodyToCurrency(tempCurrency."ISO Numeric Code", jsonBody);
+                    // get body from 1C
+                    jsonBody.WriteTo(Body);
+                    if not ConnectTo1C(entityType, requestMethodPOST, Body, '') then exit(false);
+                    jsonBody.ReadFrom(Body);
+                    AddIDToIntegrationEntity(lblSystemCode, Database::Currency, tempCurrency."ISO Numeric Code", '',
+                                    WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText());
+                end;
+                Commit();
+            until tempCurrency.Next() = 0;
+
+        // update entity in 1C
+        // create list for updating in 1C
+        tempCurrency.DeleteAll();
+        if Currency.FindSet(false, false) then
+            repeat
+                if IntegrationEntity.Get(lblSystemCode, Database::Currency, Currency."ISO Numeric Code", '', CompanyName)
+                and (IntegrationEntity."Last Modify Date Time" < Currency."Last Modified Date Time") then begin
+                    tempCurrency := Currency;
+                    tempCurrency.Insert();
+                end;
+            until Currency.Next() = 0;
+
+        if tempCurrency.FindSet(false, false) then
+            repeat
+                // create request body
+                CreateRequestBodyToCurrency(tempCurrency."ISO Numeric Code", jsonBody);
+                entityTypePATCHValue := StrSubstNo(entityTypePATCH, GetCurrencyIdFromIntegrEntity(tempCurrency."ISO Numeric Code"));
+                // patch entity in 1C
+                jsonBody.WriteTo(Body);
+                if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, filterValue) then
+                    exit(false);
+                UpdateDateTimeIntegrationEntity(lblSystemCode, Database::Currency, tempCurrency."ISO Numeric Code", '');
+                Commit();
+            until tempCurrency.Next() = 0;
+
+        exit(true);
+    end;
+
+    local procedure CreateRequestBodyToCurrency(ISONumericCode: Code[3]; var
+                                                                             Body: JsonObject)
+    var
+        Currency: Record Currency;
+    begin
+        Currency.SetCurrentKey("ISO Numeric Code");
+        Currency.SetRange("ISO Numeric Code", ISONumericCode);
+        Currency.FindSet(false, false);
+        Clear(Body);
+        Body.Add('Code', ISONumericCode);
+        Body.Add('Description', Currency.Code);
+        Body.Add('НаименованиеПолное', Currency.Description + Currency."Description 2");
+    end;
+
     procedure GetBankIdFrom1C(): Boolean
     var
         entityType: Label 'Catalog_Банки';
+        entityTypePATCH: Label 'Catalog_Банки(%1)';
+        entityTypePATCHValue: Text;
         requestMethodGET: Label 'GET';
         requestMethodPOST: Label 'POST';
+        requestMethodPATCH: Label 'PATCH';
         Body: Text;
         filterValue: Text;
+        lblfilter: Label '&$filter=%1 eq ''%2''';
         lblSystemCode: Label '1C';
-        lblName: Label 'Bank';
         BankDirectory: Record "Bank Directory";
         tempBankDirectory: Record "Bank Directory" temporary;
         IntegrationEntity: Record "Integration Entity";
@@ -39,35 +139,52 @@ codeunit 50018 "Integration 1C"
             until BankDirectory.Next() = 0;
 
         // link between 1C МФО and BIC in BC
-        if tempBankDirectory.Count = 0 then exit(true);
+        if tempBankDirectory.FindSet(false, false) then
+            repeat
+                filterValue := StrSubstNo(lblfilter, 'Code', tempBankDirectory.BIC);
+                if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
+                jsonBody.ReadFrom(Body);
+                jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
+                if jsonLines.Count <> 0 then begin
+                    foreach LineToken in jsonLines do
+                        AddIDToIntegrationEntity(lblSystemCode, Database::Currency, tempBankDirectory.BIC, '',
+                                            WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
+                end else begin
+                    // create request body
+                    CreateRequestBodyToBank(tempBankDirectory.BIC, jsonBody);
+                    // get body from 1C
+                    jsonBody.WriteTo(Body);
+                    if not ConnectTo1C(entityType, requestMethodPOST, Body, '') then exit(false);
+                    jsonBody.ReadFrom(Body);
+                    AddIDToIntegrationEntity(lblSystemCode, Database::Currency, tempBankDirectory.BIC, '',
+                                    WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText());
+                end;
+                Commit();
+            until tempBankDirectory.Next() = 0;
 
-        // get body from 1C
-        if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
-        jsonBody.ReadFrom(Body);
-        jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
-        foreach LineToken in jsonLines do begin
-            codeBIC := DelChr(WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Code').AsValue().AsText(), '<>', ' ');
-            if tempBankDirectory.Get(codeBIC) then begin
-                AddIDToIntegrationEntity(lblSystemCode, Database::"Bank Directory", tempBankDirectory.BIC, '',
-                                WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
-                tempBankDirectory.Delete();
-            end;
-        end;
+        // update entity in 1C
+        // create list for updating in 1C
+        tempBankDirectory.DeleteAll();
+        if BankDirectory.FindSet(false, false) then
+            repeat
+                if IntegrationEntity.Get(lblSystemCode, Database::"Bank Directory", BankDirectory.BIC, '', CompanyName)
+                and (IntegrationEntity."Last Modify Date Time" < BankDirectory."Last DateTime Modified") then begin
+                    tempBankDirectory := BankDirectory;
+                    tempBankDirectory.Insert();
+                end;
+            until BankDirectory.Next() = 0;
 
-        // create entity in 1C
-        Clear(jsonBody);
-        Clear(jsonLines);
         if tempBankDirectory.FindSet(false, false) then
             repeat
                 // create request body
                 CreateRequestBodyToBank(tempBankDirectory.BIC, jsonBody);
-
-                // get body from 1C
+                entityTypePATCHValue := StrSubstNo(entityTypePATCH, GetBankDirectoryIdFromIntegrEntity(tempBankDirectory.BIC));
+                // patch entity in 1C
                 jsonBody.WriteTo(Body);
-                if not ConnectTo1C(entityType, requestMethodPOST, Body, filterValue) then exit(false);
-                jsonBody.ReadFrom(Body);
-                AddIDToIntegrationEntity(lblSystemCode, Database::"Bank Directory", tempBankDirectory.BIC, '',
-                                WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText());
+                if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, '') then
+                    exit(false);
+                UpdateDateTimeIntegrationEntity(lblSystemCode, Database::"Bank Directory", tempBankDirectory.BIC, '');
+                Commit();
             until tempBankDirectory.Next() = 0;
 
         exit(true);
@@ -94,12 +211,14 @@ codeunit 50018 "Integration 1C"
     procedure GetUoMIdFrom1C(): Boolean
     var
         entityType: Label 'Catalog_КлассификаторЕдиницИзмерения';
+        entityTypePATCH: Label 'Catalog_КлассификаторЕдиницИзмерения(%1)';
+        entityTypePATCHValue: Text;
         requestMethodGET: Label 'GET';
         requestMethodPOST: Label 'POST';
+        requestMethodPATCH: Label 'PATCH';
         Body: Text;
         filterValue: Text;
         lblSystemCode: Label '1C';
-        lblName: Label 'UnitOfMeasure';
         UnitOfMeasure: Record "Unit of Measure";
         tempUnitOfMeasure: Record "Unit of Measure" temporary;
         IntegrationEntity: Record "Integration Entity";
@@ -121,7 +240,6 @@ codeunit 50018 "Integration 1C"
             until UnitOfMeasure.Next() = 0;
 
         // link between BC and 1C by Code and Description
-        if tempUnitOfMeasure.Count = 0 then exit(true);
 
         // get body from 1C
         if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
@@ -137,6 +255,7 @@ codeunit 50018 "Integration 1C"
             tempCodeUoM1C := DelChr(WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Code').AsValue().AsText(), '<>', ' ');
             GetMaximumCode(codeUoM1C, tempCodeUoM1C);
         end;
+        Commit();
 
         // create entity in 1C
         Clear(jsonBody);
@@ -149,10 +268,36 @@ codeunit 50018 "Integration 1C"
 
                 // get body from 1C
                 jsonBody.WriteTo(Body);
-                if not ConnectTo1C(entityType, requestMethodPOST, Body, filterValue) then exit(false);
+                if not ConnectTo1C(entityType, requestMethodPOST, Body, '') then exit(false);
                 jsonBody.ReadFrom(Body);
                 AddIDToIntegrationEntity(lblSystemCode, Database::"Unit of Measure", tempUnitOfMeasure.Code, '',
                                 WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText());
+                Commit();
+            until tempUnitOfMeasure.Next() = 0;
+
+        // update entity in 1C
+        // create list for updating in 1C
+        tempUnitOfMeasure.DeleteAll();
+        if UnitOfMeasure.FindSet(false, false) then
+            repeat
+                if IntegrationEntity.Get(lblSystemCode, Database::"Unit of Measure", UnitOfMeasure.Code, '', CompanyName)
+                and (IntegrationEntity."Last Modify Date Time" < UnitOfMeasure."Last Modified Date Time") then begin
+                    tempUnitOfMeasure := UnitOfMeasure;
+                    tempUnitOfMeasure.Insert();
+                end;
+            until UnitOfMeasure.Next() = 0;
+
+        if tempUnitOfMeasure.FindSet(false, false) then
+            repeat
+                // create request body
+                CreateRequestBodyToUoM(tempUnitOfMeasure.Code, jsonBody, '');
+                entityTypePATCHValue := StrSubstNo(entityTypePATCH, GetUoMIdFromIntegrEntity(tempUnitOfMeasure.Code));
+                // patch entity in 1C
+                jsonBody.WriteTo(Body);
+                if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, '') then
+                    exit(false);
+                UpdateDateTimeIntegrationEntity(lblSystemCode, Database::"Unit of Measure", tempUnitOfMeasure.Code, '');
+                Commit();
             until tempUnitOfMeasure.Next() = 0;
 
         exit(true);
@@ -177,7 +322,8 @@ codeunit 50018 "Integration 1C"
     begin
         UnitOfMeasure.Get(UnitOfMeasureCode);
         Clear(Body);
-        Body.Add('Code', codeUoM1C);
+        if codeUoM1C <> '' then
+            Body.Add('Code', codeUoM1C);
         Body.Add('Description', LowerCase(UnitOfMeasureCode));
         Body.Add('НаименованиеПолное', UnitOfMeasure.Description);
     end;
@@ -195,15 +341,26 @@ codeunit 50018 "Integration 1C"
         IntegrationEntity.Insert(true);
     end;
 
+    local procedure UpdateDateTimeIntegrationEntity(SystemCode: Code[20]; tableID: Integer; Code1: Code[20]; Code2: Code[20]);
+    var
+        IntegrationEntity: Record "Integration Entity";
+    begin
+        IntegrationEntity.Get(SystemCode, tableID, Code1, Code2, CompanyName);
+        IntegrationEntity.Modify(true);
+    end;
+
     procedure GetItemsIdFrom1C(): Boolean
     var
         entityType: Label 'Catalog_Номенклатура';
+        entityTypePATCH: Label 'Catalog_Номенклатура(%1)';
+        entityTypePATCHValue: Text;
         requestMethodGET: Label 'GET';
         requestMethodPOST: Label 'POST';
+        requestMethodPATCH: Label 'PATCH';
         Body: Text;
+        lblfilter: Label '&$filter=%1 eq ''%2''';
         filterValue: Text;
         lblSystemCode: Label '1C';
-        lblName: Label 'Iten';
         Item: Record Item;
         tempItem: Record Item temporary;
         IntegrationEntity: Record "Integration Entity";
@@ -213,7 +370,7 @@ codeunit 50018 "Integration 1C"
         LineToken: JsonToken;
         ItemNo: Code[20];
     begin
-        // create UoMs list for getting id from 1C
+        // create Items list for getting id from 1C
         if Item.FindSet(false, false) then
             repeat
                 if not IntegrationEntity.Get(lblSystemCode, Database::Item, Item."No.", '', CompanyName) then begin
@@ -222,36 +379,63 @@ codeunit 50018 "Integration 1C"
                 end;
             until Item.Next() = 0;
 
-        // link between 1C МФО and BIC in BC
-        if tempItem.Count = 0 then exit(true);
+        if tempItem.FindSet(false, false) then
+            repeat
+                // get item by code from 1C
+                filterValue := StrSubstNo(lblfilter, 'Code', tempItem."No.");
+                if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then
+                    exit(false);
+                jsonBody.ReadFrom(Body);
+                jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
+                if jsonLines.Count <> 0 then begin
+                    foreach LineToken in jsonLines do
+                        AddIDToIntegrationEntity(lblSystemCode, Database::Item, tempItem."No.", '',
+                                WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
 
-        // get body from 1C
-        // if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
-        // jsonBody.ReadFrom(Body);
-        // jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
-        // foreach LineToken in jsonLines do begin
-        //     ItemNo := DelChr(WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Code').AsValue().AsText(), '<>', ' ');
-        //     if tempItem.Get(ItemNo) then begin
-        //         AddIDToIntegrationEntity(lblSystemCode, Database::Item, tempItem."No.", '',
-        //                         WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
-        //         tempItem.Delete();
-        //     end;
-        // end;
+                    // patch item in 1C
+                    CreateRequestBodyToItems(tempItem."No.", jsonBody);
+                    entityTypePATCHValue := StrSubstNo(entityTypePATCH, GetItemIdFromIntegrEntity(tempItem."No."));
+                    jsonBody.WriteTo(Body);
+                    if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, '') then
+                        exit(false);
+                    UpdateDateTimeIntegrationEntity(lblSystemCode, Database::Item, tempItem."No.", '');
+                end else begin
+                    // request body for create Item in 1C
+                    CreateRequestBodyToItems(tempItem."No.", jsonBody);
+                    jsonBody.WriteTo(Body);
+                    // get body from 1C
+                    if not ConnectTo1C(entityType, requestMethodPOST, Body, '') then
+                        exit(false);
+                    jsonBody.ReadFrom(Body);
+                    AddIDToIntegrationEntity(lblSystemCode, Database::Item, tempItem."No.", '',
+                                    WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText());
+                end;
+                Commit();
+            until tempItem.Next() = 0;
 
-        // create entity in 1C
-        // Clear(jsonBody);
-        // Clear(jsonLines);
+        // update entity in 1C
+        // create Items list for updating in 1C
+        tempItem.DeleteAll();
+        if Item.FindSet(false, false) then
+            repeat
+                if IntegrationEntity.Get(lblSystemCode, Database::Item, Item."No.", '', CompanyName)
+                and (IntegrationEntity."Last Modify Date Time" < Item."Last DateTime Modified") then begin
+                    tempItem := Item;
+                    tempItem.Insert();
+                end;
+            until Item.Next() = 0;
+
         if tempItem.FindSet(false, false) then
             repeat
                 // create request body
                 CreateRequestBodyToItems(tempItem."No.", jsonBody);
-
-                // get body from 1C
+                entityTypePATCHValue := StrSubstNo(entityTypePATCH, GetItemIdFromIntegrEntity(tempItem."No."));
+                // patch item in 1C
                 jsonBody.WriteTo(Body);
-                if not ConnectTo1C(entityType, requestMethodPOST, Body, filterValue) then exit(false);
-                jsonBody.ReadFrom(Body);
-                AddIDToIntegrationEntity(lblSystemCode, Database::Item, tempItem."No.", '',
-                                WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText());
+                if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, filterValue) then
+                    exit(false);
+                UpdateDateTimeIntegrationEntity(lblSystemCode, Database::Item, tempItem."No.", '');
+                Commit();
             until tempItem.Next() = 0;
 
         exit(true);
@@ -265,9 +449,28 @@ codeunit 50018 "Integration 1C"
         Clear(Body);
         Body.Add('Code', ItemNo);
         Body.Add('Description', Items.Description);
-        Body.Add('СтавкаНДС', Items."VAT Prod. Posting Group");
-        Body.Add('БазоваяЕдиницаИзмерения_Key', GetItemUoMIdFromIntegrEntity(Items."Base Unit of Measure"));
+        Body.Add('Услуга', Items.Type = Items.Type::"Non-Inventory");
+        Body.Add('СтавкаНДС', GetVAT(Items."VAT Bus. Posting Gr. (Price)", Items."VAT Prod. Posting Group"));
+        if Items."Base Unit of Measure" <> '' then
+            Body.Add('БазоваяЕдиницаИзмерения_Key', GetItemUoMIdFromIntegrEntity(Items."Base Unit of Measure"));
         Body.Add('ЕдиницыИзмерения', GetJsonItemUoM(ItemNo));
+    end;
+
+    local procedure GetVAT(VATBusPostingGroup: Code[20]; VATProdPostingGroup: Code[20]): Text[20]
+    var
+        VATPostingSetup: Record "VAT Posting Setup";
+    begin
+        if not VATPostingSetup.Get(VATBusPostingGroup, VATProdPostingGroup) then exit('');
+        case VATPostingSetup."VAT %" of
+            0:
+                begin
+
+                end;
+            20:
+                begin
+                    exit('НДС20');
+                end;
+        end;
     end;
 
     local procedure GetJsonItemUoM(ItemNo: Code[20]): JsonArray
@@ -279,6 +482,7 @@ codeunit 50018 "Integration 1C"
     begin
         ItemUoM.SetCurrentKey("Item No.");
         ItemUoM.SetRange("Item No.", ItemNo);
+        ItemUoM.SetFilter(Code, '<>%1', '');
         if ItemUoM.FindSet(false, false) then begin
             Clear(jsonUoMs);
             LineNo := 0;
@@ -291,6 +495,43 @@ codeunit 50018 "Integration 1C"
                 jsonUoMs.Add(jsonUoMLine);
             until ItemUoM.Next() = 0;
         end;
+        exit(jsonUoMs);
+    end;
+
+    local procedure GetUoMIdFromIntegrEntity(UoMCode: Code[10]): Text
+    var
+        IntegrEntity: Record "Integration Entity";
+        lblSystemCode: Label '1C';
+    begin
+        IntegrEntity.Get(lblSystemCode, Database::"Unit of Measure", UoMCode, '', CompanyName);
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    local procedure GetBankDirectoryIdFromIntegrEntity(BankDirectoryBIC: Code[9]): Text
+    var
+        IntegrEntity: Record "Integration Entity";
+        lblSystemCode: Label '1C';
+    begin
+        IntegrEntity.Get(lblSystemCode, Database::"Bank Directory", BankDirectoryBIC, '', CompanyName);
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    local procedure GetCurrencyIdFromIntegrEntity(CurrencyISONumericCode: Code[3]): Text
+    var
+        IntegrEntity: Record "Integration Entity";
+        lblSystemCode: Label '1C';
+    begin
+        IntegrEntity.Get(lblSystemCode, Database::Currency, CurrencyISONumericCode, '', CompanyName);
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    local procedure GetItemIdFromIntegrEntity(ItemNo: Code[20]): Text
+    var
+        IntegrEntity: Record "Integration Entity";
+        lblSystemCode: Label '1C';
+    begin
+        IntegrEntity.Get(lblSystemCode, Database::Item, ItemNo, '', CompanyName);
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
     local procedure GetItemUoMIdFromIntegrEntity(ItemUoMCode: Code[10]): Text
@@ -335,6 +576,7 @@ codeunit 50018 "Integration 1C"
         Authorization: Text;
         MethodGET: Label 'GET';
         MethodPOST: Label 'POST';
+        MethodPATCH: Label 'PATCH';
         ContentType: Label 'Content-Type';
         ContentTypeFormUrlencoded: Label 'application/x-www-form-urlencoded';
         ParameterFormat: Label '$format';
@@ -359,7 +601,7 @@ codeunit 50018 "Integration 1C"
                 Base64Convert.ToBase64(StrSubstNo(ClientIdSecretBase64, ClientId, ClientSecret)));
         RequestHeader.Add(ParameterAuthorization, Authorization);
 
-        if requestMethod = 'POST' then begin
+        if requestMethod in [MethodPOST, MethodPATCH] then begin
             RequestMessage.Content.WriteFrom(Body);
             RequestMessage.Content.GetHeaders(RequestHeader);
             RequestHeader.Remove(ContentType);

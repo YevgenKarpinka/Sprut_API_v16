@@ -123,6 +123,22 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                         Message('Error!');
                 end;
             }
+            action(GetCurrencyIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get Currency Id From 1C', RUS = 'Get Currency Id From 1C';
+                ToolTipML = ENU = 'Get Currency Id From 1C',
+                            RUS = 'Get Currency Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.GetCurrencyIdFrom1C() then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
         }
     }
 
