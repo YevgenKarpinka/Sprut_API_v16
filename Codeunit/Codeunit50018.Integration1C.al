@@ -9,6 +9,270 @@ codeunit 50018 "Integration 1C"
         IntegrationLog: Record "Integration Log";
         WebServiceMgt: Codeunit "Web Service Mgt.";
 
+    procedure GetCompanyIdFrom1C(): Boolean
+    var
+        entityType: Label 'Catalog_Организации';
+        entityTypePATCH: Label 'Catalog_Организации(%1)';
+        entityTypePATCHValue: Text;
+        requestMethodGET: Label 'GET';
+        requestMethodPOST: Label 'POST';
+        requestMethodPATCH: Label 'PATCH';
+        Body: Text;
+        filterValue: Text;
+        lblfilter: Label '&$filter=%1 eq ''%2''';
+        lblSystemCode: Label '1C';
+        CompanyIntegration: Record "Company Integration";
+        CompanyInfo: Record "Company Information";
+        tempCompanyIntegration: Record "Company Integration" temporary;
+        IntegrationEntity: Record "Integration Entity";
+        ResponceTokenLine: Text;
+        jsonLines: JsonArray;
+        jsonBody: JsonObject;
+        LineToken: JsonToken;
+        codeISO: Code[10];
+    begin
+        // create entity list for getting id from 1C
+        if CompanyIntegration.FindSet(false, false) then
+            repeat
+                CompanyInfo.ChangeCompany(CompanyIntegration."Company Name");
+                if not IntegrationEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '', CompanyName) then begin
+                    tempCompanyIntegration := CompanyIntegration;
+                    tempCompanyIntegration.Insert();
+                end;
+            until CompanyIntegration.Next() = 0;
+
+        // link between 1C and BC
+        // get entity from 1C
+        if tempCompanyIntegration.FindSet(false, false) then
+            repeat
+                CompanyInfo.ChangeCompany(CompanyIntegration."Company Name");
+                filterValue := StrSubstNo(lblfilter, 'КодПоЕДРПОУ', CompanyInfo."OKPO Code");
+                if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
+                jsonBody.ReadFrom(Body);
+                jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
+                if jsonLines.Count <> 0 then begin
+                    foreach LineToken in jsonLines do
+                        AddIDToIntegrationEntity(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '',
+                                            WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
+                end;
+                Commit();
+            until tempCompanyIntegration.Next() = 0;
+
+        exit(true);
+    end;
+
+    procedure GetVendorBankAccountIdFrom1C(): Boolean
+    var
+        entityType: Label 'Catalog_БанковскиеСчета';
+        entityTypePATCH: Label 'Catalog_БанковскиеСчета(%1)';
+        entityTypePATCHValue: Text;
+        requestMethodGET: Label 'GET';
+        requestMethodPOST: Label 'POST';
+        requestMethodPATCH: Label 'PATCH';
+        Body: Text;
+        filterValue: Text;
+        lblfilter: Label '&$filter=%1 eq ''%2''';
+        lblSystemCode: Label '1C';
+        VendBankAcc: Record "Vendor Bank Account";
+        tempVendBankAcc: Record "Vendor Bank Account" temporary;
+        IntegrationEntity: Record "Integration Entity";
+        ResponceTokenLine: Text;
+        jsonLines: JsonArray;
+        jsonBody: JsonObject;
+        LineToken: JsonToken;
+        codeISO: Code[10];
+    begin
+        // create Currency list for getting id from 1C
+        if VendBankAcc.FindSet(false, false) then
+            repeat
+                if not IntegrationEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '', CompanyName) then begin
+                    tempVendBankAcc := VendBankAcc;
+                    tempVendBankAcc.Insert();
+                end;
+            until VendBankAcc.Next() = 0;
+
+        // link between 1C and BC
+        // create entity in 1C or get it
+        if tempVendBankAcc.FindSet(false, false) then
+            repeat
+                filterValue := StrSubstNo(lblfilter, 'НомерСчета', tempVendBankAcc.IBAN);
+                if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
+                jsonBody.ReadFrom(Body);
+                jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
+                if jsonLines.Count <> 0 then begin
+                    foreach LineToken in jsonLines do
+                        AddIDToIntegrationEntity(lblSystemCode, Database::"Vendor Bank Account", tempVendBankAcc.IBAN, '',
+                                            WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
+                end else begin
+                    // create request body
+                    CreateRequestBodyToVendorBankAccount(tempVendBankAcc.IBAN, jsonBody);
+                    // get body from 1C
+                    jsonBody.WriteTo(Body);
+                    if not ConnectTo1C(entityType, requestMethodPOST, Body, '') then exit(false);
+                    jsonBody.ReadFrom(Body);
+                    AddIDToIntegrationEntity(lblSystemCode, Database::"Vendor Bank Account", tempVendBankAcc.IBAN, '',
+                                    WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText());
+                end;
+                Commit();
+            until tempVendBankAcc.Next() = 0;
+
+        // update entity in 1C
+        // create list for updating in 1C
+        tempVendBankAcc.DeleteAll();
+        if VendBankAcc.FindSet(false, false) then
+            repeat
+                if IntegrationEntity.Get(lblSystemCode, Database::"Customer Bank Account", VendBankAcc.IBAN, '', CompanyName)
+                and (IntegrationEntity."Last Modify Date Time" < VendBankAcc."Last DateTime Modified") then begin
+                    tempVendBankAcc := VendBankAcc;
+                    tempVendBankAcc.Insert();
+                end;
+            until VendBankAcc.Next() = 0;
+
+        if tempVendBankAcc.FindSet(false, false) then
+            repeat
+                // create request body
+                CreateRequestBodyToVendorBankAccount(tempVendBankAcc.IBAN, jsonBody);
+                entityTypePATCHValue := StrSubstNo(entityTypePATCH, GetVendBankAccIdFromIntegrEntity(tempVendBankAcc.IBAN));
+                // patch entity in 1C
+                jsonBody.WriteTo(Body);
+                if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, filterValue) then
+                    exit(false);
+                UpdateDateTimeIntegrationEntity(lblSystemCode, Database::Currency, tempVendBankAcc.IBAN, '');
+                Commit();
+            until tempVendBankAcc.Next() = 0;
+
+        exit(true);
+    end;
+
+    local procedure CreateRequestBodyToVendorBankAccount(VendBankAccIBAN: Code[50]; var Body: JsonObject)
+    var
+        VendorBankAccount: Record "Vendor Bank Account";
+        lblContragent: Label 'StandardODATA.Catalog_Контрагенты';
+    begin
+        VendorBankAccount.SetCurrentKey(IBAN);
+        VendorBankAccount.SetRange(IBAN, VendBankAccIBAN);
+        VendorBankAccount.FindSet(false, false);
+        Clear(Body);
+        Body.Add('НомерСчета', VendorBankAccount.IBAN);
+        Body.Add('НомерСчетаУстаревший', VendorBankAccount."Bank Account No.");
+        Body.Add('Description', VendorBankAccount.Name + VendorBankAccount."Name 2");
+        Body.Add('Банк_Key', GetBankIDByBIC(VendorBankAccount.BIC));
+        Body.Add('Валютный', GetCurrencyAccount(VendorBankAccount."Currency Code"));
+        Body.Add('ВалютаДенежныхСредств_Key', GetCurrencyIdFromIntegrEntityByCode(VendorBankAccount.Code));
+        Body.Add('Owner', GetVendorIdFromIntegrEntity(VendorBankAccount."Vendor No."));
+        Body.Add('Owner_Type', lblContragent);
+    end;
+
+    procedure GetCustomerBankAccountIdFrom1C(): Boolean
+    var
+        entityType: Label 'Catalog_БанковскиеСчета';
+        entityTypePATCH: Label 'Catalog_БанковскиеСчета(%1)';
+        entityTypePATCHValue: Text;
+        requestMethodGET: Label 'GET';
+        requestMethodPOST: Label 'POST';
+        requestMethodPATCH: Label 'PATCH';
+        Body: Text;
+        filterValue: Text;
+        lblfilter: Label '&$filter=%1 eq ''%2''';
+        lblSystemCode: Label '1C';
+        CustBankAcc: Record "Customer Bank Account";
+        tempCustBankAcc: Record "Customer Bank Account" temporary;
+        IntegrationEntity: Record "Integration Entity";
+        ResponceTokenLine: Text;
+        jsonLines: JsonArray;
+        jsonBody: JsonObject;
+        LineToken: JsonToken;
+        codeISO: Code[10];
+    begin
+        // create Currency list for getting id from 1C
+        if CustBankAcc.FindSet(false, false) then
+            repeat
+                if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '', CompanyName) then begin
+                    tempCustBankAcc := CustBankAcc;
+                    tempCustBankAcc.Insert();
+                end;
+            until CustBankAcc.Next() = 0;
+
+        // link between 1C and BC
+        // create entity in 1C or get it
+        if tempCustBankAcc.FindSet(false, false) then
+            repeat
+                filterValue := StrSubstNo(lblfilter, 'НомерСчета', tempCustBankAcc.IBAN);
+                if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
+                jsonBody.ReadFrom(Body);
+                jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
+                if jsonLines.Count <> 0 then begin
+                    foreach LineToken in jsonLines do
+                        AddIDToIntegrationEntity(lblSystemCode, Database::"Customer Bank Account", tempCustBankAcc.IBAN, '',
+                                            WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
+                end else begin
+                    // create request body
+                    CreateRequestBodyToCustomerBankAccount(tempCustBankAcc.IBAN, jsonBody);
+                    // get body from 1C
+                    jsonBody.WriteTo(Body);
+                    if not ConnectTo1C(entityType, requestMethodPOST, Body, '') then exit(false);
+                    jsonBody.ReadFrom(Body);
+                    AddIDToIntegrationEntity(lblSystemCode, Database::"Customer Bank Account", tempCustBankAcc.IBAN, '',
+                                    WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText());
+                end;
+                Commit();
+            until tempCustBankAcc.Next() = 0;
+
+        // update entity in 1C
+        // create list for updating in 1C
+        tempCustBankAcc.DeleteAll();
+        if CustBankAcc.FindSet(false, false) then
+            repeat
+                if IntegrationEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '', CompanyName)
+                and (IntegrationEntity."Last Modify Date Time" < CustBankAcc."Last DateTime Modified") then begin
+                    tempCustBankAcc := CustBankAcc;
+                    tempCustBankAcc.Insert();
+                end;
+            until CustBankAcc.Next() = 0;
+
+        if tempCustBankAcc.FindSet(false, false) then
+            repeat
+                // create request body
+                CreateRequestBodyToCustomerBankAccount(tempCustBankAcc.IBAN, jsonBody);
+                entityTypePATCHValue := StrSubstNo(entityTypePATCH, GetCustBankAccIdFromIntegrEntity(tempCustBankAcc.IBAN));
+                // patch entity in 1C
+                jsonBody.WriteTo(Body);
+                if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, filterValue) then
+                    exit(false);
+                UpdateDateTimeIntegrationEntity(lblSystemCode, Database::Currency, tempCustBankAcc.IBAN, '');
+                Commit();
+            until tempCustBankAcc.Next() = 0;
+
+        exit(true);
+    end;
+
+    local procedure CreateRequestBodyToCustomerBankAccount(CustBankAccIBAN: Code[50]; var Body: JsonObject)
+    var
+        CustomerBankAccount: Record "Customer Bank Account";
+        lblContragent: Label 'StandardODATA.Catalog_Контрагенты';
+    begin
+        CustomerBankAccount.SetCurrentKey(IBAN);
+        CustomerBankAccount.SetRange(IBAN, CustBankAccIBAN);
+        CustomerBankAccount.FindSet(false, false);
+        Clear(Body);
+        Body.Add('НомерСчета', CustomerBankAccount.IBAN);
+        Body.Add('НомерСчетаУстаревший', CustomerBankAccount."Bank Account No.");
+        Body.Add('Description', CustomerBankAccount.Name + CustomerBankAccount."Name 2");
+        Body.Add('Банк_Key', GetBankIDByBIC(CustomerBankAccount.BIC));
+        Body.Add('Валютный', GetCurrencyAccount(CustomerBankAccount."Currency Code"));
+        Body.Add('ВалютаДенежныхСредств_Key', GetCurrencyIdFromIntegrEntityByCode(CustomerBankAccount.Code));
+        Body.Add('Owner', GetCustomerIdFromIntegrEntity(CustomerBankAccount."Customer No."));
+        Body.Add('Owner_Type', lblContragent);
+    end;
+
+    local procedure GetCurrencyAccount(CustomerBankAccountCurrencyCode: Code[10]): Boolean
+    var
+        GLSetup: Record "General Ledger Setup";
+    begin
+        GLSetup.Get();
+        exit(GLSetup."LCY Code" <> CustomerBankAccountCurrencyCode);
+    end;
+
     procedure GetCurrencyIdFrom1C(): Boolean
     var
         entityType: Label 'Catalog_Валюты';
@@ -459,16 +723,27 @@ codeunit 50018 "Integration 1C"
     local procedure GetVAT(VATBusPostingGroup: Code[20]; VATProdPostingGroup: Code[20]): Text[20]
     var
         VATPostingSetup: Record "VAT Posting Setup";
+        lblVAT20: Label 'НДС20';
+        lblVAT7: Label 'НДС7';
+        lblVAT0: Label 'НДС0';
+        lblWithoutVAT: Label 'БезНДС';
+        lblNotVAT: Label 'НеНДС';
     begin
         if not VATPostingSetup.Get(VATBusPostingGroup, VATProdPostingGroup) then exit('');
         case VATPostingSetup."VAT %" of
             0:
                 begin
-
+                    if VATPostingSetup."VAT Exempt" then
+                        exit(lblWithoutVAT);
+                    exit(lblVAT0);
+                end;
+            7:
+                begin
+                    exit(lblVAT7);
                 end;
             20:
                 begin
-                    exit('НДС20');
+                    exit(lblVAT20);
                 end;
         end;
     end;
@@ -498,6 +773,24 @@ codeunit 50018 "Integration 1C"
         exit(jsonUoMs);
     end;
 
+    local procedure GetVendBankAccIdFromIntegrEntity(VendBankAccIBAN: Code[50]): Text
+    var
+        IntegrEntity: Record "Integration Entity";
+        lblSystemCode: Label '1C';
+    begin
+        IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAccIBAN, '', CompanyName);
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    local procedure GetCustBankAccIdFromIntegrEntity(CustBankAccIBAN: Code[50]): Text
+    var
+        IntegrEntity: Record "Integration Entity";
+        lblSystemCode: Label '1C';
+    begin
+        IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAccIBAN, '', CompanyName);
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
     local procedure GetUoMIdFromIntegrEntity(UoMCode: Code[10]): Text
     var
         IntegrEntity: Record "Integration Entity";
@@ -513,6 +806,46 @@ codeunit 50018 "Integration 1C"
         lblSystemCode: Label '1C';
     begin
         IntegrEntity.Get(lblSystemCode, Database::"Bank Directory", BankDirectoryBIC, '', CompanyName);
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    local procedure GetVendorIdFromIntegrEntity(VendorNo: Code[20]): Text
+    var
+        IntegrEntity: Record "Integration Entity";
+        lblSystemCode: Label '1C';
+    begin
+        IntegrEntity.Get(lblSystemCode, Database::Vendor, VendorNo, '', CompanyName);
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    local procedure GetCustomerIdFromIntegrEntity(CustomerNo: Code[20]): Text
+    var
+        IntegrEntity: Record "Integration Entity";
+        // Customer: Record Customer;
+        lblSystemCode: Label '1C';
+    begin
+        // Currency.Get(CustomerNo);
+        IntegrEntity.Get(lblSystemCode, Database::Customer, CustomerNo, '', CompanyName);
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    local procedure GetBankIDByBIC(BankBIC: Code[9]): Text
+    var
+        IntegrEntity: Record "Integration Entity";
+        lblSystemCode: Label '1C';
+    begin
+        IntegrEntity.Get(lblSystemCode, Database::"Bank Directory", BankBIC, '', CompanyName);
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    local procedure GetCurrencyIdFromIntegrEntityByCode(CurrencyCode: Code[10]): Text
+    var
+        IntegrEntity: Record "Integration Entity";
+        Currency: Record Currency;
+        lblSystemCode: Label '1C';
+    begin
+        Currency.Get(CurrencyCode);
+        IntegrEntity.Get(lblSystemCode, Database::Currency, Currency."ISO Numeric Code", '', CompanyName);
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
