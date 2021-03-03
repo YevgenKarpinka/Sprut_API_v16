@@ -17,7 +17,7 @@ page 50015 "Integration Entity List"
         {
             repeater(RepeaterName)
             {
-                Editable = false;
+                // Editable = false;
                 field("System Code"; "System Code")
                 {
                     ApplicationArea = All;
