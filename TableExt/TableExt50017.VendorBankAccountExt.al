@@ -20,7 +20,6 @@ tableextension 50017 "Vendor Bank Account Ext." extends "Vendor Bank Account"
 
     trigger OnDelete()
     begin
-        UpdateLastDateTimeModified();
     end;
 
     trigger OnRename()

@@ -20,7 +20,6 @@ tableextension 50016 "Customer Bank Account Ext." extends "Customer Bank Account
 
     trigger OnDelete()
     begin
-        UpdateLastDateTimeModified();
     end;
 
     trigger OnRename()

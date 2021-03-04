@@ -26,6 +26,8 @@ codeunit 50008 "Copy Items to All Companies"
         ItemTo: Record Item;
         ItemUoMFrom: Record "Item Unit of Measure";
         ItemUoMTo: Record "Item Unit of Measure";
+        UoMFrom: Record "Unit of Measure";
+        UoMTo: Record "Unit of Measure";
     begin
         CompIntegrTo.SetCurrentKey("Copy Items To");
         CompIntegrTo.SetRange("Copy Items To", true);
@@ -36,19 +38,29 @@ codeunit 50008 "Copy Items to All Companies"
         ItemTo.LockTable();
         ItemUoMTo.LockTable();
 
-
-        if ItemFrom.FindSet(false, false) then
+        if CompIntegrTo.FindSet(false, false) then
             repeat
-                ConfProgressBar.Init(0, 0, StrSubstNo(txtProcessHeader, ItemFrom."No."));
-                if CompIntegrTo.FindSet(false, false) then
-                    repeat
-                        ConfProgressBar.Update(StrSubstNo(txtCopyItemToCompany,
+                ItemTo.ChangeCompany(CompIntegrTo."Company Name");
+                ItemUoMTo.ChangeCompany(CompIntegrTo."Company Name");
+                ConfProgressBar.Init(0, 0, StrSubstNo(txtCopyItemToCompany,
                                                             CompanyName,
                                                             CompIntegrTo."Company Name"));
-
-                        ItemTo.ChangeCompany(CompIntegrTo."Company Name");
-                        ItemUoMTo.ChangeCompany(CompIntegrTo."Company Name");
+                if ItemFrom.FindSet(false, false) then
+                    repeat
+                        ConfProgressBar.Update(StrSubstNo(txtProcessHeader, ItemFrom."No."));
                         ItemTo.SetRange("No.", ItemFrom."No.");
+                        // copy UoM before Items
+                        UoMTo.ChangeCompany(CompIntegrTo."Company Name");
+                        // if UoMTo.get('ПОСЛУГА') then
+                        //     UoMTo.Delete();
+                        if UoMFrom.FindSet(false, false) then
+                            repeat
+                                if not UoMTo.Get(UoMFrom.Code)
+                                or (UoMTo."Last Modified Date Time" < UoMFrom."Last Modified Date Time") then begin
+                                    UoMTo.TransferFields(UoMFrom, false);
+                                    if not UoMTo.Insert() then UoMTo.Modify();
+                                end;
+                            until UoMFrom.Next() = 0;
 
                         if not ItemTo.FindFirst() then begin
                             if ItemFrom."Sales Unit of Measure" <> '' then begin
@@ -75,9 +87,10 @@ codeunit 50008 "Copy Items to All Companies"
                                 ItemTo.Modify();
                             end;
                         end;
-                    // Commit();
-                    until CompIntegrTo.Next() = 0;
-            until ItemFrom.Next() = 0;
+                        Commit();
+
+                    until ItemFrom.Next() = 0;
+            until CompIntegrTo.Next() = 0;
 
         ConfProgressBar.Close();
     end;
@@ -86,7 +99,7 @@ codeunit 50008 "Copy Items to All Companies"
         CompIntegrFrom: Record "Company Integration";
         ConfProgressBar: Codeunit "Config Progress Bar";
         txtCopyItemToCompany: TextConst ENU = 'From Company %1 To Company %2',
-                                        RUS = 'с Организации %1 в Организацию %2';
+                                        RUS = 'С Организации %1 в Организацию %2';
         txtProcessHeader: TextConst ENU = 'Copy Item %1',
                                     RUS = 'Копирование товара %1';
 }

@@ -12,7 +12,6 @@ tableextension 50014 "Item Unit of Measure Ext." extends "Item Unit of Measure"
 
     trigger OnDelete()
     begin
-        UpdateItemLastDateTimeModified();
     end;
 
     trigger OnRename()

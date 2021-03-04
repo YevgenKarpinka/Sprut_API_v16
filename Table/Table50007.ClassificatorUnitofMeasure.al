@@ -14,6 +14,11 @@ table 50007 "Classificator Unit of Measure"
 
             trigger OnValidate()
             begin
+                for CountChr := 1 to StrLen("Numeric Code") do begin
+                    if not ("Numeric Code"[CountChr] in ['0' .. '9']) then
+                        Error(errSymbolsNotAllowed);
+                end;
+
                 while StrLen("Numeric Code") < 4 do
                     "Numeric Code" := '0' + "Numeric Code";
             end;
@@ -44,6 +49,13 @@ table 50007 "Classificator Unit of Measure"
 
             trigger OnValidate()
             begin
+                if "Numeric Code EU" = '' then exit;
+
+                for CountChr := 1 to StrLen("Numeric Code EU") do begin
+                    if not ("Numeric Code EU"[CountChr] in [0 .. 9]) then
+                        Error(errSymbolsNotAllowed);
+                end;
+
                 while StrLen("Numeric Code EU") < 4 do
                     "Numeric Code EU" := '0' + "Numeric Code EU";
             end;
@@ -60,12 +72,12 @@ table 50007 "Classificator Unit of Measure"
 
     trigger OnInsert()
     begin
-
+        OnCheck();
     end;
 
     trigger OnModify()
     begin
-
+        OnCheck();
     end;
 
     trigger OnDelete()
@@ -75,7 +87,19 @@ table 50007 "Classificator Unit of Measure"
 
     trigger OnRename()
     begin
-
+        OnCheck();
     end;
 
+    var
+        CountChr: Integer;
+        errSymbolsNotAllowed: TextConst ENU = 'Inpunt allowed only numeric!',
+                                        RUS = 'Разрешено вводить только числа!';
+        errBlankNotAllowed: TextConst ENU = 'Blank not allowed!',
+                                        RUS = 'Пустое поле не разрешено!';
+
+    local procedure OnCheck()
+    begin
+        TestField("Numeric Code");
+        TestField("Short Name");
+    end;
 }

@@ -20,7 +20,6 @@ tableextension 50015 "Bank Directory Ext." extends "Bank Directory"
 
     trigger OnDelete()
     begin
-        UpdateLastDateTimeModified();
     end;
 
     trigger OnRename()

@@ -61,6 +61,144 @@ codeunit 50018 "Integration 1C"
         exit(true);
     end;
 
+    local procedure GetCompanyIdFromIntegrEntity(): Guid
+    var
+        CompanyInfo: Record "Company Information";
+        IntegrEntity: Record "Integration Entity";
+        lblSystemCode: Label '1C';
+    begin
+        CompanyInfo.Get();
+        if CompanyInfo."OKPO Code" = '' then exit('');
+
+        if IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '', CompanyName) then
+            exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+
+        GetCompanyIdFrom1C();
+        IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '', CompanyName);
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    procedure GetCustomerAgreementIdFrom1C(): Boolean
+    var
+        entityType: Label 'Catalog_ДоговорыКонтрагентов';
+        entityTypePATCH: Label 'Catalog_ДоговорыКонтрагентов(%1)';
+        entityTypePATCHValue: Text;
+        requestMethodGET: Label 'GET';
+        requestMethodPOST: Label 'POST';
+        requestMethodPATCH: Label 'PATCH';
+        Body: Text;
+        filterValue: Text;
+        lblfilter: Label '&$filter=%1 eq ''%2''';
+        lblSystemCode: Label '1C';
+        CustomerAgreement: Record "Customer Agreement";
+        tempCustomerAgreement: Record "Customer Agreement" temporary;
+        IntegrationEntity: Record "Integration Entity";
+        ResponceTokenLine: Text;
+        jsonLines: JsonArray;
+        jsonBody: JsonObject;
+        LineToken: JsonToken;
+        codeISO: Code[10];
+    begin
+        // create Currency list for getting id from 1C
+        if CustomerAgreement.FindSet(false, false) then
+            repeat
+                if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", CustomerAgreement."CRM ID", '', CompanyName) then begin
+                    tempCustomerAgreement := CustomerAgreement;
+                    tempCustomerAgreement.Insert();
+                end;
+            until CustomerAgreement.Next() = 0;
+
+        // link between 1C and BC
+        // create entity in 1C or get it
+        if tempCustomerAgreement.FindSet(false, false) then
+            repeat
+                filterValue := StrSubstNo(lblfilter, 'Номер', tempCustomerAgreement."CRM ID");
+                if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
+                jsonBody.ReadFrom(Body);
+                jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
+                if jsonLines.Count <> 0 then begin
+                    foreach LineToken in jsonLines do
+                        AddIDToIntegrationEntity(lblSystemCode, Database::"Customer Agreement", tempCustomerAgreement."CRM ID", '',
+                                            WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
+                end else begin
+                    // create request body
+                    CreateRequestBodyToCustomerAgreement(tempCustomerAgreement."Customer No.", tempCustomerAgreement."No.", jsonBody);
+                    // get body from 1C
+                    jsonBody.WriteTo(Body);
+                    if not ConnectTo1C(entityType, requestMethodPOST, Body, '') then exit(false);
+                    jsonBody.ReadFrom(Body);
+                    AddIDToIntegrationEntity(lblSystemCode, Database::"Customer Agreement", tempCustomerAgreement."CRM ID", '',
+                                    WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText());
+                end;
+                Commit();
+            until tempCustomerAgreement.Next() = 0;
+
+        // update entity in 1C
+        // create list for updating in 1C
+        tempCustomerAgreement.DeleteAll();
+        if tempCustomerAgreement.FindSet(false, false) then
+            repeat
+                if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", CustomerAgreement."CRM ID", '', CompanyName)
+                and (IntegrationEntity."Last Modify Date Time" < CustomerAgreement."Last DateTime Modified") then begin
+                    tempCustomerAgreement := CustomerAgreement;
+                    tempCustomerAgreement.Insert();
+                end;
+            until CustomerAgreement.Next() = 0;
+
+        if tempCustomerAgreement.FindSet(false, false) then
+            repeat
+                // create request body
+                CreateRequestBodyToCustomerAgreement(tempCustomerAgreement."Customer No.", tempCustomerAgreement."No.", jsonBody);
+                entityTypePATCHValue := StrSubstNo(entityTypePATCH, GetCustomerAgreementIdFromIntegrEntity(tempCustomerAgreement."CRM ID"));
+                // patch entity in 1C
+                jsonBody.WriteTo(Body);
+                if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, '') then
+                    exit(false);
+                UpdateDateTimeIntegrationEntity(lblSystemCode, Database::"Customer Agreement", tempCustomerAgreement."CRM ID", '');
+                Commit();
+            until tempCustomerAgreement.Next() = 0;
+
+        exit(true);
+    end;
+
+    local procedure GetCustomerAgreementIdFromIntegrEntity(CustomerAgreementCRMID: Guid): Guid
+    var
+        CustomerAgreement: Record "Customer Agreement";
+        IntegrEntity: Record "Integration Entity";
+        lblSystemCode: Label '1C';
+        BlankGuid: Guid;
+    begin
+        if CustomerAgreementCRMID = BlankGuid then exit('');
+
+        if IntegrEntity.Get(lblSystemCode, Database::"Customer Agreement", CustomerAgreementCRMID, '', CompanyName) then
+            exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    local procedure CreateRequestBodyToCustomerAgreement(CustomerNo: Code[20]; AgreementNo: Code[20]; var Body: JsonObject)
+    var
+        CustomerAgreement: Record "Customer Agreement";
+        lblPaymentView: Label 'ПоДоговоруВЦелом';
+        lblPaymentViewVAT: Label 'ПоДоговоруВЦелом';
+        lblAgreementView: Label 'СПокупателем';
+        lblSchemaPostingVAT: Label 'fee33cc5-2cab-11ea-acf7-545049000031';
+        lblSchemaPostingVATTara: Label 'fee33cc5-2cab-11ea-acf7-545049000031';
+    begin
+        CustomerAgreement.Get(CustomerNo, AgreementNo);
+        Clear(Body);
+        Body.Add('Номер', CustomerAgreement."CRM ID");
+        Body.Add('Description', CustomerAgreement."No.");
+        Body.Add('Дата', CustomerAgreement."Starting Date");
+        Body.Add('СрокДействия', CustomerAgreement."Expire Date");
+        Body.Add('ВедениеВзаиморасчетов', lblPaymentView);
+        Body.Add('ВедениеВзаиморасчетовНУ', lblPaymentViewVAT);
+        Body.Add('ВидДоговора', lblAgreementView);
+        Body.Add('Owner_Key', GetCustomerIdFromIntegrEntity(CustomerNo));
+        Body.Add('ВалютаВзаиморасчетов_Key', GetCurrencyIdFromIntegrEntity(CustomerAgreement."Currency Code"));
+        Body.Add('Организация_Key', GetCompanyIdFromIntegrEntity());
+        Body.Add('СхемаНалоговогоУчета_Key', lblSchemaPostingVAT);
+        Body.Add('СхемаНалоговогоУчетаПоТаре_Key', lblSchemaPostingVATTara);
+    end;
+
     procedure GetCustomerIdFrom1C(): Boolean
     var
         entityType: Label 'Catalog_Контрагенты';

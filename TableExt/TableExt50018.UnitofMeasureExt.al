@@ -2,10 +2,7 @@ tableextension 50018 "Unit of Measure Ext." extends "Unit of Measure"
 {
     fields
     {
-        field(50000; "Last DateTime Modified"; DateTime)
-        {
-            DataClassification = CustomerContent;
-        }
+
         field(50001; "Numeric Code"; Code[4])
         {
             CaptionML = ENU = 'Numeric Code',
@@ -27,7 +24,7 @@ tableextension 50018 "Unit of Measure Ext." extends "Unit of Measure"
 
     trigger OnDelete()
     begin
-        UpdateLastDateTimeModified();
+
     end;
 
     trigger OnRename()
@@ -37,7 +34,7 @@ tableextension 50018 "Unit of Measure Ext." extends "Unit of Measure"
 
     local procedure UpdateLastDateTimeModified()
     begin
-        "Last DateTime Modified" := CurrentDateTime;
+        // "Last DateTime Modified" := CurrentDateTime;
         TestField("Numeric Code");
     end;
 }

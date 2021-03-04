@@ -11,8 +11,36 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
         {
             DataClassification = CustomerContent;
         }
+        field(50002; "Last DateTime Modified"; DateTime)
+        {
+            DataClassification = CustomerContent;
+        }
     }
 
+    trigger OnInsert()
+    begin
+        UpdateLastDateTimeModified();
+    end;
+
+    trigger OnModify()
+    begin
+        UpdateLastDateTimeModified();
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+        UpdateLastDateTimeModified();
+    end;
+
+    local procedure UpdateLastDateTimeModified()
+    begin
+        "Last DateTime Modified" := CurrentDateTime;
+    end;
 }
 
 enum 50001 AgreementStatus
@@ -44,3 +72,4 @@ enum 50001 AgreementStatus
         CaptionML = ENU = 'Broken', RUS = 'Разорван';
     }
 }
+
