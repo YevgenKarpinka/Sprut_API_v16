@@ -24,7 +24,7 @@ table 50006 "Integration Entity"
             CaptionML = ENU = 'Code 1',
                         RUS = 'Код 1';
         }
-        field(4; "Code 2"; code[20])
+        field(4; "Code 2"; code[30])
         {
             DataClassification = ToBeClassified;
             CaptionML = ENU = 'Code 2',
@@ -48,13 +48,6 @@ table 50006 "Integration Entity"
             CaptionML = ENU = 'Last Modify Date Time',
                         RUS = 'Дата и время модификации';
         }
-        field(8; "Company Name"; Text[30])
-        {
-            CaptionML = ENU = 'Company Name',
-                        RUS = 'Имя компании';
-            DataClassification = CustomerContent;
-            TableRelation = Company.Name;
-        }
         field(9; "Table Name"; Text[30])
         {
             CaptionML = ENU = 'Table Name',
@@ -67,7 +60,7 @@ table 50006 "Integration Entity"
 
     keys
     {
-        key(PK; "System Code", "Table ID", "Code 1", "Code 2", "Company Name")
+        key(PK; "System Code", "Table ID", "Code 1", "Code 2")
         {
             Clustered = true;
         }
@@ -78,7 +71,6 @@ table 50006 "Integration Entity"
 
     trigger OnInsert()
     begin
-        "Company Name" := CompanyName;
         "Create Date Time" := CurrentDateTime;
         "Last Modify Date Time" := CurrentDateTime;
     end;

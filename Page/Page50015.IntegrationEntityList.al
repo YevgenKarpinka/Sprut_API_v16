@@ -43,11 +43,6 @@ page 50015 "Integration Entity List"
                     ApplicationArea = All;
 
                 }
-                field("Company Name"; "Company Name")
-                {
-                    ApplicationArea = All;
-
-                }
                 field("Entity Id"; "Entity Id")
                 {
                     ApplicationArea = All;

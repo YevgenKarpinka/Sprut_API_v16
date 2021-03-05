@@ -35,7 +35,7 @@ codeunit 50018 "Integration 1C"
         if CompanyIntegration.FindSet(false, false) then
             repeat
                 CompanyInfo.ChangeCompany(CompanyIntegration."Company Name");
-                if not IntegrationEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '', CompanyName) then begin
+                if not IntegrationEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", CompanyIntegration."Company Name", CompanyName) then begin
                     tempCompanyIntegration := CompanyIntegration;
                     tempCompanyIntegration.Insert();
                 end;
@@ -52,7 +52,7 @@ codeunit 50018 "Integration 1C"
                 jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
                 if jsonLines.Count <> 0 then begin
                     foreach LineToken in jsonLines do
-                        AddIDToIntegrationEntity(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '',
+                        AddIDToIntegrationEntity(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", CompanyIntegration."Company Name",
                                             WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
                 end;
                 Commit();
@@ -69,12 +69,11 @@ codeunit 50018 "Integration 1C"
     begin
         CompanyInfo.Get();
         if CompanyInfo."OKPO Code" = '' then exit('');
-
-        if IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '', CompanyName) then
+        if IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", CompanyName) then
             exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
 
         GetCompanyIdFrom1C();
-        IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", CompanyName);
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -102,7 +101,8 @@ codeunit 50018 "Integration 1C"
         // create Currency list for getting id from 1C
         if CustomerAgreement.FindSet(false, false) then
             repeat
-                if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", CustomerAgreement."CRM ID", '', CompanyName) then begin
+                if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", CustomerAgreement."CRM ID",
+                                                CustomerAgreement."No.", CompanyName) then begin
                     tempCustomerAgreement := CustomerAgreement;
                     tempCustomerAgreement.Insert();
                 end;
@@ -118,8 +118,9 @@ codeunit 50018 "Integration 1C"
                 jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
                 if jsonLines.Count <> 0 then begin
                     foreach LineToken in jsonLines do
-                        AddIDToIntegrationEntity(lblSystemCode, Database::"Customer Agreement", tempCustomerAgreement."CRM ID", '',
-                                            WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
+                        AddIDToIntegrationEntity(lblSystemCode, Database::"Customer Agreement", tempCustomerAgreement."CRM ID",
+                                                    tempCustomerAgreement."No.",
+                                                    WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText());
                 end else begin
                     // create request body
                     CreateRequestBodyToCustomerAgreement(tempCustomerAgreement."Customer No.", tempCustomerAgreement."No.", jsonBody);
@@ -127,8 +128,9 @@ codeunit 50018 "Integration 1C"
                     jsonBody.WriteTo(Body);
                     if not ConnectTo1C(entityType, requestMethodPOST, Body, '') then exit(false);
                     jsonBody.ReadFrom(Body);
-                    AddIDToIntegrationEntity(lblSystemCode, Database::"Customer Agreement", tempCustomerAgreement."CRM ID", '',
-                                    WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText());
+                    AddIDToIntegrationEntity(lblSystemCode, Database::"Customer Agreement", tempCustomerAgreement."CRM ID",
+                                                tempCustomerAgreement."No.",
+                                                WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText());
                 end;
                 Commit();
             until tempCustomerAgreement.Next() = 0;
@@ -138,7 +140,8 @@ codeunit 50018 "Integration 1C"
         tempCustomerAgreement.DeleteAll();
         if tempCustomerAgreement.FindSet(false, false) then
             repeat
-                if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", CustomerAgreement."CRM ID", '', CompanyName)
+                if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", CustomerAgreement."CRM ID",
+                                            tempCustomerAgreement."No.", CompanyName)
                 and (IntegrationEntity."Last Modify Date Time" < CustomerAgreement."Last DateTime Modified") then begin
                     tempCustomerAgreement := CustomerAgreement;
                     tempCustomerAgreement.Insert();
@@ -149,19 +152,20 @@ codeunit 50018 "Integration 1C"
             repeat
                 // create request body
                 CreateRequestBodyToCustomerAgreement(tempCustomerAgreement."Customer No.", tempCustomerAgreement."No.", jsonBody);
-                entityTypePATCHValue := StrSubstNo(entityTypePATCH, GetCustomerAgreementIdFromIntegrEntity(tempCustomerAgreement."CRM ID"));
+                entityTypePATCHValue := StrSubstNo(entityTypePATCH, GetCustomerAgreementIdFromIntegrEntity(tempCustomerAgreement."CRM ID", tempCustomerAgreement."No."));
                 // patch entity in 1C
                 jsonBody.WriteTo(Body);
                 if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, '') then
                     exit(false);
-                UpdateDateTimeIntegrationEntity(lblSystemCode, Database::"Customer Agreement", tempCustomerAgreement."CRM ID", '');
+                UpdateDateTimeIntegrationEntity(lblSystemCode, Database::"Customer Agreement", tempCustomerAgreement."CRM ID",
+                                                    tempCustomerAgreement."No.");
                 Commit();
             until tempCustomerAgreement.Next() = 0;
 
         exit(true);
     end;
 
-    local procedure GetCustomerAgreementIdFromIntegrEntity(CustomerAgreementCRMID: Guid): Guid
+    local procedure GetCustomerAgreementIdFromIntegrEntity(CustomerAgreementCRMID: Guid; CustomerAgreementNo: Code[20]): Guid
     var
         CustomerAgreement: Record "Customer Agreement";
         IntegrEntity: Record "Integration Entity";
@@ -170,7 +174,7 @@ codeunit 50018 "Integration 1C"
     begin
         if CustomerAgreementCRMID = BlankGuid then exit('');
 
-        if IntegrEntity.Get(lblSystemCode, Database::"Customer Agreement", CustomerAgreementCRMID, '', CompanyName) then
+        if IntegrEntity.Get(lblSystemCode, Database::"Customer Agreement", CustomerAgreementCRMID, CustomerAgreementNo) then
             exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -355,11 +359,11 @@ codeunit 50018 "Integration 1C"
     begin
         if not CustBankAcc.Get(CustNo, CustomerDefaultBankCode) then exit('');
 
-        if IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '', CompanyName) then
+        if IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '') then
             exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
 
         GetVendorBankAccountIdFrom1C();
-        IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -519,11 +523,11 @@ codeunit 50018 "Integration 1C"
     begin
         if not VendBankAcc.Get(VendNo, VendorDefaultBankCode) then exit('');
 
-        if IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '', CompanyName) then
+        if IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '') then
             exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
 
         GetVendorBankAccountIdFrom1C();
-        IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -1246,7 +1250,7 @@ codeunit 50018 "Integration 1C"
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
-        IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAccIBAN, '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAccIBAN, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -1255,7 +1259,7 @@ codeunit 50018 "Integration 1C"
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
-        IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAccIBAN, '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAccIBAN, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -1264,7 +1268,7 @@ codeunit 50018 "Integration 1C"
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
-        IntegrEntity.Get(lblSystemCode, Database::"Unit of Measure", UoMCode, '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::"Unit of Measure", UoMCode, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -1273,7 +1277,7 @@ codeunit 50018 "Integration 1C"
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
-        IntegrEntity.Get(lblSystemCode, Database::"Bank Directory", BankDirectoryBIC, '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::"Bank Directory", BankDirectoryBIC, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -1284,7 +1288,7 @@ codeunit 50018 "Integration 1C"
         Vend: Record Vendor;
     begin
         Vend.Get(VendorNo);
-        IntegrEntity.Get(lblSystemCode, Database::Vendor, Vend."OKPO Code", '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::Vendor, Vend."OKPO Code", '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -1295,7 +1299,7 @@ codeunit 50018 "Integration 1C"
         lblSystemCode: Label '1C';
     begin
         Customer.Get(CustomerNo);
-        IntegrEntity.Get(lblSystemCode, Database::Customer, Customer."CRM ID", '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::Customer, Customer."CRM ID", '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -1304,7 +1308,7 @@ codeunit 50018 "Integration 1C"
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
-        IntegrEntity.Get(lblSystemCode, Database::"Bank Directory", BankBIC, '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::"Bank Directory", BankBIC, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -1315,7 +1319,7 @@ codeunit 50018 "Integration 1C"
         lblSystemCode: Label '1C';
     begin
         Currency.Get(CurrencyCode);
-        IntegrEntity.Get(lblSystemCode, Database::Currency, Currency."ISO Numeric Code", '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::Currency, Currency."ISO Numeric Code", '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -1324,7 +1328,7 @@ codeunit 50018 "Integration 1C"
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
-        IntegrEntity.Get(lblSystemCode, Database::Item, ItemNo, '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::Item, ItemNo, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -1333,13 +1337,13 @@ codeunit 50018 "Integration 1C"
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
-        if IntegrEntity.Get(lblSystemCode, Database::"Unit of Measure", ItemUoMCode, '', CompanyName) then begin
+        if IntegrEntity.Get(lblSystemCode, Database::"Unit of Measure", ItemUoMCode, '') then begin
             exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
         end;
 
         // create UoM in 1C
         GetUoMIdFrom1C();
-        IntegrEntity.Get(lblSystemCode, Database::"Unit of Measure", ItemUoMCode, '', CompanyName);
+        IntegrEntity.Get(lblSystemCode, Database::"Unit of Measure", ItemUoMCode, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
@@ -1407,10 +1411,8 @@ codeunit 50018 "Integration 1C"
 
         // Insert Operation to Log
         IntegrationLog.InsertOperationToLog('STANDART_1C_API', requestMethod, API_URL, '', Body, APIResult, ResponseMessage.IsSuccessStatusCode());
-
         // for testing
         // Message(APIResult);
-
         // response body
         Body := APIResult;
 
