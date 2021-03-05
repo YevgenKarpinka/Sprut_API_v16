@@ -101,7 +101,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    if Integration1C.GetBankIdFrom1C() then
+                    if Integration1C.GetBankDirectoryIdFrom1C() then
                         Message('Ok!')
                     else
                         Message('Error!');

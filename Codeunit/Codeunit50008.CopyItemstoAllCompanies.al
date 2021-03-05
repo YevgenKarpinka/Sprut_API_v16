@@ -28,10 +28,13 @@ codeunit 50008 "Copy Items to All Companies"
         ItemUoMTo: Record "Item Unit of Measure";
         UoMFrom: Record "Unit of Measure";
         UoMTo: Record "Unit of Measure";
+        DaleteAllFlag: Boolean;
     begin
         CompIntegrTo.SetCurrentKey("Copy Items To");
         CompIntegrTo.SetRange("Copy Items To", true);
         if CompIntegrTo.IsEmpty then exit;
+
+        // DaleteAllFlag := Confirm('DeleteAll Item of Measure?', true);
 
         ItemFrom.LockTable();
         ItemUoMFrom.LockTable();
@@ -45,45 +48,64 @@ codeunit 50008 "Copy Items to All Companies"
                 ConfProgressBar.Init(0, 0, StrSubstNo(txtCopyItemToCompany,
                                                             CompanyName,
                                                             CompIntegrTo."Company Name"));
+
+                // if DaleteAllFlag then begin
+                //     ItemUoMFrom.FindSet(false, false);
+                //     ItemUoMTo.DeleteAll();
+                //     repeat
+                //         ItemUoMTo := ItemUoMFrom;
+                //         ItemUoMTo.Insert();
+                //     until ItemUoMFrom.Next() = 0;
+                // end;
+
                 if ItemFrom.FindSet(false, false) then
                     repeat
                         ConfProgressBar.Update(StrSubstNo(txtProcessHeader, ItemFrom."No."));
                         ItemTo.SetRange("No.", ItemFrom."No.");
                         // copy UoM before Items
                         UoMTo.ChangeCompany(CompIntegrTo."Company Name");
-                        // if UoMTo.get('ПОСЛУГА') then
-                        //     UoMTo.Delete();
                         if UoMFrom.FindSet(false, false) then
                             repeat
                                 if not UoMTo.Get(UoMFrom.Code)
                                 or (UoMTo."Last Modified Date Time" < UoMFrom."Last Modified Date Time") then begin
-                                    UoMTo.TransferFields(UoMFrom, false);
+                                    UoMTo := UoMFrom;
                                     if not UoMTo.Insert() then UoMTo.Modify();
                                 end;
                             until UoMFrom.Next() = 0;
 
                         if not ItemTo.FindFirst() then begin
                             if ItemFrom."Sales Unit of Measure" <> '' then begin
-                                ItemUoMFrom.Get(ItemFrom."No.", ItemFrom."Sales Unit of Measure");
-                                ItemUoMTo.Init();
-                                ItemUoMTo.TransferFields(ItemUoMFrom);
-                                ItemUoMTo.Insert();
+
+                                ItemUoMTo.SetRange("Item No.", ItemFrom."No.");
+                                ItemUoMTo.DeleteAll();
+
+                                ItemUoMFrom.SetRange("Item No.", ItemFrom."No.");
+                                ItemUoMFrom.FindSet(false, false);
+                                repeat
+                                    ItemUoMTo := ItemUoMFrom;
+                                    ItemUoMTo.Insert();
+                                until ItemUoMFrom.Next() = 0;
                             end;
 
-                            ItemTo.Init();
-                            ItemTo.TransferFields(ItemFrom);
+                            ItemTo := ItemFrom;
                             ItemTo.Insert();
                         end else begin
                             if (ItemFrom."Last DateTime Modified" <> ItemTo."Last DateTime Modified") then begin
                                 if (ItemFrom."Sales Unit of Measure" <> '')
                                     and not ItemUoMTo.Get(ItemFrom."No.", ItemFrom."Sales Unit of Measure") then begin
-                                    ItemUoMFrom.Get(ItemFrom."No.", ItemFrom."Sales Unit of Measure");
-                                    ItemUoMTo.Init();
-                                    ItemUoMTo.TransferFields(ItemUoMFrom);
-                                    ItemUoMTo.Insert();
+
+                                    ItemUoMTo.SetRange("Item No.", ItemFrom."No.");
+                                    ItemUoMTo.DeleteAll();
+
+                                    ItemUoMFrom.SetRange("Item No.", ItemFrom."No.");
+                                    ItemUoMFrom.FindSet(false, false);
+                                    repeat
+                                        ItemUoMTo := ItemUoMFrom;
+                                        ItemUoMTo.Insert();
+                                    until ItemUoMFrom.Next() = 0;
                                 end;
 
-                                ItemTo.TransferFields(ItemFrom, false);
+                                ItemTo := ItemFrom;
                                 ItemTo.Modify();
                             end;
                         end;

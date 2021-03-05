@@ -48,6 +48,16 @@ page 50015 "Integration Entity List"
                     ApplicationArea = All;
 
                 }
+                field("Entity Code"; "Entity Code")
+                {
+                    ApplicationArea = All;
+
+                }
+                field("Company Name"; "Company Name")
+                {
+                    ApplicationArea = All;
+
+                }
                 field("Create Date Time"; "Create Date Time")
                 {
                     ApplicationArea = All;

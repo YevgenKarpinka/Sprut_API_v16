@@ -37,6 +37,7 @@ codeunit 50005 "CRM Action API"
     var
         SalesHeader: Record "Sales Header";
         Location: Record Location;
+        ReleaseSalesDoc: Codeunit "Release Sales Document";
     begin
         CheckCRMInvoiceAmount(salesOrderId, crmInvoiceAmount);
         CheckCRM_Id(crmId);
@@ -44,6 +45,11 @@ codeunit 50005 "CRM Action API"
         SalesHeader.SetRange("Document Type", SalesHeader."Document Type"::Order);
         SalesHeader.SetRange("No.", salesOrderId);
         SalesHeader.FindFirst();
+        if SalesHeader.TestStatusIsNotReleased() then
+            ReleaseSalesDoc.PerformManualRelease(SalesHeader);
+        SalesHeader."CRM Invoice No." := crmInvoiceId;
+        SalesHeader."CRM ID" := crmId;
+        SalesHeader.Modify();
         if Location.RequireShipment(SalesHeader."Location Code") then begin
             recWhseShipmentLine.SetCurrentKey("Source Document", "Source No.");
             recWhseShipmentLine.SetRange("Source Document", recWhseShipmentLine."Source Document"::"Sales Order");
@@ -54,9 +60,9 @@ codeunit 50005 "CRM Action API"
             WhsePostShipment.SetPrint(false);
             WhsePostShipment.RUN(recWhseShipmentLine);
         end else begin
-            SalesHeader."CRM Invoice No." := crmInvoiceId;
-            SalesHeader."CRM ID" := crmId;
-            SalesHeader.Modify();
+            // SalesHeader."CRM Invoice No." := crmInvoiceId;
+            // SalesHeader."CRM ID" := crmId;
+            // SalesHeader.Modify();
             SalesHeader.Invoice := true;
             SalesHeader.Ship := true;
             CODEUNIT.RUN(CODEUNIT::"Sales-Post", SalesHeader);

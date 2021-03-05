@@ -48,6 +48,13 @@ table 50006 "Integration Entity"
             CaptionML = ENU = 'Last Modify Date Time',
                         RUS = 'Дата и время модификации';
         }
+        field(8; "Company Name"; Text[30])
+        {
+            CaptionML = ENU = 'Company Name',
+                        RUS = 'Имя компании';
+            DataClassification = CustomerContent;
+            TableRelation = Company.Name;
+        }
         field(9; "Table Name"; Text[30])
         {
             CaptionML = ENU = 'Table Name',
@@ -55,6 +62,12 @@ table 50006 "Integration Entity"
             FieldClass = FlowField;
             CalcFormula = Lookup(AllObjWithCaption."Object Name" where("Object Type" = const(Table), "Object ID" = field("Table ID")));
             Editable = false;
+        }
+        field(10; "Entity Code"; Text[40])
+        {
+            CaptionML = ENU = 'Entity Code',
+                        RUS = 'Код сущности';
+            DataClassification = CustomerContent;
         }
     }
 
