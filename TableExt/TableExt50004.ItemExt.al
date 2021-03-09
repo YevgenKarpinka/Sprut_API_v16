@@ -8,7 +8,7 @@ tableextension 50004 "Item Ext" extends Item
             DataClassification = CustomerContent;
             CaptionML = ENU = 'CRM Item Id',
                         RUS = 'Id товара в CRM';
-            Editable = false;
+            // Editable = false;
         }
         field(50001; "1C Path"; Text[30])
         {

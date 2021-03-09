@@ -29,6 +29,7 @@ codeunit 50008 "Copy Items to All Companies"
         UoMFrom: Record "Unit of Measure";
         UoMTo: Record "Unit of Measure";
         DaleteAllFlag: Boolean;
+        blankGuid: Guid;
     begin
         CompIntegrTo.SetCurrentKey("Copy Items To");
         CompIntegrTo.SetRange("Copy Items To", true);
@@ -37,6 +38,9 @@ codeunit 50008 "Copy Items to All Companies"
         // DaleteAllFlag := Confirm('DeleteAll Item of Measure?', true);
 
         ItemFrom.LockTable();
+        ItemFrom.SetCurrentKey("CRM Item Id");
+        ItemFrom.SetFilter("CRM Item Id", '<>%1', blankGuid);
+
         ItemUoMFrom.LockTable();
         ItemTo.LockTable();
         ItemUoMTo.LockTable();
@@ -105,7 +109,7 @@ codeunit 50008 "Copy Items to All Companies"
                                     until ItemUoMFrom.Next() = 0;
                                 end;
 
-                                ItemTo := ItemFrom;
+                                ItemTo.TransferFields(ItemFrom, false);
                                 ItemTo.Modify();
                             end;
                         end;
