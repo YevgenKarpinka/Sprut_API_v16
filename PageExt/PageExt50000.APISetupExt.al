@@ -91,22 +91,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                         Message('Error!');
                 end;
             }
-            action(GetBankIdFrom1C)
-            {
-                ApplicationArea = All;
-                CaptionML = ENU = 'Get Bank Id From 1C', RUS = 'Get Bank Id From 1C';
-                ToolTipML = ENU = 'Get Bank Id From 1C',
-                            RUS = 'Get Bank Id From 1C';
-                Image = TeamSales;
 
-                trigger OnAction()
-                begin
-                    if Integration1C.GetBankDirectoryIdFrom1C() then
-                        Message('Ok!')
-                    else
-                        Message('Error!');
-                end;
-            }
             action(GetItemsIdFrom1C)
             {
                 ApplicationArea = All;
@@ -123,6 +108,22 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                         Message('Error!');
                 end;
             }
+            action(GetBankIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get Bank Id From 1C', RUS = 'Get Bank Id From 1C';
+                ToolTipML = ENU = 'Get Bank Id From 1C',
+                            RUS = 'Get Bank Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.GetBankDirectoryIdFrom1C() then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
             action(GetCurrencyIdFrom1C)
             {
                 ApplicationArea = All;
@@ -134,6 +135,102 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                 trigger OnAction()
                 begin
                     if Integration1C.GetCurrencyIdFrom1C() then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
+            action(GetCompanyIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get Company Id From 1C', RUS = 'Get Company Id From 1C';
+                ToolTipML = ENU = 'Get Company Id From 1C',
+                            RUS = 'Get Company Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.GetCompanyIdFrom1C() then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
+            action(GetCustomerIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get Customer Id From 1C', RUS = 'Get Customer Id From 1C';
+                ToolTipML = ENU = 'Get Customer Id From 1C',
+                            RUS = 'Get Customer Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.GetCustomerIdFrom1C() then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
+            action(GetVendorIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get Vendor Id From 1C', RUS = 'Get Vendor Id From 1C';
+                ToolTipML = ENU = 'Get Vendor Id From 1C',
+                            RUS = 'Get Vendor Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.GetVendorIdFrom1C() then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
+            action(GetCustomerBankAccIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get CustomerBankAcc Id From 1C', RUS = 'Get CustomerBankAcc Id From 1C';
+                ToolTipML = ENU = 'Get CustomerBankAcc Id From 1C',
+                            RUS = 'Get CustomerBankAcc Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.GetCustomerBankAccountIdFrom1C() then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
+            action(GetVendorBankAccIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get VendorBankAcc Id From 1C', RUS = 'Get VendorBankAcc Id From 1C';
+                ToolTipML = ENU = 'Get VendorBankAcc Id From 1C',
+                            RUS = 'Get VendorBankAcc Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.GetVendorBankAccountIdFrom1C() then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
+            action(GetCustomerAgreementIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get CustomerAgreement Id From 1C', RUS = 'Get CustomerAgreement Id From 1C';
+                ToolTipML = ENU = 'Get CustomerAgreement Id From 1C',
+                            RUS = 'Get CustomerAgreement Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.GetCustomerAgreementIdFrom1C() then
                         Message('Ok!')
                     else
                         Message('Error!');

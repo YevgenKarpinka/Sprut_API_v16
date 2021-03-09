@@ -18,13 +18,13 @@ table 50006 "Integration Entity"
             CaptionML = ENU = 'Table ID',
                         RUS = 'ИД таблицы';
         }
-        field(3; "Code 1"; code[20])
+        field(3; "Code 1"; Text[40])
         {
             DataClassification = ToBeClassified;
             CaptionML = ENU = 'Code 1',
                         RUS = 'Код 1';
         }
-        field(4; "Code 2"; code[30])
+        field(4; "Code 2"; Text[40])
         {
             DataClassification = ToBeClassified;
             CaptionML = ENU = 'Code 2',
