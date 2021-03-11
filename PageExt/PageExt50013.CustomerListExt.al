@@ -19,8 +19,25 @@ pageextension 50013 "Customer List Ext." extends "Customer List"
     actions
     {
         // Add changes to page actions here
+        // addfirst("&Customer")
+        // {
+        //     action(DeleteAllFiltered)
+        //     {
+        //         ApplicationArea = All;
+        //         CaptionML = ENU = 'DeleteAllFiltered',
+        //                     RUS = 'DeleteAllFiltered';
+
+        //         trigger OnAction()
+        //         var
+        //             Cust: Record Customer;
+        //         begin
+        //             CurrPage.SetSelectionFilter(Cust);
+        //             if Confirm('Delete All?', true) then
+        //                 Cust.DeleteAll();
+        //             CurrPage.Update(false);
+        //         end;
+        //     }
+        // }
     }
 
-    var
-        myInt: Integer;
 }

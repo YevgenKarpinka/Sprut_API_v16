@@ -240,15 +240,24 @@ codeunit 50018 "Integration 1C"
         LineToken: JsonToken;
         codeISO: Code[10];
         blankGuid: Guid;
+        limitStep: Integer;
+        countStep: Integer;
     begin
+        // for testing
+        limitStep := 3;
+        countStep := 0;
+        // comment after testing
+
         // create Currency list for getting id from 1C
         Customer.SetCurrentKey("CRM ID");
         Customer.SetFilter("CRM ID", '<>%1', blankGuid);
         if Customer.FindSet(false, false) then
             repeat
-                if not IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '') then begin
+                if not IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '')
+                and (countStep <= limitStep) then begin // comment after testing
                     tempCustomer := Customer;
                     tempCustomer.Insert();
+                    countStep += 1;
                 end;
             until Customer.Next() = 0;
 
