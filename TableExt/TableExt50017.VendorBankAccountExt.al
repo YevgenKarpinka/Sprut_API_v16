@@ -28,7 +28,12 @@ tableextension 50017 "Vendor Bank Account Ext." extends "Vendor Bank Account"
     end;
 
     local procedure UpdateLastDateTimeModified()
+    var
+        Vend: Record Vendor;
     begin
         "Last DateTime Modified" := CurrentDateTime;
+        Vend.Get("Vendor No.");
+        Vend."Last Modified Date Time" := "Last DateTime Modified";
+        Vend.Modify();
     end;
 }

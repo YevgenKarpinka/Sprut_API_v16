@@ -28,7 +28,12 @@ tableextension 50016 "Customer Bank Account Ext." extends "Customer Bank Account
     end;
 
     local procedure UpdateLastDateTimeModified()
+    var
+        Cust: Record Customer;
     begin
         "Last DateTime Modified" := CurrentDateTime;
+        Cust.Get("Customer No.");
+        Cust."Last Modified Date Time" := "Last DateTime Modified";
+        Cust.Modify();
     end;
 }
