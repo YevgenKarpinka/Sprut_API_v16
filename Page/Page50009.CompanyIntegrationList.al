@@ -52,6 +52,11 @@ page 50009 "Company Integration List"
                     ApplicationArea = All;
 
                 }
+                field("Integration With 1C"; "Integration With 1C")
+                {
+                    ApplicationArea = All;
+
+                }
             }
         }
     }
@@ -225,6 +230,39 @@ page 50009 "Company Integration List"
                     begin
                         CurrPage.SetSelectionFilter(CompIntegr);
                         CompIntegr.ModifyAll("Send Email Error Tasks", false, true);
+                        CurrPage.Update(false);
+                    end;
+                }
+            }
+            group(IntegrationWith1C)
+            {
+                CaptionML = ENU = 'Integration With 1C',
+                            RUS = 'Интеграция с 1С';
+                action(SetSelectionIntegrationWith1C)
+                {
+                    ApplicationArea = Warehouse;
+                    CaptionML = ENU = 'Set Selection Integration',
+                                RUS = 'Установить интеграцию';
+                    Image = Production;
+
+                    trigger OnAction()
+                    begin
+                        CurrPage.SetSelectionFilter(CompIntegr);
+                        CompIntegr.ModifyAll("Integration With 1C", true, true);
+                        CurrPage.Update(false);
+                    end;
+                }
+                action(SetUnSelectionIntegrationWith1C)
+                {
+                    ApplicationArea = Warehouse;
+                    CaptionML = ENU = 'Set UnSelection Integration',
+                                RUS = 'Отменить интеграцию';
+                    Image = Production;
+
+                    trigger OnAction()
+                    begin
+                        CurrPage.SetSelectionFilter(CompIntegr);
+                        CompIntegr.ModifyAll("Integration With 1C", false, true);
                         CurrPage.Update(false);
                     end;
                 }

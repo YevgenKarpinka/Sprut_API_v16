@@ -72,6 +72,12 @@ table 50005 "Company Integration"
                         RUS = 'Отсылать почту ошибок задач';
             DataClassification = CustomerContent;
         }
+        field(8; "Integration With 1C"; Boolean)
+        {
+            CaptionML = ENU = 'Integration With 1C',
+                        RUS = 'Интеграция с 1С';
+            DataClassification = CustomerContent;
+        }
     }
 
     keys

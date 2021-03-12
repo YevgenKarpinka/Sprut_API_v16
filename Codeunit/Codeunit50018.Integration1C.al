@@ -2,7 +2,13 @@ codeunit 50018 "Integration 1C"
 {
     trigger OnRun()
     begin
-
+        if IntegrationWith1CEnabled() then begin
+            // GetUoMIdFrom1C();
+            GetItemsIdFrom1C();
+            GetBankDirectoryIdFrom1C();
+            GetVendorIdFrom1C();
+            GetCustomerIdFrom1C();
+        end;
     end;
 
     var
@@ -80,7 +86,7 @@ codeunit 50018 "Integration 1C"
         exit(GuidToClearText(IntegrEntity."Entity Id"));
     end;
 
-    procedure GetCustomerAgreementIdFrom1C(): Boolean
+    procedure GetCustomerAgreementIdFrom1C(CustomerAgreement: Record "Customer Agreement"): Boolean
     var
         entityType: Label 'Catalog_ДоговорыКонтрагентов';
         entityTypePATCH: Label 'Catalog_ДоговорыКонтрагентов(%1)';
@@ -92,8 +98,8 @@ codeunit 50018 "Integration 1C"
         filterValue: Text;
         lblfilter: Label '&$filter=%1 eq ''%2''';
         lblSystemCode: Label '1C';
-        CustomerAgreement: Record "Customer Agreement";
         tempCustomerAgreement: Record "Customer Agreement" temporary;
+        Customer: Record Customer;
         IntegrationEntity: Record "Integration Entity";
         ResponceTokenLine: Text;
         jsonLines: JsonArray;
@@ -103,12 +109,13 @@ codeunit 50018 "Integration 1C"
         blankGuid: Guid;
     begin
         // create Currency list for getting id from 1C
-        CustomerAgreement.SetCurrentKey("CRM ID", Active);
+        CustomerAgreement.SetCurrentKey("CRM ID");
         CustomerAgreement.SetFilter("CRM ID", '<>%1', blankGuid);
-        CustomerAgreement.SetRange(Active, true);
         if CustomerAgreement.FindSet(false, false) then
             repeat
-                if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(CustomerAgreement."CRM ID"), '') then begin
+                if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(CustomerAgreement."CRM ID"), '')
+                and Customer.Get(CustomerAgreement."Customer No.")
+                and IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '') then begin
                     tempCustomerAgreement := CustomerAgreement;
                     tempCustomerAgreement.Insert();
                 end;
@@ -182,7 +189,8 @@ codeunit 50018 "Integration 1C"
         if IntegrEntity.Get(lblSystemCode, Database::"Customer Agreement", CustomerAgreementCRMID, '') then
             exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
 
-        GetCustomerAgreementIdFrom1C();
+        CustomerAgreement.SetRange("Customer No.", CustomerAgreement."Customer No.");
+        GetCustomerAgreementIdFrom1C(CustomerAgreement);
         IntegrEntity.Get(lblSystemCode, Database::"Customer Agreement", CustomerAgreementCRMID, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
@@ -211,6 +219,7 @@ codeunit 50018 "Integration 1C"
         Body.Add('Организация_Key', GetCompanyIdFromIntegrEntity());
         Body.Add('СхемаНалоговогоУчета_Key', lblSchemaPostingVAT);
         Body.Add('СхемаНалоговогоУчетаПоТаре_Key', lblSchemaPostingVATTara);
+        Body.Add('DeletionMark', CustomerAgreement.Active);
     end;
 
     local procedure GuidToClearText(TextToConvert: Text): Text
@@ -234,6 +243,8 @@ codeunit 50018 "Integration 1C"
         lblSystemCode: Label '1C';
         Customer: Record Customer;
         tempCustomer: Record Customer temporary;
+        CustBankAcc: Record "Customer Bank Account";
+        CustAgreement: Record "Customer Agreement";
         IntegrationEntity: Record "Integration Entity";
         ResponceTokenLine: Text;
         jsonLines: JsonArray;
@@ -245,8 +256,8 @@ codeunit 50018 "Integration 1C"
         countStep: Integer;
     begin
         // for testing
-        limitStep := 3;
-        countStep := 0;
+        // limitStep := 3;
+        // countStep := 0;
         // comment after testing
 
         // create Currency list for getting id from 1C
@@ -258,7 +269,7 @@ codeunit 50018 "Integration 1C"
                 and (countStep <= limitStep) then begin // comment after testing
                     tempCustomer := Customer;
                     tempCustomer.Insert();
-                    countStep += 1;
+                    // countStep += 1;
                 end;
             until Customer.Next() = 0;
 
@@ -295,6 +306,18 @@ codeunit 50018 "Integration 1C"
                     jsonBody.WriteTo(Body);
                     if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, '') then
                         exit(false);
+                end else begin
+
+                    if CustomerBankAccountExist(tempCustomer."No.") then begin
+                        CustBankAcc.SetRange("Customer No.", tempCustomer."No.");
+                        GetCustomerBankAccountIdFrom1C(CustBankAcc);
+                    end;
+
+                    if CustomerAgreementExist(tempCustomer."No.") then begin
+                        CustAgreement.SetRange("Customer No.", tempCustomer."No.");
+                        GetCustomerAgreementIdFrom1C(CustAgreement);
+                    end;
+
                 end;
 
                 Commit();
@@ -331,6 +354,8 @@ codeunit 50018 "Integration 1C"
     local procedure CreateRequestBodyToCustomer(CustomerNo: Code[20]; var Body: JsonObject; requestMethod: Text[10])
     var
         Customer: Record Customer;
+        CustBankAcc: Record "Customer Bank Account";
+        CustAgreement: Record "Customer Agreement";
         lblLegalEntity: Label 'ЮридическоеЛицо';
         lblCustomerParentKey: Label '5df557a2-80ae-11eb-b1ab-0022489ae653';
         requestMethodPATCH: Label 'PATCH';
@@ -348,6 +373,17 @@ codeunit 50018 "Integration 1C"
         Body.Add('ID_CRM', GuidToClearText(Customer."CRM ID"));
 
         if (requestMethod = requestMethodPATCH) then begin
+
+            if CustomerBankAccountExist(CustomerNo) then begin
+                CustBankAcc.SetRange("Customer No.", CustomerNo);
+                GetCustomerBankAccountIdFrom1C(CustBankAcc);
+            end;
+
+            if CustomerAgreementExist(CustomerNo) then begin
+                CustAgreement.SetRange("Customer No.", CustomerNo);
+                GetCustomerAgreementIdFrom1C(CustAgreement);
+            end;
+
             mainBankAccId := GetCustomerBankAccountIDFromIntegrEntity(Customer."No.", Customer."Default Bank Code");
             if (mainBankAccId <> '') then
                 Body.Add('ОсновнойБанковскийСчет_Key', mainBankAccId);
@@ -355,6 +391,7 @@ codeunit 50018 "Integration 1C"
 
         Body.Add('НеЯвляетсяРезидентом', GetCustomerResident(Customer."No."));
         Body.Add('КонтактнаяИнформация', GetCustomerContactInfo(Customer."No."));
+        Body.Add('DeletionMark', Customer.IsBlocked());
     end;
 
     local procedure GetCustomerContactInfo(CustomerNo: Code[20]): JsonArray
@@ -412,7 +449,8 @@ codeunit 50018 "Integration 1C"
         if IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '') then
             exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
 
-        GetCustomerBankAccountIdFrom1C();
+        CustBankAcc.SetRange("Customer No.", CustBankAcc."Customer No.");
+        GetCustomerBankAccountIdFrom1C(CustBankAcc);
         IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
@@ -431,6 +469,7 @@ codeunit 50018 "Integration 1C"
         lblSystemCode: Label '1C';
         Vendor: Record Vendor;
         tempVendor: Record Vendor temporary;
+        VendBankAcc: Record "Vendor Bank Account";
         IntegrationEntity: Record "Integration Entity";
         ResponceTokenLine: Text;
         jsonLines: JsonArray;
@@ -482,7 +521,15 @@ codeunit 50018 "Integration 1C"
                     jsonBody.WriteTo(Body);
                     if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, '') then
                         exit(false);
+                end else begin
+
+                    if VendorBankAccountExist(tempVendor."No.") then begin
+                        VendBankAcc.SetRange("Vendor No.", tempVendor."No.");
+                        GetVendorBankAccountIdFrom1C(VendBankAcc);
+                    end;
+
                 end;
+
                 Commit();
             until tempVendor.Next() = 0;
 
@@ -515,7 +562,9 @@ codeunit 50018 "Integration 1C"
         exit(true);
     end;
 
-    local procedure CreateRequestBodyToVendor(VendorNo: Code[20]; var Body: JsonObject; requestMethod: Text[10])
+    local procedure CreateRequestBodyToVendor(VendorNo: Code[20]; var
+                                                                      Body: JsonObject;
+                                                                      requestMethod: Text[10])
     var
         Vendor: Record Vendor;
         lblLegalEntity: Label 'ЮридическоеЛицо';
@@ -542,6 +591,7 @@ codeunit 50018 "Integration 1C"
 
         Body.Add('НеЯвляетсяРезидентом', GetVendorResident(Vendor."No."));
         Body.Add('КонтактнаяИнформация', GetVendorContactInfo(Vendor."No."));
+        Body.Add('DeletionMark', Vendor.Blocked <> Vendor.Blocked::All);
     end;
 
     local procedure GetVendorContactInfo(VendorNo: Code[20]): JsonArray
@@ -599,12 +649,13 @@ codeunit 50018 "Integration 1C"
         if IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '') then
             exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
 
-        GetVendorBankAccountIdFrom1C();
+        VendBankAcc.SetRange("Vendor No.", VendBankAcc."Vendor No.");
+        GetVendorBankAccountIdFrom1C(VendBankAcc);
         IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
-    procedure GetVendorBankAccountIdFrom1C(): Boolean
+    procedure GetVendorBankAccountIdFrom1C(VendBankAcc: Record "Vendor Bank Account"): Boolean
     var
         entityType: Label 'Catalog_БанковскиеСчета';
         entityTypePATCH: Label 'Catalog_БанковскиеСчета(%1)';
@@ -616,8 +667,8 @@ codeunit 50018 "Integration 1C"
         filterValue: Text;
         lblfilter: Label '&$filter=%1 eq ''%2''';
         lblSystemCode: Label '1C';
-        VendBankAcc: Record "Vendor Bank Account";
         tempVendBankAcc: Record "Vendor Bank Account" temporary;
+        Vendor: Record Vendor;
         IntegrationEntity: Record "Integration Entity";
         ResponceTokenLine: Text;
         jsonLines: JsonArray;
@@ -628,7 +679,9 @@ codeunit 50018 "Integration 1C"
         // create Currency list for getting id from 1C
         if VendBankAcc.FindSet(false, false) then
             repeat
-                if not IntegrationEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '') then begin
+                if not IntegrationEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '')
+                and Vendor.Get(VendBankAcc."Vendor No.")
+                and IntegrationEntity.Get(lblSystemCode, Database::Vendor, Vendor."No.", '') then begin
                     tempVendBankAcc := VendBankAcc;
                     tempVendBankAcc.Insert();
                 end;
@@ -708,7 +761,7 @@ codeunit 50018 "Integration 1C"
         Body.Add('Owner_Type', lblContragent);
     end;
 
-    procedure GetCustomerBankAccountIdFrom1C(): Boolean
+    procedure GetCustomerBankAccountIdFrom1C(CustBankAcc: Record "Customer Bank Account"): Boolean
     var
         entityType: Label 'Catalog_БанковскиеСчета';
         entityTypePATCH: Label 'Catalog_БанковскиеСчета(%1)';
@@ -720,8 +773,8 @@ codeunit 50018 "Integration 1C"
         filterValue: Text;
         lblfilter: Label '&$filter=%1 eq ''%2''';
         lblSystemCode: Label '1C';
-        CustBankAcc: Record "Customer Bank Account";
         tempCustBankAcc: Record "Customer Bank Account" temporary;
+        Customer: Record Customer;
         IntegrationEntity: Record "Integration Entity";
         ResponceTokenLine: Text;
         jsonLines: JsonArray;
@@ -732,7 +785,10 @@ codeunit 50018 "Integration 1C"
         // create Currency list for getting id from 1C
         if CustBankAcc.FindSet(false, false) then
             repeat
-                if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '') then begin
+
+                if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '')
+                and Customer.Get(CustBankAcc."Customer No.")
+                and IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '') then begin
                     tempCustBankAcc := CustBankAcc;
                     tempCustBankAcc.Insert();
                 end;
@@ -1261,6 +1317,7 @@ codeunit 50018 "Integration 1C"
         if Items."Base Unit of Measure" <> '' then
             Body.Add('БазоваяЕдиницаИзмерения_Key', GetUoMIdFromIntegrEntity(Items."Base Unit of Measure"));
         Body.Add('ЕдиницыИзмерения', GetJsonItemUoM(ItemNo));
+        Body.Add('DeletionMark', Items.Blocked);
     end;
 
     local procedure GetVAT(VATBusPostingGroup: Code[20]; VATProdPostingGroup: Code[20]): Text[20]
@@ -1318,26 +1375,42 @@ codeunit 50018 "Integration 1C"
 
     local procedure GetVendBankAccIdFromIntegrEntity(VendBankAccIBAN: Code[50]): Text
     var
+        VendBankAcc: Record "Vendor Bank Account";
+        VendNo: Code[20];
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
         if IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAccIBAN, '') then
             exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
 
-        GetVendorBankAccountIdFrom1C();
+        VendBankAcc.SetRange(IBAN, VendBankAccIBAN);
+        VendBankAcc.FindFirst();
+        VendNo := VendBankAcc."Vendor No.";
+        VendBankAcc.Reset();
+        VendBankAcc.SetRange("Vendor No.", VendNo);
+
+        GetVendorBankAccountIdFrom1C(VendBankAcc);
         IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAccIBAN, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
     local procedure GetCustBankAccIdFromIntegrEntity(CustBankAccIBAN: Code[50]): Text
     var
+        CustBankAcc: Record "Customer Bank Account";
+        CustNo: Code[20];
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
         if IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAccIBAN, '') then
             exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
 
-        GetCustomerBankAccountIdFrom1C();
+        CustBankAcc.SetRange(IBAN, CustBankAccIBAN);
+        CustBankAcc.FindFirst();
+        CustNo := CustBankAcc."Customer No.";
+        CustBankAcc.Reset();
+        CustBankAcc.SetRange("Customer No.", CustNo);
+
+        GetCustomerBankAccountIdFrom1C(CustBankAcc);
         IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAccIBAN, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
@@ -1416,6 +1489,39 @@ codeunit 50018 "Integration 1C"
         GetUoMIdFrom1C();
         IntegrEntity.Get(lblSystemCode, Database::"Unit of Measure", UoM."Numeric Code", '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    local procedure VendorBankAccountExist(VendorNo: Code[20]): Boolean
+    var
+        VendBankAcc: Record "Vendor Bank Account";
+    begin
+        VendBankAcc.SetRange("Vendor No.", VendorNo);
+        exit(not VendBankAcc.IsEmpty);
+    end;
+
+    local procedure CustomerBankAccountExist(CustomerNo: Code[20]): Boolean
+    var
+        CustBankAcc: Record "Customer Bank Account";
+    begin
+        CustBankAcc.SetRange("Customer No.", CustomerNo);
+        exit(not CustBankAcc.IsEmpty);
+    end;
+
+    local procedure CustomerAgreementExist(CustomerNo: Code[20]): Boolean
+    var
+        CustAgreement: Record "Customer Agreement";
+    begin
+        CustAgreement.SetRange("Customer No.", CustomerNo);
+        exit(not CustAgreement.IsEmpty);
+    end;
+
+    local procedure IntegrationWith1CEnabled(): Boolean
+    var
+        CompanyIntegration: Record "Company Integration";
+    begin
+        CompanyIntegration.SetCurrentKey("Company Name");
+        CompanyIntegration.SetRange("Company Name", CompanyName);
+        exit(not CompanyIntegration.IsEmpty);
     end;
 
     procedure Get1CRoot()

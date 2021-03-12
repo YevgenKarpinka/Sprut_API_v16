@@ -198,7 +198,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    if Integration1C.GetCustomerBankAccountIdFrom1C() then
+                    if Integration1C.GetCustomerBankAccountIdFrom1C(CustBankAcc) then
                         Message('Ok!')
                     else
                         Message('Error!');
@@ -214,7 +214,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    if Integration1C.GetVendorBankAccountIdFrom1C() then
+                    if Integration1C.GetVendorBankAccountIdFrom1C(VendBankAcc) then
                         Message('Ok!')
                     else
                         Message('Error!');
@@ -230,7 +230,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    if Integration1C.GetCustomerAgreementIdFrom1C() then
+                    if Integration1C.GetCustomerAgreementIdFrom1C(CustAgreement) then
                         Message('Ok!')
                     else
                         Message('Error!');
@@ -241,8 +241,9 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
     var
         WebServiceMgt: Codeunit "Web Service Mgt.";
-
         Integration1C: Codeunit "Integration 1C";
-
         TokenTypeAccessToken: Label 'Token Type: %1\\AccessToken:\\%2';
+        CustBankAcc: Record "Customer Bank Account";
+        VendBankAcc: Record "Vendor Bank Account";
+        CustAgreement: Record "Customer Agreement";
 }

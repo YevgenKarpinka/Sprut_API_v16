@@ -45,4 +45,17 @@ tableextension 50006 "Customer Ext" extends Customer
         }
     }
 
+    trigger OnBeforeInsert()
+    var
+        Customer: Record Customer;
+    begin
+        Customer.SetCurrentKey("CRM ID");
+        Customer.SetRange("CRM ID", "CRM ID");
+        if not Customer.IsEmpty then
+            Error(errCustomerWithCRMIDAlreadyExist, "CRM ID");
+    end;
+
+    var
+        errCustomerWithCRMIDAlreadyExist: TextConst ENU = 'Customer With CRM_ID %1 Already Exist!',
+                                                    RUS = 'Клиент с CRM ID %1 уже существует!';
 }
