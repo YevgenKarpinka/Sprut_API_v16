@@ -34,7 +34,11 @@ tableextension 50018 "Unit of Measure Ext." extends "Unit of Measure"
 
     local procedure UpdateLastDateTimeModified()
     begin
+        CaptionMgt.CheckModifyAllowed();
         // "Last DateTime Modified" := CurrentDateTime;
         TestField("Numeric Code");
     end;
+
+    var
+        CaptionMgt: Codeunit "Caption Mgt.";
 }

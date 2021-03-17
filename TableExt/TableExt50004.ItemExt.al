@@ -44,6 +44,7 @@ tableextension 50004 "Item Ext" extends Item
         CompIntegr.SetRange("Company Name", CompanyName);
         CompIntegr.FindFirst();
         CompIntegr.TestField("Copy Items To", false);
+        CompIntegr.TestField("Copy Items From", true);
     end;
 
     procedure InitToCopyItem(xCopyItemFromMainCompany: Boolean)

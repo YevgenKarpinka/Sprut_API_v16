@@ -14,16 +14,22 @@ tableextension 50012 "Location Ext." extends Location
 
     trigger OnInsert()
     begin
+        CaptionMgt.CheckModifyAllowed();
         "Last Modified Date Time" := CurrentDateTime;
     end;
 
     trigger OnModify()
     begin
+        CaptionMgt.CheckModifyAllowed();
         "Last Modified Date Time" := CurrentDateTime;
     end;
 
     trigger OnRename()
     begin
+        CaptionMgt.CheckModifyAllowed();
         "Last Modified Date Time" := CurrentDateTime;
     end;
+
+    var
+        CaptionMgt: Codeunit "Caption Mgt.";
 }

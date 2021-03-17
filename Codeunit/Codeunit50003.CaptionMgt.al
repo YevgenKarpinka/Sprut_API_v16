@@ -13,4 +13,14 @@ codeunit 50003 "Caption Mgt."
         DownloadFromStream(_inStream, 'Export', '', 'All Files (*.*)|*.*', ToFileName);
     end;
 
+    procedure CheckModifyAllowed();
+    var
+        CompIntegr: Record "Company Integration";
+    begin
+        CompIntegr.SetCurrentKey("Company Name", "Copy Items To");
+        CompIntegr.SetRange("Company Name", CompanyName);
+        CompIntegr.FindFirst();
+        CompIntegr.TestField("Copy Items To", false);
+        CompIntegr.TestField("Copy Items From", true);
+    end;
 }

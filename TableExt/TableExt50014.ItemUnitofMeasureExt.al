@@ -2,11 +2,13 @@ tableextension 50014 "Item Unit of Measure Ext." extends "Item Unit of Measure"
 {
     trigger OnInsert()
     begin
+        CaptionMgt.CheckModifyAllowed();
         UpdateItemLastDateTimeModified();
     end;
 
     trigger OnModify()
     begin
+        CaptionMgt.CheckModifyAllowed();
         UpdateItemLastDateTimeModified();
     end;
 
@@ -16,11 +18,13 @@ tableextension 50014 "Item Unit of Measure Ext." extends "Item Unit of Measure"
 
     trigger OnRename()
     begin
+        CaptionMgt.CheckModifyAllowed();
         UpdateItemLastDateTimeModified();
     end;
 
     var
         Item: Record Item;
+        CaptionMgt: Codeunit "Caption Mgt.";
 
     local procedure UpdateItemLastDateTimeModified()
     begin

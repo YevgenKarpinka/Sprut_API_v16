@@ -18,7 +18,14 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
     }
 
     trigger OnInsert()
+    var
+        CustomerAgr: Record "Customer Agreement";
     begin
+        CustomerAgr.SetCurrentKey("CRM ID");
+        CustomerAgr.SetRange("CRM ID", "CRM ID");
+        if not CustomerAgr.IsEmpty then
+            Error(errCustomerAgreementWithCRMIDAlreadyExist, "CRM ID");
+
         UpdateLastDateTimeModified();
     end;
 
@@ -41,6 +48,10 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
     begin
         "Last DateTime Modified" := CurrentDateTime;
     end;
+
+    var
+        errCustomerAgreementWithCRMIDAlreadyExist: TextConst ENU = 'Customer Agreement With CRM_ID %1 Already Exist!',
+                                                            RUS = 'Договор клиента с CRM ID %1 уже существует!';
 }
 
 enum 50001 AgreementStatus
