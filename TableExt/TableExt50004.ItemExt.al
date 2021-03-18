@@ -15,7 +15,7 @@ tableextension 50004 "Item Ext" extends Item
             DataClassification = CustomerContent;
             CaptionML = ENU = '1C Path',
                         RUS = '1C Путь';
-            Editable = false;
+            // Editable = false;
         }
     }
 
