@@ -5,14 +5,14 @@ pageextension 50013 "Customer List Ext." extends "Customer List"
         // Add changes to page layout here
         addlast(Control1)
         {
-            field("VAT Registration No."; "VAT Registration No.")
-            {
-                ApplicationArea = All;
-            }
-            field("TAX Registration No."; "TAX Registration No.")
-            {
-                ApplicationArea = All;
-            }
+            // field("VAT Registration No."; "VAT Registration No.")
+            // {
+            //     ApplicationArea = All;
+            // }
+            // field("TAX Registration No."; "TAX Registration No.")
+            // {
+            //     ApplicationArea = All;
+            // }
         }
     }
 
