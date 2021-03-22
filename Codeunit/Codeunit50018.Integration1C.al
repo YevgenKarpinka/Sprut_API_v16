@@ -1595,4 +1595,65 @@ codeunit 50018 "Integration 1C"
 
         exit(ResponseMessage.IsSuccessStatusCode);
     end;
+
+    procedure UpdateBankDirectoryByCompany(newCompanyName: Text[20])
+    var
+        CustBankAccount: Record "Customer Bank Account";
+        VendBankAccount: Record "Vendor Bank Account";
+        BankDirectory: Record "Bank Directory";
+    begin
+        CustBankAccount.ChangeCompany(newCompanyName);
+        VendBankAccount.ChangeCompany(newCompanyName);
+        BankDirectory.ChangeCompany(newCompanyName);
+
+        CustBankAccount.SetFilter(IBAN, '<>%1', '');
+        if CustBankAccount.FindSet(false, false) then begin
+            repeat
+                if (CustBankAccount.BIC = '') then begin
+                    if StrLen(CustBankAccount.IBAN) > 25 then begin
+                        // create bank directory from iban
+                        if not BankDirectory.Get(CopyStr(CustBankAccount.IBAN, 5, 6)) then begin
+                            BankDirectory.Init();
+                            BankDirectory.BIC := CopyStr(CustBankAccount.IBAN, 5, 6);
+                            BankDirectory.Insert();
+                        end;
+                        CustBankAccount.BIC := BankDirectory.BIC;
+                        CustBankAccount.Modify();
+                    end;
+                end else begin
+                    if not BankDirectory.Get(CustBankAccount.BIC) then begin
+                        BankDirectory.Init();
+                        BankDirectory.BIC := CustBankAccount.BIC;
+                        BankDirectory.Insert();
+                    end;
+                end;
+
+            until CustBankAccount.Next() = 0;
+        end;
+
+        VendBankAccount.SetFilter(IBAN, '<>%1', '');
+        if VendBankAccount.FindSet(false, false) then begin
+            repeat
+                if (VendBankAccount.BIC = '') then begin
+                    if StrLen(VendBankAccount.IBAN) > 25 then begin
+                        // create bank directory from iban
+                        if not BankDirectory.Get(CopyStr(VendBankAccount.IBAN, 5, 6)) then begin
+                            BankDirectory.Init();
+                            BankDirectory.BIC := CopyStr(VendBankAccount.IBAN, 5, 6);
+                            BankDirectory.Insert();
+                        end;
+                        VendBankAccount.BIC := BankDirectory.BIC;
+                        VendBankAccount.Modify();
+                    end;
+                end else begin
+                    if not BankDirectory.Get(VendBankAccount.BIC) then begin
+                        BankDirectory.Init();
+                        BankDirectory.BIC := VendBankAccount.BIC;
+                        BankDirectory.Insert();
+                    end;
+                end;
+
+            until VendBankAccount.Next() = 0;
+        end;
+    end;
 }

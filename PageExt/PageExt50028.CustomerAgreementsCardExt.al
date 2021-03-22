@@ -1,4 +1,4 @@
-pageextension 50006 "Customer Agreements Ext" extends "Customer Agreements"
+pageextension 50028 "Customer Agreements Card Ext" extends "Customer Agreement Card"
 {
     layout
     {

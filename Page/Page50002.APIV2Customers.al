@@ -442,42 +442,46 @@ page 50002 "APIV2 - Customers"
     local procedure RegisterIBAN()
     var
         CustBankAccount: Record "Customer Bank Account";
+        GLSetup: Record "General Ledger Setup";
     begin
-        if txtIBAN = Rec."Default Bank Code" then exit;
+        if txtIBAN = "Default Bank Code" then exit;
 
         if txtIBAN = '' then begin
-            CustBankAccount.Get(Rec."Default Bank Code");
+            CustBankAccount.Get("Default Bank Code");
             txtIBAN := CustBankAccount.IBAN;
             exit;
         end;
 
         CustBankAccount.SetCurrentKey("Customer No.", IBAN);
-        CustBankAccount.SetRange("Customer No.", Rec."No.");
+        CustBankAccount.SetRange("Customer No.", "No.");
         CustBankAccount.SetRange(IBAN, txtIBAN);
         if not CustBankAccount.FindFirst() then begin
             CustBankAccount.SetRange(IBAN);
             CustBankAccount.SetRange(Code, 'CRM_IBAN_CODE');
             if not CustBankAccount.FindFirst() then begin
                 CustBankAccount.Init();
-                CustBankAccount."Customer No." := Rec."No.";
+                CustBankAccount."Customer No." := "No.";
                 CustBankAccount.Code := 'CRM_IBAN_CODE';
+                CustBankAccount.BIC := GetBankBIC(CopyStr(txtIBAN, 5, 6));
+                if "Currency Code" <> '' then
+                    CustBankAccount."Currency Code" := "Currency Code"
+                else begin
+                    GLSetup.Get();
+                    CustBankAccount."Currency Code" := GLSetup."LCY Code";
+                end;
                 CustBankAccount.IBAN := txtIBAN;
                 CustBankAccount.Insert();
             end else begin
                 CustBankAccount.IBAN := txtIBAN;
                 CustBankAccount.Modify();
             end;
-
-            if CustBankAccount.Code <> '' then begin
-                Rec."Default Bank Code" := CustBankAccount.Code;
-                RegisterFieldSet(Rec.FIELDNO("Default Bank Code"));
-            end;
+        end;
+        if CustBankAccount.Code <> '' then begin
+            "Default Bank Code" := CustBankAccount.Code;
+            RegisterFieldSet(FIELDNO("Default Bank Code"));
         end;
     end;
 
-    /// <summary> 
-    /// Description for SetCalculatedFields.
-    /// </summary>
     local procedure SetCalculatedFields()
     var
         TaxAreaBuffer: Record "Tax Area Buffer";
@@ -488,9 +492,6 @@ page 50002 "APIV2 - Customers"
         TaxAreaDisplayName := TaxAreaBuffer.GetTaxAreaDisplayName(Rec."Tax Area ID");
     end;
 
-    /// <summary> 
-    /// Description for ClearCalculatedFields.
-    /// </summary>
     local procedure ClearCalculatedFields()
     begin
         CLEAR(Rec.SystemId);
@@ -500,10 +501,6 @@ page 50002 "APIV2 - Customers"
         TempFieldSet.DELETEALL();
     end;
 
-    /// <summary> 
-    /// Description for RegisterFieldSet.
-    /// </summary>
-    /// <param name="FieldNo">Parameter of type Integer.</param>
     local procedure RegisterFieldSet(FieldNo: Integer)
     begin
         IF TempFieldSet.GET(DATABASE::Customer, FieldNo) THEN
@@ -515,9 +512,6 @@ page 50002 "APIV2 - Customers"
         TempFieldSet.INSERT(TRUE);
     end;
 
-    /// <summary> 
-    /// Description for ProcessPostalAddress.
-    /// </summary>
     local procedure ProcessPostalAddress()
     var
         GraphMgtCustomer: Codeunit "Graph Mgt - Customer";
@@ -546,13 +540,6 @@ page 50002 "APIV2 - Customers"
             RegisterFieldSet(Rec.FIELDNO(County));
     end;
 
-    // >>
-    /// <summary> 
-    /// Description for ProcessNewRecordFromAPI.
-    /// </summary>
-    /// <param name="InsertedRecordRef">Parameter of type RecordRef.</param>
-    /// <param name="TempFieldSet">Parameter of type Record "Field".</param>
-    /// <param name="ModifiedDateTime">Parameter of type DateTime.</param>
     local procedure ProcessNewRecordFromAPI(var InsertedRecordRef: RecordRef; var TempFieldSet: Record "Field"; ModifiedDateTime: DateTime)
     var
         ConfigTemplateHeader: Record "Config. Template Header";
@@ -561,7 +548,6 @@ page 50002 "APIV2 - Customers"
         ConfigTemplateManagement: Codeunit "Config. Template Management";
         UpdatedRecRef: RecordRef;
     begin
-        // if not ConfigTmplSelectionRules.FindTemplateBasedOnRecordFields(InsertedRecordRef, ConfigTemplateHeader) then
         if not FindTemplateBasedOnRecordFields(InsertedRecordRef, ConfigTemplateHeader) then
             exit;
 
@@ -571,12 +557,6 @@ page 50002 "APIV2 - Customers"
         IntegrationManagement.InsertUpdateIntegrationRecord(InsertedRecordRef, ModifiedDateTime);
     end;
 
-    /// <summary> 
-    /// Description for FindTemplateBasedOnRecordFields.
-    /// </summary>
-    /// <param name="RecordVariant">Parameter of type Variant.</param>
-    /// <param name="ConfigTemplateHeader">Parameter of type Record "Config. Template Header".</param>
-    /// <returns>Return variable "Boolean".</returns>
     local procedure FindTemplateBasedOnRecordFields(RecordVariant: Variant; var ConfigTemplateHeader: Record "Config. Template Header"): Boolean
     var
         ConfigTmplSelectionRules: Record "Config. Tmpl. Selection Rules";
@@ -616,6 +596,19 @@ page 50002 "APIV2 - Customers"
         until ConfigTmplSelectionRules.Next = 0;
 
         exit(false);
+    end;
+
+    local procedure GetBankBIC(BankBIC: Code[9]): Code[9]
+    var
+        BankDirectory: Record "Bank Directory";
+    begin
+        if not BankDirectory.Get(BankBIC) then begin
+            BankDirectory.Init();
+            BankDirectory.BIC := BankBIC;
+            BankDirectory.Insert();
+        end;
+
+        exit(BankDirectory.BIC);
     end;
 
     // <<
