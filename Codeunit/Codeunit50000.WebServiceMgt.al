@@ -11,6 +11,7 @@ codeunit 50000 "Web Service Mgt."
         errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount: Label 'Sales order amount %1 can not be less prepayment invoices amount %2';
         errReportNotSavedToPDF: Label 'Report %1 not saved to PDF';
         errWrong_CRM_Id: Label 'Wrong CRM Id %1';
+        WebServiceMgt: Codeunit "Web Service Mgt.";
 
 
 
@@ -155,6 +156,14 @@ codeunit 50000 "Web Service Mgt."
     begin
         jsonRespToken.ReadFrom(ResponceToken);
         exit(Round(GetJSToken(jsonRespToken, 'order_amount').AsValue().AsDecimal(), 0.01));
+    end;
+
+    procedure GetSpecificationLocationCode(ResponceToken: Text): Code[20]
+    var
+        jsonRespToken: JsonObject;
+    begin
+        jsonRespToken.ReadFrom(ResponceToken);
+        exit(GetJSToken(jsonRespToken, 'location_code').AsValue().AsText());
     end;
 
     procedure GetSpecificationLinesArray(ResponceToken: Text): Text
@@ -316,6 +325,7 @@ codeunit 50000 "Web Service Mgt."
         ResponceTokenLine: Text;
         jsonLines: JsonArray;
         LineToken: JsonToken;
+        LocationCode: Code[20];
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
 
@@ -365,6 +375,9 @@ codeunit 50000 "Web Service Mgt."
         if SpecAmount <> SalesHeader."Amount Including VAT" then
             exit(true);
 
+        LocationCode := WebServiceMgt.GetSpecificationLocationCode(ResponceToken);
+        ChangeSalesOrderLocationCode(SalesOrderNo, LocationCode);
+
         // foreach LineToken in jsonLines do begin
         //     LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
         //     ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
@@ -400,8 +413,10 @@ codeunit 50000 "Web Service Mgt."
         ResponceTokenLine: Text;
         jsonLines: JsonArray;
         LineToken: JsonToken;
+        LocationCode: Code[20];
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
+        LocationCode := GetSpecificationLocationCode(ResponceToken);
         SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
         SalesHeader.CalcFields("Amount Including VAT");
 
@@ -426,6 +441,9 @@ codeunit 50000 "Web Service Mgt."
             if SalesLine."Unit Price" <> UnitPrice then exit(true);
             if SalesLine."Line Amount" <> SpecLineAmount then exit(true);
         end;
+
+        // change sales header and line location code
+        ChangeSalesOrderLocationCode(SalesOrderNo, LocationCode);
 
         exit(false);
     end;
@@ -757,6 +775,35 @@ codeunit 50000 "Web Service Mgt."
         if CustLedgEntry.FindFirst() then
             exit(CustLedgEntry."Document No.");
         exit('');
+    end;
+
+    procedure ChangeSalesOrderLocationCode(SalesOrderNo: Code[20]; LocationCode: Code[20])
+    var
+        Location: Record Location;
+        SalesHeader: Record "Sales Header";
+        SalesLine: Record "Sales Line";
+        newSalesLine: Record "Sales Line";
+        Item: Record Item;
+    begin
+        Location.Get(LocationCode);
+        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
+        if LocationCode = SalesHeader."Location Code" then exit;
+
+        SalesHeader."Location Code" := LocationCode;
+        SalesHeader.Modify();
+
+        SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
+        SalesLine.SetRange("Document No.", SalesOrderNo);
+        SalesLine.SetFilter("Location Code", '<>%1', LocationCode);
+        if SalesLine.FindSet(true, false) then
+            repeat
+                if Item.Get(SalesLine."No.")
+                and Item.IsInventoriableType() then begin
+                    newSalesLine.Get(SalesLine."Document Type", SalesLine."Document No.", SalesLine."Line No.");
+                    newSalesLine."Location Code" := LocationCode;
+                    newSalesLine.Modify();
+                end;
+            until SalesLine.Next() = 0;
     end;
 
     procedure SendPaymentToCRM(custAgreementId: Guid; PayerDetails: Text[100]; paymentAmount: Decimal; crmInvoiceNo: Text[50]; crmId: Guid; crmPaymentId: Guid)

@@ -206,7 +206,7 @@ codeunit 50018 "Integration 1C"
     begin
         CustomerAgreement.Get(CustomerNo, AgreementNo);
         Clear(Body);
-        Body.Add('Номер', GuidToClearText(CustomerAgreement."CRM ID"));
+        Body.Add('Номер', CustomerAgreement."External Agreement No.");
         Body.Add('Description', CustomerAgreement."No.");
         Body.Add('Дата', CustomerAgreement."Starting Date");
         Body.Add('СрокДействия', CustomerAgreement."Expire Date");
@@ -219,7 +219,10 @@ codeunit 50018 "Integration 1C"
         Body.Add('Организация_Key', GetCompanyIdFromIntegrEntity());
         Body.Add('СхемаНалоговогоУчета_Key', lblSchemaPostingVAT);
         Body.Add('СхемаНалоговогоУчетаПоТаре_Key', lblSchemaPostingVATTara);
-        Body.Add('DeletionMark', CustomerAgreement.Active);
+        Body.Add('DeletionMark', not CustomerAgreement.Active);
+        // Body.Add('НаименованиеДляПечати', CustomerAgreement."External Agreement No.");
+        Body.Add('Комментарий', GuidToClearText(CustomerAgreement."CRM ID"));
+
     end;
 
     local procedure GuidToClearText(TextToConvert: Text): Text

@@ -94,6 +94,9 @@ codeunit 50001 "Prepayment Management"
         // delete all sales lines
         OnDeleteSalesOrderLine(SalesOrderNo);
 
+        // Update sales header location
+        UpdateSalesHeaderLocation(SalesOrderNo, SpecificationResponseText);
+
         // insert sales line
         InsertSalesLineFromCRM(SalesOrderNo, SpecificationResponseText);
 
@@ -107,6 +110,14 @@ codeunit 50001 "Prepayment Management"
         SalesLine.Validate("Unit Price", UnitPrice);
         SalesLine.Validate("Line Amount", LineAmount);
         SalesLine.Modify(true);
+    end;
+
+    procedure UpdateSalesHeaderLocation(SalesOrderNo: Code[20]; SpecificationResponseText: Text)
+    var
+        LocationCode: Code[20];
+    begin
+        LocationCode := WebServicesMgt.GetSpecificationLocationCode(SpecificationResponseText);
+        WebServicesMgt.ChangeSalesOrderLocationCode(SalesOrderNo, LocationCode);
     end;
 
     procedure InsertSalesLineFromCRM(SalesOrderNo: Code[20]; responseText: Text)
@@ -624,10 +635,6 @@ codeunit 50001 "Prepayment Management"
             UNTIL DetailedCustLedgEntry.NEXT = 0;
     end;
 
-    /// <summary> 
-    /// Description for MarkUnApplyPayment.
-    /// </summary>
-    /// <param name="CustLedgEntry">Parameter of type Record "Cust. Ledger Entry".</param>
     local procedure MarkUnApplyPayment(CustLedgEntry: Record "Cust. Ledger Entry")
     var
         locCustLedgEntry: Record "Cust. Ledger Entry";
@@ -637,5 +644,43 @@ codeunit 50001 "Prepayment Management"
                 locCustLedgEntry.Validate("Applies-to ID", UserId);
                 locCustLedgEntry.Modify();
             end;
+    end;
+
+    procedure CustPrepmtApply(SalesOrderNo: Code[20]): Boolean
+    var
+        InvCustLedgEntry: Record "Cust. Ledger Entry";
+        CrMCustLedgEntry: Record "Cust. Ledger Entry";
+        SalesInvHeader: Record "Sales Invoice Header";
+        SalesCrMemoHeader: Record "Sales Cr.Memo Header";
+        isSuccess: Boolean;
+    begin
+        isSuccess := true;
+
+        SalesInvHeader.SetCurrentKey("No.", "Prepayment Order No.");
+        SalesInvHeader.SetRange("Prepayment Order No.", SalesOrderNo);
+        if SalesInvHeader.FindSet(false, false) then
+            repeat
+                SalesInvHeader.CalcFields("Remaining Amount");
+                if SalesInvHeader."Remaining Amount" > 0 then begin
+                    InvCustLedgEntry.SetRange("Document No.", SalesInvHeader."No.");
+                    InvCustLedgEntry.SetRange("Posting Date", SalesInvHeader."Posting Date");
+                    InvCustLedgEntry.SetRange("Agreement No.", SalesInvHeader."Agreement No.");
+                    InvCustLedgEntry.SetRange(Prepayment, true);
+                    InvCustLedgEntry.SetRange(Open, true);
+                    if InvCustLedgEntry.FindFirst() then begin
+                        SalesCrMemoHeader.SetCurrentKey("No.", "Prepayment Order No.");
+                        SalesCrMemoHeader.SetRange("Prepayment Order No.", SalesOrderNo);
+                        if SalesCrMemoHeader.FindFirst() then begin
+
+
+                            InvCustLedgEntry."Applies-to ID" := SalesOrderNo;
+                            InvCustLedgEntry.Modify();
+                        end;
+                    end;
+                end;
+            until SalesInvHeader.Next() = 0;
+
+
+        exit(isSuccess);
     end;
 }
