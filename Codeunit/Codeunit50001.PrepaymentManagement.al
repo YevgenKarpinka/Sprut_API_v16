@@ -166,6 +166,37 @@ codeunit 50001 "Prepayment Management"
         end;
     end;
 
+    procedure AddedPrepaymentInvoicesFromCRM(SalesOrderNo: Code[20]; responseText: Text);
+    var
+        invoiceID: Text[50];
+        crmId: Guid;
+        API_SalesInvoice: Page "APIV2 - Sales Invoice";
+        PrepmInvAmount: Decimal;
+        jsonPrepmInv: JsonArray;
+        PrepmInvToken: JsonToken;
+    begin
+        // loop for create prepayment invoices
+        jsonPrepmInv.ReadFrom(responseText);
+        foreach PrepmInvToken in jsonPrepmInv do begin
+            invoiceID := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
+            if not InvoiceIdExist(invoiceID) then begin
+                PrepmInvAmount := Round(WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
+                crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'crm_id').AsValue().AsText();
+                API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId);
+                API_SalesInvoice.CreatePrepaymentInvoice(SalesOrderNo);
+            end;
+        end;
+    end;
+
+    local procedure InvoiceIdExist(invoiceID: Text[50]): Boolean
+    var
+        SalesInvHeader: Record "Sales Invoice Header";
+    begin
+        SalesInvHeader.SetCurrentKey("CRM Invoice No.");
+        SalesInvHeader.SetRange("CRM Invoice No.", invoiceID);
+        exit(not SalesInvHeader.IsEmpty);
+    end;
+
     local procedure GetSalesOrderLastLineNo(SalesOrderNo: Code[20]): Integer
     var
         SalesLine: Record "Sales Line";
@@ -177,7 +208,7 @@ codeunit 50001 "Prepayment Management"
         exit(10000);
     end;
 
-    local procedure InsertNewSalesLine(SalesOrderNo: Code[20]; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal; crmLineID: Guid)
+    procedure InsertNewSalesLine(SalesOrderNo: Code[20]; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal; crmLineID: Guid)
     var
         SalesLine: Record "Sales Line";
     begin

@@ -142,7 +142,7 @@ page 50003 "APIV2 - Sales Invoice"
         prepaymentPercent: Decimal;
         PrepaymentAmount: Decimal;
         TotalOrderAmount: Decimal;
-        TotalPrepaymentAmountBefore: Decimal;
+        // TotalPrepaymentAmountBefore: Decimal;
         TotalPrepaymentAmountInvoice: Decimal;
         postedInvoiceNo: Code[20];
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
@@ -201,7 +201,7 @@ page 50003 "APIV2 - Sales Invoice"
         locSalesLine.CalcSums("Line Amount", "Prepmt. Line Amount", "Prepmt. Amt. Inv.");
 
         TotalOrderAmount := locSalesLine."Line Amount";
-        TotalPrepaymentAmountBefore := locSalesLine."Prepmt. Line Amount";
+        // TotalPrepaymentAmountBefore := locSalesLine."Prepmt. Line Amount";
         TotalPrepaymentAmountInvoice := locSalesLine."Prepmt. Amt. Inv.";
 
         exit(TotalOrderAmount >= (TotalPrepaymentAmountInvoice + PrepaymentAmount))
@@ -223,6 +223,7 @@ page 50003 "APIV2 - Sales Invoice"
         DiffAmounts: Decimal;
         LinesCount: Integer;
         Counter: Integer;
+        DiffLineAmount: Decimal;
     begin
         Currency.Initialize(SalesHeader."Currency Code");
 
@@ -233,40 +234,51 @@ page 50003 "APIV2 - Sales Invoice"
         // update prepayment percent sales header
         SalesHeader."CRM Invoice No." := invoiceId;
         SalesHeader."CRM ID" := crmId;
-        SalesHeader.Validate("Prepayment %", PrepaymentPercent);
+        // SalesHeader.Validate("Prepayment %", PrepaymentPercent);
+        SalesHeader."Prepayment %" := PrepaymentPercent;
         SalesHeader.Modify();
 
         // update prepayment percent sales line
-        locSalesLine.SetCurrentKey(Quantity);
+        locSalesLine.SetCurrentKey("Line No.", Quantity);
         locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
         locSalesLine.SetRange("Document No.", SalesOrderNo);
         locSalesLine.SetFilter(Quantity, '<>%1', 0);
-        locSalesLine.CalcSums("Prepmt. Line Amount");
+        // update prepmt line amount sales line
+        locSalesLine.FindSet(false, true);
+        repeat
+            if locSalesLine."Line Amount" > locSalesLine."Prepmt. Amt. Inv." then begin
+                DiffLineAmount := locSalesLine."Line Amount" - locSalesLine."Prepmt. Amt. Inv.";
+                if DiffLineAmount >= PrepaymentAmount then begin
+                    DiffAmounts := PrepaymentAmount;
+                end else begin
+                    DiffAmounts := DiffLineAmount;
+                end;
+                locSalesLine.Validate("Prepmt. Line Amount", locSalesLine."Prepmt. Amt. Inv." + DiffAmounts);
+                locSalesLine.Modify(true);
+                PrepaymentAmount -= DiffAmounts;
+            end;
+        until (locSalesLine.Next() = 0) or (PrepaymentAmount = 0);
 
-        DiffAmounts := TotalPrepaymentAmount - locSalesLine."Prepmt. Line Amount";
-
-        if DiffAmounts < Currency."Amount Rounding Precision" then exit;
-
-        LinesCount := locSalesLine.Count;
-        LinePrepaymentAmount := Round(DiffAmounts / LinesCount, Currency."Amount Rounding Precision");
-        if LinePrepaymentAmount > 0 then begin
-
-            locSalesLine.FindSet(false, true);
-            repeat
-                if Counter = LinesCount then
-                    locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + DiffAmounts
-                else
-                    locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + LinePrepaymentAmount;
-                locSalesLine.Modify();
-
-                DiffAmounts -= LinePrepaymentAmount;
-            until locSalesLine.Next() = 0;
-
-        end else begin
-            locSalesLine.FindLast();
-            locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + DiffAmounts;
-            locSalesLine.Modify();
-        end;
+        // locSalesLine.CalcSums("Prepmt. Line Amount");
+        // DiffAmounts := TotalPrepaymentAmount - locSalesLine."Prepmt. Line Amount";
+        // if DiffAmounts < Currency."Amount Rounding Precision" then exit;
+        // LinesCount := locSalesLine.Count;
+        // LinePrepaymentAmount := Round(DiffAmounts / LinesCount, Currency."Amount Rounding Precision");
+        // if LinePrepaymentAmount > 0 then begin
+        // locSalesLine.FindSet(false, true);
+        // repeat
+        //     if Counter = LinesCount then
+        //         locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + DiffAmounts
+        //     else
+        //         locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + LinePrepaymentAmount;
+        //     locSalesLine.Modify();
+        //     DiffAmounts -= LinePrepaymentAmount;
+        // until locSalesLine.Next() = 0;
+        // end else begin
+        //     locSalesLine.FindLast();
+        //     locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + DiffAmounts;
+        //     locSalesLine.Modify();
+        // end;
 
     end;
 }

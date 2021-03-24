@@ -138,6 +138,6 @@ enum 50003 WorkStatus
     value(3; Done)
     {
         CaptionML = ENU = 'Done',
-                    RUS = 'Звершено';
+                    RUS = 'Завершено';
     }
 }

@@ -14,6 +14,7 @@ codeunit 50000 "Web Service Mgt."
         WebServiceMgt: Codeunit "Web Service Mgt.";
 
 
+        PrepmtMgt: Codeunit "Prepayment Management";
 
 
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]; var Body: Text): Boolean
@@ -73,11 +74,14 @@ codeunit 50000 "Web Service Mgt."
     end;
 
     procedure SetInvoicesLineIdToCRM(SalesOrderNo: Code[20]; entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
+    var
+        JSObjectLine: JsonObject;
     begin
         // for testing
         // SalesOrderNo := 'ПРЗК-20-00053';
 
         SetBodyFromSalesOrderNo(SalesOrderNo, Body);
+        SetBodyFromPostedInvoices(SalesOrderNo, Body);
         if StrLen(Body) = 0 then exit(false);
 
         if not GetEntity(entityType, requestMethod, Body) then
@@ -104,6 +108,32 @@ codeunit 50000 "Web Service Mgt."
 
             Clear(JSObjectLine);
             JSObjectLine.Add('Lines', JSObjectBody);
+            JSObjectLine.WriteTo(Body);
+        end;
+    end;
+
+    local procedure SetBodyFromPostedInvoices(SalesOrderNo: Code[20]; var Body: Text)
+    var
+        locSalesInvHeader: Record "Sales Invoice Header";
+        JSObjectBody: JsonArray;
+        JSObjectLine: JsonObject;
+    begin
+        locSalesInvHeader.SetCurrentKey("Prepayment Order No.");
+        locSalesInvHeader.SetRange("Prepayment Order No.", SalesOrderNo);
+        locSalesInvHeader.SetFilter("CRM Invoice No.", '<>%1', '');
+        if locSalesInvHeader.FindSet(false, false) then begin
+            repeat
+                Clear(JSObjectLine);
+                JSObjectLine.Add('number', locSalesInvHeader."No.");
+                JSObjectLine.Add('postedInvoiceNo', locSalesInvHeader."CRM Invoice No.");
+
+                JSObjectBody.Add(JSObjectLine);
+            until locSalesInvHeader.Next() = 0;
+
+            Clear(JSObjectLine);
+            if StrLen(Body) <> 0 then
+                JSObjectLine.ReadFrom(Body);
+            JSObjectLine.Add('PostedInvoices', JSObjectBody);
             JSObjectLine.WriteTo(Body);
         end;
     end;
@@ -266,22 +296,22 @@ codeunit 50000 "Web Service Mgt."
         PrepmInvAmount: Decimal;
     begin
         GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
-        GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
-
-        SpecAmount := CheckSpecificationAmount(SpecificationResponseText);
-        PrepmInvAmount := GetPrepaymentInvoicesAmount(InvoicesResponseText);
-
-        // check Specification Amount and Prepayment Amount
-        if SpecAmount < PrepmInvAmount then
-            Error(errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount, SpecAmount, PrepmInvAmount);
-
         // check sales order for change need
         if SalesOrderChangeNeed(SalesOrderNo, SpecificationResponseText) then
             exit(true);
 
+        GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+        SpecAmount := CheckSpecificationAmount(SpecificationResponseText);
+        PrepmInvAmount := GetPrepaymentInvoicesAmount(InvoicesResponseText);
+        // check Specification Amount and Prepayment Amount
+        if SpecAmount < PrepmInvAmount then
+            Error(errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount, SpecAmount, PrepmInvAmount);
         // check prepayment invoices for change need
-        if PrepaymentInvoicesChangeNeed(SalesOrderNo, InvoicesResponseText) then
+        if PrepaymentInvoicesChangesNeed(SalesOrderNo, InvoicesResponseText) then
             exit(true);
+
+        // update sales line
+        // to do
 
         exit(false);
     end;
@@ -298,14 +328,37 @@ codeunit 50000 "Web Service Mgt."
         PrepmInvAmount: Decimal;
     begin
         GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
-        GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
-
-        // check prepayment invoices for change need
-        if PrepaymentInvoicesChangeNeed(SalesOrderNo, InvoicesResponseText) then
-            exit(true);
-
         // check sales order for change need
         if SalesOrderFullChangesNeed(SalesOrderNo, SpecificationResponseText) then
+            exit(true);
+
+        GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+        // check prepayment invoices for change need
+        if PrepaymentInvoicesChangesNeed(SalesOrderNo, InvoicesResponseText) then
+            exit(true);
+
+        exit(false);
+    end;
+
+    procedure NeedCreatePrepmtInvoice(SalesOrderNo: Code[20]): Boolean
+    var
+        SpecificationResponseText: Text;
+        InvoicesResponseText: Text;
+        connectorCode: Label 'CRM';
+        SpecEntityType: Label 'specification';
+        InvEntityType: Label 'invoice';
+        POSTrequestMethod: Label 'POST';
+        SpecAmount: Decimal;
+        PrepmInvAmount: Decimal;
+    begin
+        // GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
+        // check sales order for change need
+        // if SalesOrderFullChangesNeed(SalesOrderNo, SpecificationResponseText) then
+        //     exit(true);
+
+        GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+        // check prepayment invoices for change need
+        if PrepaymentInvoicesAddedNeed(SalesOrderNo, InvoicesResponseText) then
             exit(true);
 
         exit(false);
@@ -326,6 +379,7 @@ codeunit 50000 "Web Service Mgt."
         jsonLines: JsonArray;
         LineToken: JsonToken;
         LocationCode: Code[20];
+        countSL: Integer;
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
 
@@ -340,62 +394,68 @@ codeunit 50000 "Web Service Mgt."
             until SalesLine.Next() = 0;
 
         foreach LineToken in jsonLines do begin
-            if GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then
-                exit(true);
+            if not GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then begin
+                // exit(true);
+                LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
+                ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+                Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
+                UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
+                SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
+                crmLineId := GetJSToken(LineToken.AsObject(), 'CRM_ID').AsValue().AsText();
 
-            LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
-            ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
-            Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
-            UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
-            SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
-            crmLineId := GetJSToken(LineToken.AsObject(), 'CRM_ID').AsValue().AsText();
-
-            if not SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then exit(true);
-            if SalesLine."No." <> ItemNo then exit(true);
-            if SalesLine.Quantity <> Qty then exit(true);
-            if SalesLine."Unit Price" <> UnitPrice then exit(true);
-            if SalesLine."Line Amount" <> SpecLineAmount then exit(true);
-            if (UpperCase(DelChr(SalesLine."CRM ID", '<>', '{}')) <> UpperCase(crmLineId)) and not IsNullGuid(crmLineId) then begin
-                SalesLine.Validate("CRM ID", crmLineId);
-                SalesLine.Modify(true);
+                if SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then begin
+                    if SalesLine."No." <> ItemNo then exit(true);
+                    if SalesLine.Quantity > Qty then exit(true);
+                    if SalesLine."Unit Price" > UnitPrice then exit(true);
+                    // if SalesLine."Line Amount" > SpecLineAmount then exit(true);
+                    if SalesLine."Prepmt. Amt. Inv." > SpecLineAmount then exit(true);
+                    if (LowerCase(DelChr(SalesLine."CRM ID", '<>', '{}')) <> crmLineId) and not IsNullGuid(crmLineId) then begin
+                        SalesLine.Validate("CRM ID", crmLineId);
+                        SalesLine.Modify();
+                    end;
+                    SalesLine.Mark(false);
+                end;
             end;
-            SalesLine.Mark(false);
         end;
 
         SalesLine.MarkedOnly(true);
+        countSL := SalesLine.Count;
         if SalesLine.FindSet(false, false) then
             repeat
                 if SalesLine."Prepmt. Amt. Inv." <> 0 then exit(true);
             until SalesLine.Next() = 0;
         SalesLine.DeleteAll(true);
 
-        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
-        SalesHeader.CalcFields("Amount Including VAT");
+        // SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
+        // SalesHeader.CalcFields("Amount Including VAT");
+        // if SpecAmount < SalesHeader."Amount Including VAT" then
+        //     exit(true);
 
-        if SpecAmount <> SalesHeader."Amount Including VAT" then
-            exit(true);
+        // LocationCode := WebServiceMgt.GetSpecificationLocationCode(ResponceToken);
+        // ChangeSalesOrderLocationCode(SalesOrderNo, LocationCode);
 
-        LocationCode := WebServiceMgt.GetSpecificationLocationCode(ResponceToken);
-        ChangeSalesOrderLocationCode(SalesOrderNo, LocationCode);
+        // update sales line
+        foreach LineToken in jsonLines do begin
+            LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
+            ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+            Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
+            UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
+            SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
 
-        // foreach LineToken in jsonLines do begin
-        //     LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
-        //     ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
-        //     Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
-        //     UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
-        //     SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
-
-        //     SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo);
-        //     if SalesLine.Quantity <> Qty then
-        //         SalesLine.Validate(Quantity, Qty);
-        //     if SalesLine."Unit Price" <> UnitPrice then
-        //         SalesLine.Validate("Unit Price", UnitPrice);
-        //     if SalesLine."Line Amount" <> SpecLineAmount then
-        //         SalesLine.Validate("Line Amount", SpecLineAmount);
-        //     if (SalesLine."CRM ID" <> crmLineId) and not IsNullGuid(crmLineId) then
-        //         SalesLine.Validate("CRM ID", crmLineId);
-        //     SalesLine.Modify(true);
-        // end;
+            if SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then begin
+                if SalesLine.Quantity <> Qty then
+                    SalesLine.Validate(Quantity, Qty);
+                if SalesLine."Unit Price" <> UnitPrice then
+                    SalesLine.Validate("Unit Price", UnitPrice);
+                if SalesLine."Line Amount" <> SpecLineAmount then
+                    SalesLine.Validate("Line Amount", SpecLineAmount);
+                if (LowerCase(DelChr(SalesLine."CRM ID", '<>', '{}')) <> crmLineId) and not IsNullGuid(crmLineId) then
+                    SalesLine.Validate("CRM ID", crmLineId);
+                SalesLine.Modify(true);
+            end else begin
+                PrepmtMgt.InsertNewSalesLine(SalesOrderNo, ItemNo, Qty, UnitPrice, SpecLineAmount, crmLineID);
+            end;
+        end;
 
         exit(false);
     end;
@@ -416,11 +476,12 @@ codeunit 50000 "Web Service Mgt."
         LocationCode: Code[20];
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
-        LocationCode := GetSpecificationLocationCode(ResponceToken);
+        // LocationCode := GetSpecificationLocationCode(ResponceToken);
         SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
-        SalesHeader.CalcFields("Amount Including VAT");
+        // if SalesHeader."Location Code" <> LocationCode then exit(true);
 
-        if SpecAmount <> SalesHeader."Amount Including VAT" then
+        SalesHeader.CalcFields("Amount Including VAT");
+        if SalesHeader."Amount Including VAT" <> SpecAmount then
             exit(true);
 
         ResponceTokenLine := GetSpecificationLinesArray(ResponceToken);
@@ -442,13 +503,10 @@ codeunit 50000 "Web Service Mgt."
             if SalesLine."Line Amount" <> SpecLineAmount then exit(true);
         end;
 
-        // change sales header and line location code
-        ChangeSalesOrderLocationCode(SalesOrderNo, LocationCode);
-
         exit(false);
     end;
 
-    local procedure PrepaymentInvoicesChangeNeed(SalesOrderNo: Code[20]; ResponceTokenLines: Text): Boolean
+    local procedure PrepaymentInvoicesAddedNeed(SalesOrderNo: Code[20]; ResponceTokenLines: Text): Boolean
     var
         SalesInvHeader: Record "Sales Invoice Header";
         invoiceID: Text[50];
@@ -456,7 +514,57 @@ codeunit 50000 "Web Service Mgt."
         bcPrepmInvAmount: Decimal;
         jsonPrepmInv: JsonArray;
         PrepmInvToken: JsonToken;
+        CountInvoiceCRM: Integer;
+        CountSalesInv: Integer;
     begin
+        // CountInvoiceCRM := 0;
+        // CountSalesInv := 0;
+        // SalesInvHeader.SetCurrentKey("CRM Invoice No.");
+
+        jsonPrepmInv.ReadFrom(ResponceTokenLines);
+        CountInvoiceCRM := jsonPrepmInv.Count;
+
+        // foreach PrepmInvToken in jsonPrepmInv do begin
+        //     CountInvoiceCRM += 1;
+        //     invoiceID := GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
+        //     PrepmInvAmount := Round(GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
+
+        //     SalesInvHeader.SetRange("CRM Invoice No.", invoiceID);
+        //     if SalesInvHeader.FindSet(false, false) then
+        //         repeat
+
+        //             SalesInvHeader.CalcFields("Amount Including VAT");
+        //             bcPrepmInvAmount += SalesInvHeader."Amount Including VAT";
+        //         until SalesInvHeader.Next() = 0;
+
+        //     if PrepmInvAmount < bcPrepmInvAmount then
+        //         exit(true);
+        // end;
+
+        // if crm invoice will be delete
+        // SalesInvHeader.Reset();
+        SalesInvHeader.SetCurrentKey("Prepayment Order No.", "CRM Invoice No.");
+        SalesInvHeader.SetRange("Prepayment Order No.", SalesOrderNo);
+        SalesInvHeader.SetFilter("CRM Invoice No.", '<>%1', '');
+        CountSalesInv := SalesInvHeader.Count;
+        if CountInvoiceCRM > CountSalesInv then exit(true);
+
+        exit(false);
+    end;
+
+    local procedure PrepaymentInvoicesChangesNeed(SalesOrderNo: Code[20]; ResponceTokenLines: Text): Boolean
+    var
+        SalesInvHeader: Record "Sales Invoice Header";
+        invoiceID: Text[50];
+        PrepmInvAmount: Decimal;
+        bcPrepmInvAmount: Decimal;
+        jsonPrepmInv: JsonArray;
+        PrepmInvToken: JsonToken;
+        CountInvoiceCRM: Integer;
+        CountSalesInv: Integer;
+    begin
+        CountInvoiceCRM := 0;
+        CountSalesInv := 0;
         SalesInvHeader.SetCurrentKey("CRM Invoice No.");
         jsonPrepmInv.ReadFrom(ResponceTokenLines);
         foreach PrepmInvToken in jsonPrepmInv do begin
@@ -466,13 +574,22 @@ codeunit 50000 "Web Service Mgt."
             SalesInvHeader.SetRange("CRM Invoice No.", invoiceID);
             if SalesInvHeader.FindSet(false, false) then
                 repeat
+                    CountInvoiceCRM += 1;
                     SalesInvHeader.CalcFields("Amount Including VAT");
                     bcPrepmInvAmount += SalesInvHeader."Amount Including VAT";
                 until SalesInvHeader.Next() = 0;
 
-            if PrepmInvAmount <> bcPrepmInvAmount then
+            if PrepmInvAmount < bcPrepmInvAmount then
                 exit(true);
         end;
+
+        // if crm invoice will be delete
+        SalesInvHeader.Reset();
+        SalesInvHeader.SetCurrentKey("Prepayment Order No.", "CRM Invoice No.");
+        SalesInvHeader.SetRange("Prepayment Order No.", SalesOrderNo);
+        SalesInvHeader.SetFilter("CRM Invoice No.", '<>%1', '');
+        CountSalesInv := SalesInvHeader.Count;
+        if CountInvoiceCRM < CountSalesInv then exit(true);
 
         exit(false);
     end;

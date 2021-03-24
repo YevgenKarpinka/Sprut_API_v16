@@ -23,7 +23,6 @@ codeunit 50010 "Modification Order"
     begin
         // analyze need full update sales order or not
         if WebServicesMgt.NeedFullUpdateSalesOrder(SalesOrderNo) then begin
-
             // unapply prepayments
             PrepmMgt.UnApplyPayments(SalesOrderNo);
             // Open Sales Order
@@ -37,8 +36,10 @@ codeunit 50010 "Modification Order"
             OpenSalesOrder(SalesHeader, SalesOrderNo);
             // delete all sales lines
             PrepmMgt.OnDeleteSalesOrderLine(SalesOrderNo);
+
             // Update sales header location
-            PrepmMgt.UpdateSalesHeaderLocation(SalesOrderNo, SpecificationResponseText);
+            // PrepmMgt.UpdateSalesHeaderLocation(SalesOrderNo, SpecificationResponseText);
+
             // insert sales line
             PrepmMgt.InsertSalesLineFromCRM(SalesOrderNo, SpecificationResponseText);
             // Get Invoices From CRM
@@ -46,7 +47,14 @@ codeunit 50010 "Modification Order"
             // create prepayment invoice by amount
             PrepmMgt.CreatePrepaymentInvoicesFromCRM(SalesOrderNo, InvoicesResponseText);
 
-        end;
+        end else
+            // create Added prepayment invoice by amount
+            if WebServicesMgt.NeedCreatePrepmtInvoice(SalesOrderNo) then begin
+                // Get Invoices From CRM
+                WebServicesMgt.GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+                // create Added prepayment invoice by amount
+                PrepmMgt.AddedPrepaymentInvoicesFromCRM(SalesOrderNo, InvoicesResponseText);
+            end;
     end;
 
     local procedure OpenSalesOrder(var SalesHeader: Record "Sales Header"; SalesOrderNo: Code[20])
