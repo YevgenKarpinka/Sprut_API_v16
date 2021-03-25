@@ -104,10 +104,10 @@ enum 50002 TaskStatus
         CaptionML = ENU = 'OnSendToCRM',
                     RUS = 'НаОбновлениеCRM';
     }
-    value(2; OnSendToEmail)
+    value(2; OnEmail)
     {
-        CaptionML = ENU = 'OnSendToEmail',
-                    RUS = 'НаПочтуДляCRM';
+        CaptionML = ENU = 'OnEmail',
+                    RUS = 'НаПочту';
     }
     value(3; Done)
     {

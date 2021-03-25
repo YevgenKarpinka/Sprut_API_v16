@@ -64,10 +64,10 @@ codeunit 50006 "Task Modify Order"
                     end;
 
                     // modify task status to next level
-                    ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnSendToEmail);
+                    ModifyTaskStatusToNextLevel(recTaskModifyOrder.Status::OnEmail);
                     // UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);
                 end;
-            recTaskModifyOrder.Status::OnSendToEmail:
+            recTaskModifyOrder.Status::OnEmail:
                 begin
                     UpdateWorkStatus(recTaskModifyOrder."Work Status"::InWork);
 

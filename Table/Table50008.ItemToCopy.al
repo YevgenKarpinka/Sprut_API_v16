@@ -42,7 +42,7 @@ table 50008 "Item To Copy"
             FieldClass = FlowField;
             Editable = false;
         }
-        field(3; Type; Enum "Entity Type")
+        field(3; Type; Enum EntityType)
         {
             DataClassification = SystemMetadata;
             CaptionML = ENU = 'Type',
@@ -60,7 +60,7 @@ table 50008 "Item To Copy"
 
 }
 
-enum 50006 "Entity Type"
+enum 50006 EntityType
 {
     Extensible = true;
 
