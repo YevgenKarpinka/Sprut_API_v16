@@ -380,6 +380,7 @@ codeunit 50000 "Web Service Mgt."
         LineToken: JsonToken;
         LocationCode: Code[20];
         countSL: Integer;
+        modifiedSL: Boolean;
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
 
@@ -419,7 +420,6 @@ codeunit 50000 "Web Service Mgt."
         end;
 
         SalesLine.MarkedOnly(true);
-        countSL := SalesLine.Count;
         if SalesLine.FindSet(false, false) then
             repeat
                 if SalesLine."Prepmt. Amt. Inv." <> 0 then exit(true);
@@ -436,22 +436,37 @@ codeunit 50000 "Web Service Mgt."
 
         // update sales line
         foreach LineToken in jsonLines do begin
-            LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
+            if not GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then
+                LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger()
+            else
+                LineNo := 0;
             ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
             Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
             UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
             SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
+            crmLineId := GetJSToken(LineToken.AsObject(), 'CRM_ID').AsValue().AsText();
 
             if SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then begin
-                if SalesLine.Quantity <> Qty then
+                modifiedSL := false;
+                if SalesLine.Quantity <> Qty then begin
                     SalesLine.Validate(Quantity, Qty);
-                if SalesLine."Unit Price" <> UnitPrice then
+                    modifiedSL := true;
+                end;
+                if SalesLine."Unit Price" <> UnitPrice then begin
                     SalesLine.Validate("Unit Price", UnitPrice);
-                if SalesLine."Line Amount" <> SpecLineAmount then
+                    modifiedSL := true;
+                end;
+                if SalesLine."Line Amount" <> SpecLineAmount then begin
                     SalesLine.Validate("Line Amount", SpecLineAmount);
-                if (LowerCase(DelChr(SalesLine."CRM ID", '<>', '{}')) <> crmLineId) and not IsNullGuid(crmLineId) then
+                    modifiedSL := true;
+                end;
+                if (LowerCase(DelChr(SalesLine."CRM ID", '<>', '{}')) <> crmLineId)
+                and not IsNullGuid(crmLineId) then begin
                     SalesLine.Validate("CRM ID", crmLineId);
-                SalesLine.Modify(true);
+                    modifiedSL := true;
+                end;
+                if modifiedSL then
+                    SalesLine.Modify(true);
             end else begin
                 PrepmtMgt.InsertNewSalesLine(SalesOrderNo, ItemNo, Qty, UnitPrice, SpecLineAmount, crmLineID);
             end;
@@ -568,13 +583,15 @@ codeunit 50000 "Web Service Mgt."
         SalesInvHeader.SetCurrentKey("CRM Invoice No.");
         jsonPrepmInv.ReadFrom(ResponceTokenLines);
         foreach PrepmInvToken in jsonPrepmInv do begin
+            CountInvoiceCRM += 1;
             invoiceID := GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
             PrepmInvAmount := Round(GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
 
             SalesInvHeader.SetRange("CRM Invoice No.", invoiceID);
+            bcPrepmInvAmount := 0;
             if SalesInvHeader.FindSet(false, false) then
                 repeat
-                    CountInvoiceCRM += 1;
+                    // CountInvoiceCRM += 1;
                     SalesInvHeader.CalcFields("Amount Including VAT");
                     bcPrepmInvAmount += SalesInvHeader."Amount Including VAT";
                 until SalesInvHeader.Next() = 0;

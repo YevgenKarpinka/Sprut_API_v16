@@ -210,8 +210,19 @@ codeunit 50001 "Prepayment Management"
 
     procedure InsertNewSalesLine(SalesOrderNo: Code[20]; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal; crmLineID: Guid)
     var
+        SalesHeader: Record "Sales Header";
         SalesLine: Record "Sales Line";
+        OrderStatus: Enum "Sales Document Status";
+        statusModified: Boolean;
     begin
+        if SalesHeader.Get(SalesLine."Document Type"::Order, SalesOrderNo)
+        and (SalesHeader.Status <> SalesHeader.Status::Open) then begin
+            OrderStatus := SalesHeader.Status;
+            SalesHeader.Status := SalesHeader.Status::Open;
+            SalesHeader.Modify();
+            statusModified := not statusModified;
+        end;
+
         SalesLine.Init();
         SalesLine."Document Type" := SalesLine."Document Type"::Order;
         SalesLine."Document No." := SalesOrderNo;
@@ -226,6 +237,11 @@ codeunit 50001 "Prepayment Management"
         Evaluate(SalesLine."CRM ID", crmLineID);
         SalesLine.Validate("CRM ID");
         SalesLine.Modify(true);
+
+        if statusModified then begin
+            SalesHeader.Status := OrderStatus;
+            SalesHeader.Modify();
+        end;
     end;
 
     // for test

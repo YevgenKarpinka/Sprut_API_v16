@@ -10,14 +10,14 @@ codeunit 50008 "Copy Items to All Companies"
 
     end;
 
-    [EventSubscriber(ObjectType::Table, 23, 'OnAfterInsertEvent', '', false, false)]
+    // [EventSubscriber(ObjectType::Table, 23, 'OnAfterInsertEvent', '', false, false)]
     local procedure OnAfterInsertEventVendor(var Rec: Record Vendor)
     begin
         if CheckVendorFieldsFilled(Rec) then
             AddEntityToCopy(entityType::Vendor, Rec."No.");
     end;
 
-    [EventSubscriber(ObjectType::Table, 23, 'OnAfterModifyEvent', '', false, false)]
+    // [EventSubscriber(ObjectType::Table, 23, 'OnAfterModifyEvent', '', false, false)]
     local procedure OnAfterModifyEventVendor(var Rec: Record Vendor)
     begin
         if CheckVendorFieldsFilled(Rec) then
@@ -48,14 +48,14 @@ codeunit 50008 "Copy Items to All Companies"
         ItemToCopy.Insert();
     end;
 
-    [EventSubscriber(ObjectType::Table, 27, 'OnAfterInsertEvent', '', false, false)]
+    // [EventSubscriber(ObjectType::Table, 27, 'OnAfterInsertEvent', '', false, false)]
     local procedure OnAfterInsertEventItem(var Rec: Record Item)
     begin
         if CheckItemFieldsFilled(Rec) then
             AddEntityToCopy(entityType::Item, Rec."No.");
     end;
 
-    [EventSubscriber(ObjectType::Table, 27, 'OnAfterModifyEvent', '', false, false)]
+    // [EventSubscriber(ObjectType::Table, 27, 'OnAfterModifyEvent', '', false, false)]
     local procedure OnAfterModifyEventItem(var Rec: Record Item)
     begin
         if CheckItemFieldsFilled(Rec) then
