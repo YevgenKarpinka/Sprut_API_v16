@@ -125,7 +125,7 @@ codeunit 50018 "Integration 1C"
         // create entity in 1C or get it
         if tempCustomerAgreement.FindSet(false, false) then
             repeat
-                filterValue := StrSubstNo(lblfilter, 'Номер', GuidToClearText(tempCustomerAgreement."CRM ID"));
+                filterValue := StrSubstNo(lblfilter, 'CRM_ID', GuidToClearText(tempCustomerAgreement."CRM ID"));
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
                 jsonBody.ReadFrom(Body);
                 jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
@@ -221,7 +221,7 @@ codeunit 50018 "Integration 1C"
         Body.Add('СхемаНалоговогоУчетаПоТаре_Key', lblSchemaPostingVATTara);
         Body.Add('DeletionMark', not CustomerAgreement.Active);
         // Body.Add('НаименованиеДляПечати', CustomerAgreement."External Agreement No.");
-        Body.Add('Комментарий', GuidToClearText(CustomerAgreement."CRM ID"));
+        Body.Add('CRM_ID', GuidToClearText(CustomerAgreement."CRM ID"));
 
     end;
 
