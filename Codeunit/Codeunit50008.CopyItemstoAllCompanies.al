@@ -10,6 +10,73 @@ codeunit 50008 "Copy Items to All Companies"
 
     end;
 
+    [EventSubscriber(ObjectType::Table, 23, 'OnAfterInsertEvent', '', false, false)]
+    local procedure OnAfterInsertEventVendor(var Rec: Record Vendor)
+    begin
+        if CheckVendorFieldsFilled(Rec) then
+            AddEntityToCopy(entityType::Vendor, Rec."No.");
+    end;
+
+    [EventSubscriber(ObjectType::Table, 23, 'OnAfterModifyEvent', '', false, false)]
+    local procedure OnAfterModifyEventVendor(var Rec: Record Vendor)
+    begin
+        if CheckVendorFieldsFilled(Rec) then
+            AddEntityToCopy(entityType::Vendor, Rec."No.");
+    end;
+
+    local procedure CheckVendorFieldsFilled(Rec: Record Vendor): Boolean
+    begin
+        if Rec."No." = '' then exit(false);
+        if Rec.Name = '' then exit(false);
+        if Rec."OKPO Code" = '' then exit(false);
+        if Rec."Prices Including VAT" = false then exit(false);
+        if Rec."Gen. Bus. Posting Group" = '' then exit(false);
+        if Rec."Vendor Posting Group" = '' then exit(false);
+        if Rec."VAT Bus. Posting Group" = '' then exit(false);
+        if Rec."Currency Code" = '' then exit(false);
+
+        exit(true);
+    end;
+
+    local procedure AddEntityToCopy(Type: Enum "Entity Type"; VendorNo: Code[20])
+    var
+        ItemToCopy: Record "Item To Copy";
+    begin
+        ItemToCopy.Init();
+        ItemToCopy."No." := VendorNo;
+        ItemToCopy.Type := Type::Vendor;
+        ItemToCopy.Insert();
+    end;
+
+    [EventSubscriber(ObjectType::Table, 27, 'OnAfterInsertEvent', '', false, false)]
+    local procedure OnAfterInsertEventItem(var Rec: Record Item)
+    begin
+        if CheckItemFieldsFilled(Rec) then
+            AddEntityToCopy(entityType::Item, Rec."No.");
+    end;
+
+    [EventSubscriber(ObjectType::Table, 27, 'OnAfterModifyEvent', '', false, false)]
+    local procedure OnAfterModifyEventItem(var Rec: Record Item)
+    begin
+        if CheckItemFieldsFilled(Rec) then
+            AddEntityToCopy(entityType::Item, Rec."No.");
+    end;
+
+    local procedure CheckItemFieldsFilled(Rec: Record Item): Boolean
+    begin
+        if Rec."No." = '' then exit(false);
+        if Rec.Description = '' then exit(false);
+        if Rec."Base Unit of Measure" = '' then exit(false);
+        if Rec."CRM Item Id" = blankGuid then exit(false);
+        if Rec."Inventory Posting Group" = '' then exit(false);
+        if Rec."VAT Prod. Posting Group" = '' then exit(false);
+        if Rec."Gen. Prod. Posting Group" = '' then exit(false);
+        if Rec."Sales Unit of Measure" = '' then exit(false);
+        if Rec."Purch. Unit of Measure" = '' then exit(false);
+
+        exit(true);
+    end;
+
     local procedure CheckMainCompany(): Boolean
     begin
         CompIntegrFrom.Reset();
@@ -128,4 +195,6 @@ codeunit 50008 "Copy Items to All Companies"
                                         RUS = 'С Организации %1 в Организацию %2';
         txtProcessHeader: TextConst ENU = 'Copy Item %1',
                                     RUS = 'Копирование товара %1';
+        blankGuid: Guid;
+        entityType: Enum "Entity Type";
 }
