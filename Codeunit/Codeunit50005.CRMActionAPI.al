@@ -60,9 +60,6 @@ codeunit 50005 "CRM Action API"
             WhsePostShipment.SetPrint(false);
             WhsePostShipment.RUN(recWhseShipmentLine);
         end else begin
-            // SalesHeader."CRM Invoice No." := crmInvoiceId;
-            // SalesHeader."CRM ID" := crmId;
-            // SalesHeader.Modify();
             SalesHeader.Invoice := true;
             SalesHeader.Ship := true;
             CODEUNIT.RUN(CODEUNIT::"Sales-Post", SalesHeader);

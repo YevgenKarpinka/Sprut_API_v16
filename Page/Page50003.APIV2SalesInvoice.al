@@ -19,13 +19,13 @@ page 50003 "APIV2 - Sales Invoice"
         {
             repeater(Group)
             {
-                field(type; Rec."Document Type")
+                field(type; "Document Type")
                 {
                     ApplicationArea = All;
                     Caption = 'type', Locked = true;
                     Editable = false;
                 }
-                field(number; Rec."No.")
+                field(number; "No.")
                 {
                     ApplicationArea = All;
                     Caption = 'number', Locked = true;
@@ -67,25 +67,12 @@ page 50003 "APIV2 - Sales Invoice"
                     ApplicationArea = All;
                     Caption = 'prepaymentPercent', Locked = true;
                     ShowMandatory = true;
-
-                    // trigger OnValidate()
-                    // begin
-                    //     // GetSalesOrder(Rec."No.");
-                    //     if prepaymentPercent <= 0 then
-                    //         Error(errPrepaymentPercentCannotBeLessOrEqual, 0);
-                    // end;
                 }
                 field(prepaymentAmount; prepaymentAmount)
                 {
                     ApplicationArea = All;
                     Caption = 'prepaymentAmount', Locked = true;
                     ShowMandatory = true;
-
-                    // trigger OnValidate()
-                    // begin
-                    //     if prepaymentAmount <= 0 then
-                    //         ERROR(errBlankPrepaymentAmount);
-                    // end;
                 }
             }
         }
@@ -142,7 +129,6 @@ page 50003 "APIV2 - Sales Invoice"
         prepaymentPercent: Decimal;
         PrepaymentAmount: Decimal;
         TotalOrderAmount: Decimal;
-        // TotalPrepaymentAmountBefore: Decimal;
         TotalPrepaymentAmountInvoice: Decimal;
         postedInvoiceNo: Code[20];
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
@@ -201,7 +187,6 @@ page 50003 "APIV2 - Sales Invoice"
         locSalesLine.CalcSums("Line Amount", "Prepmt. Line Amount", "Prepmt. Amt. Inv.");
 
         TotalOrderAmount := locSalesLine."Line Amount";
-        // TotalPrepaymentAmountBefore := locSalesLine."Prepmt. Line Amount";
         TotalPrepaymentAmountInvoice := locSalesLine."Prepmt. Amt. Inv.";
 
         exit(TotalOrderAmount >= (TotalPrepaymentAmountInvoice + PrepaymentAmount))
@@ -244,8 +229,9 @@ page 50003 "APIV2 - Sales Invoice"
         locSalesLine.SetRange("Document No.", SalesOrderNo);
         locSalesLine.SetFilter(Quantity, '<>%1', 0);
         // update prepmt line amount sales line
-        locSalesLine.FindSet(false, true);
+        locSalesLine.FindSet(true, false);
         repeat
+            locSalesLine.Validate("Prepmt. Line Amount", locSalesLine."Prepmt. Amt. Inv.");
             if locSalesLine."Line Amount" > locSalesLine."Prepmt. Amt. Inv." then begin
                 DiffLineAmount := locSalesLine."Line Amount" - locSalesLine."Prepmt. Amt. Inv.";
                 if DiffLineAmount >= PrepaymentAmount then begin
@@ -254,31 +240,10 @@ page 50003 "APIV2 - Sales Invoice"
                     DiffAmounts := DiffLineAmount;
                 end;
                 locSalesLine.Validate("Prepmt. Line Amount", locSalesLine."Prepmt. Amt. Inv." + DiffAmounts);
-                locSalesLine.Modify(true);
                 PrepaymentAmount -= DiffAmounts;
             end;
-        until (locSalesLine.Next() = 0) or (PrepaymentAmount = 0);
-
-        // locSalesLine.CalcSums("Prepmt. Line Amount");
-        // DiffAmounts := TotalPrepaymentAmount - locSalesLine."Prepmt. Line Amount";
-        // if DiffAmounts < Currency."Amount Rounding Precision" then exit;
-        // LinesCount := locSalesLine.Count;
-        // LinePrepaymentAmount := Round(DiffAmounts / LinesCount, Currency."Amount Rounding Precision");
-        // if LinePrepaymentAmount > 0 then begin
-        // locSalesLine.FindSet(false, true);
-        // repeat
-        //     if Counter = LinesCount then
-        //         locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + DiffAmounts
-        //     else
-        //         locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + LinePrepaymentAmount;
-        //     locSalesLine.Modify();
-        //     DiffAmounts -= LinePrepaymentAmount;
-        // until locSalesLine.Next() = 0;
-        // end else begin
-        //     locSalesLine.FindLast();
-        //     locSalesLine."Prepmt. Line Amount" := locSalesLine."Prepmt. Line Amount" + DiffAmounts;
-        //     locSalesLine.Modify();
-        // end;
+            locSalesLine.Modify(true);
+        until locSalesLine.Next() = 0;
 
     end;
 }
