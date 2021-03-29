@@ -433,12 +433,13 @@ codeunit 50000 "Web Service Mgt."
             SalesHeader.Status := SalesHeader.Status::Open;
             SalesHeader.Modify();
         end;
+
         // SalesHeader.CalcFields("Amount Including VAT");
         // if SpecAmount < SalesHeader."Amount Including VAT" then
         //     exit(true);
 
-        // LocationCode := WebServiceMgt.GetSpecificationLocationCode(ResponceToken);
-        // ChangeSalesOrderLocationCode(SalesOrderNo, LocationCode);
+        LocationCode := WebServiceMgt.GetSpecificationLocationCode(ResponceToken);
+        ChangeSalesOrderLocationCode(SalesOrderNo, LocationCode);
 
         // update sales line
         foreach LineToken in jsonLines do begin
@@ -500,7 +501,7 @@ codeunit 50000 "Web Service Mgt."
         ResponceTokenLine: Text;
         jsonLines: JsonArray;
         LineToken: JsonToken;
-        LocationCode: Code[20];
+    // LocationCode: Code[20];
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
         // LocationCode := GetSpecificationLocationCode(ResponceToken);
@@ -944,7 +945,7 @@ codeunit 50000 "Web Service Mgt."
         SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
         SalesLine.SetRange("Document No.", SalesOrderNo);
         SalesLine.SetFilter("Location Code", '<>%1', LocationCode);
-        if SalesLine.FindSet(true, false) then
+        if SalesLine.FindSet(false, false) then
             repeat
                 if Item.Get(SalesLine."No.")
                 and Item.IsInventoriableType() then begin

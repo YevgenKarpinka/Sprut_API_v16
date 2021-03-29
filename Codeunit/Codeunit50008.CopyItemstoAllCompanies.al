@@ -5,9 +5,14 @@ codeunit 50008 "Copy Items to All Companies"
         // check main company
         if CheckMainCompany() then exit;
 
+        // Send Items to CRM
+        SendItemToCRM();
+
         // Copy Item From Main Company
         CopyItemFromMainCompany();
 
+        // Delete Copied Items
+        DeleteItemsAfterCopy();
     end;
 
     [EventSubscriber(ObjectType::Table, 23, 'OnAfterInsertEvent', '', false, false)]
@@ -40,12 +45,12 @@ codeunit 50008 "Copy Items to All Companies"
 
     local procedure AddEntityToCopy(Type: Enum EntityType; EntityNo: Code[20])
     var
-        ItemToCopy: Record "Item To Copy";
+        ItemToCopy: Record "Entity To Copy";
     begin
         if ItemToCopy.Get(Type, EntityNo) then exit;
         ItemToCopy.Init();
-        ItemToCopy."No." := EntityNo;
         ItemToCopy.Type := Type;
+        ItemToCopy.Validate("No.", EntityNo);
         ItemToCopy.Insert();
     end;
 
@@ -68,7 +73,7 @@ codeunit 50008 "Copy Items to All Companies"
         if Rec."No." = '' then exit(false);
         if Rec.Description = '' then exit(false);
         if Rec."Base Unit of Measure" = '' then exit(false);
-        if Rec."CRM Item Id" = blankGuid then exit(false);
+        // if Rec."CRM Item Id" = blankGuid then exit(false);
         if Rec."Inventory Posting Group" = '' then exit(false);
         if Rec."VAT Prod. Posting Group" = '' then exit(false);
         if Rec."Gen. Prod. Posting Group" = '' then exit(false);
@@ -90,6 +95,7 @@ codeunit 50008 "Copy Items to All Companies"
     local procedure CopyItemFromMainCompany()
     var
         CompIntegrTo: Record "Company Integration";
+        ItemToCopy: Record "Entity To Copy";
         ItemFrom: Record Item;
         ItemTo: Record Item;
         ItemUoMFrom: Record "Item Unit of Measure";
@@ -99,19 +105,20 @@ codeunit 50008 "Copy Items to All Companies"
         DaleteAllFlag: Boolean;
         blankGuid: Guid;
     begin
+        ItemToCopy.SetRange(Type, ItemToCopy.Type::Item);
+        if ItemToCopy.IsEmpty then exit;
+
         CompIntegrTo.SetCurrentKey("Copy Items To");
         CompIntegrTo.SetRange("Copy Items To", true);
         if CompIntegrTo.IsEmpty then exit;
 
         // DaleteAllFlag := Confirm('DeleteAll Item of Measure?', true);
-
-        ItemFrom.LockTable();
-        ItemFrom.SetCurrentKey("CRM Item Id");
-        ItemFrom.SetFilter("CRM Item Id", '<>%1', blankGuid);
-
-        ItemUoMFrom.LockTable();
-        ItemTo.LockTable();
-        ItemUoMTo.LockTable();
+        // ItemFrom.LockTable();
+        // ItemFrom.SetCurrentKey("CRM Item Id");
+        // ItemFrom.SetFilter("CRM Item Id", '<>%1', blankGuid);
+        // ItemUoMFrom.LockTable();
+        // ItemTo.LockTable();
+        // ItemUoMTo.LockTable();
 
         if CompIntegrTo.FindSet(false, false) then
             repeat
@@ -130,8 +137,9 @@ codeunit 50008 "Copy Items to All Companies"
                 //     until ItemUoMFrom.Next() = 0;
                 // end;
 
-                if ItemFrom.FindSet(false, false) then
+                if ItemToCopy.FindSet(false, false) then
                     repeat
+                        ItemFrom.Get(ItemToCopy."No.");
                         ConfProgressBar.Update(StrSubstNo(txtProcessHeader, ItemFrom."No."));
                         ItemTo.SetRange("No.", ItemFrom."No.");
                         // copy UoM before Items
@@ -181,17 +189,71 @@ codeunit 50008 "Copy Items to All Companies"
                                 ItemTo.Modify();
                             end;
                         end;
-                        Commit();
+                    // Commit();
 
-                    until ItemFrom.Next() = 0;
+                    until ItemToCopy.Next() = 0;
             until CompIntegrTo.Next() = 0;
 
         ConfProgressBar.Close();
     end;
 
+    local procedure DeleteItemsAfterCopy()
+    var
+        ItemToCopy: Record "Entity To Copy";
+    begin
+        ItemToCopy.SetRange(Type, ItemToCopy.Type::Item);
+        if ItemToCopy.IsEmpty then exit;
+        ItemToCopy.DeleteAll();
+    end;
+
+    procedure SendItemToCRM()
+    var
+        _Item: Record Item;
+        _jsonItem: JsonObject;
+        _jsonToken: JsonToken;
+        _jsonText: Text;
+        responseText: Text;
+        connectorCode: Label 'CRM';
+        entityType: Label 'products';
+        POSTrequestMethod: Label 'POST';
+        PATCHrequestMethod: Label 'PATCH';
+        TokenType: Text;
+        AccessToken: Text;
+        APIResult: Text;
+        requestMethod: Text[20];
+        entityTypeValue: Text;
+        ItemToCopy: Record "Entity To Copy";
+    begin
+        ItemToCopy.SetRange(Type, ItemToCopy.Type::Item);
+        if ItemToCopy.IsEmpty then exit;
+        WebServiceMgt.GetOauthToken(TokenType, AccessToken, APIResult);
+
+        if ItemToCopy.FindSet(false, false) then begin
+            repeat
+                _Item.Get(ItemToCopy."No.");
+                // Create JSON for CRM
+                if not IsNullGuid(_Item."CRM Item Id") then begin
+                    requestMethod := PATCHrequestMethod;
+                    _jsonItem := WebServiceMgt.jsonItemsToPatch(_Item."No.");
+                    entityTypeValue := StrSubstNo('%1(%2)', entityType, _Item."CRM Item Id");
+                end else begin
+                    requestMethod := POSTrequestMethod;
+                    _jsonItem := WebServiceMgt.jsonItemsToPost(_Item."No.");
+                    entityTypeValue := entityType;
+                end;
+
+                _jsonItem.WriteTo(_jsonText);
+                // try send to CRM
+                if WebServiceMgt.CreateProductInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText) then
+                    WebServiceMgt.AddCRMproductIdToItem(_jsonText);
+            until ItemToCopy.Next() = 0;
+        end;
+    end;
+
     var
         CompIntegrFrom: Record "Company Integration";
         ConfProgressBar: Codeunit "Config Progress Bar";
+        WebServiceMgt: Codeunit "Web Service Mgt.";
         txtCopyItemToCompany: TextConst ENU = 'From Company %1 To Company %2',
                                         RUS = 'С Организации %1 в Организацию %2';
         txtProcessHeader: TextConst ENU = 'Copy Item %1',

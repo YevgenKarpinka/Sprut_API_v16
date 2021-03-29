@@ -1,8 +1,8 @@
-page 50018 "Item To Copy List"
+page 50018 "Entity To Copy List"
 {
-    CaptionML = ENU = 'Item To Copy List',
-                RUS = 'Товары для клонирования список';
-    SourceTable = "Item To Copy";
+    CaptionML = ENU = 'Entity To Copy List',
+                RUS = 'Сущности для клонирования список';
+    SourceTable = "Entity To Copy";
     DataCaptionFields = Type, "No.";
     ApplicationArea = All;
     PageType = List;

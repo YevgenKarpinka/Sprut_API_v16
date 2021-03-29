@@ -1,16 +1,22 @@
-table 50008 "Item To Copy"
+table 50008 "Entity To Copy"
 {
     DataClassification = CustomerContent;
     DataPerCompany = false;
-    DrillDownPageId = "Item To Copy List";
+    DrillDownPageId = "Entity To Copy List";
 
     fields
     {
-        field(1; "No."; Code[20])
+        field(1; Type; Enum EntityType)
         {
             DataClassification = SystemMetadata;
-            CaptionML = ENU = 'Item No.',
-                        RUS = 'Товар Но.';
+            CaptionML = ENU = 'Type',
+                        RUS = 'Тип';
+        }
+        field(2; "No."; Code[20])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'No.',
+                        RUS = 'Но.';
 
             trigger OnValidate()
             var
@@ -35,18 +41,11 @@ table 50008 "Item To Copy"
                 end;
             end;
         }
-        field(2; "Description"; Text[100])
+        field(3; "Description"; Text[100])
         {
             CaptionML = ENU = 'Description',
                         RUS = 'Описание';
-            FieldClass = FlowField;
             Editable = false;
-        }
-        field(3; Type; Enum EntityType)
-        {
-            DataClassification = SystemMetadata;
-            CaptionML = ENU = 'Type',
-                        RUS = 'Тип';
         }
     }
 
