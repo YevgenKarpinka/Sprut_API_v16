@@ -245,7 +245,11 @@ codeunit 50008 "Copy Items to All Companies"
                 _jsonItem.WriteTo(_jsonText);
                 // try send to CRM
                 if WebServiceMgt.CreateProductInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText) then
-                    WebServiceMgt.AddCRMproductIdToItem(_jsonText);
+                    WebServiceMgt.AddCRMproductIdToItem(_jsonText)
+                else begin
+                    // TempBlob._jsonText
+                    // _jsonText
+                end;
             until ItemToCopy.Next() = 0;
         end;
     end;
@@ -260,4 +264,6 @@ codeunit 50008 "Copy Items to All Companies"
                                     RUS = 'Копирование товара %1';
         blankGuid: Guid;
         entityType: Enum EntityType;
+        Base64Convert: Codeunit "Base64 Convert";
+
 }

@@ -145,6 +145,7 @@ codeunit 50000 "Web Service Mgt."
         ContentTypeValue: Label 'application/json';
         EnvironmentType: Label 'Environment';
         EnvironmentTypeValue: Label 'Production';
+        CompanyNameType: Label 'CompanyName';
         Client: HttpClient;
         RequestMessage: HttpRequestMessage;
         RequestBody: Text;

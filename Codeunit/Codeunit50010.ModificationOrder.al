@@ -38,7 +38,7 @@ codeunit 50010 "Modification Order"
             PrepmMgt.OnDeleteSalesOrderLine(SalesOrderNo);
 
             // Update sales header location
-            // PrepmMgt.UpdateSalesHeaderLocation(SalesOrderNo, SpecificationResponseText);
+            PrepmMgt.UpdateSalesHeaderLocation(SalesOrderNo, SpecificationResponseText);
 
             // insert sales line
             PrepmMgt.InsertSalesLineFromCRM(SalesOrderNo, SpecificationResponseText);
