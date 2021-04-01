@@ -697,14 +697,20 @@ codeunit 50001 "Prepayment Management"
     var
         InvCustLedgEntry: Record "Cust. Ledger Entry";
         CrMCustLedgEntry: Record "Cust. Ledger Entry";
+        getInvCustLedgEntry: Record "Cust. Ledger Entry";
+        getCrMCustLedgEntry: Record "Cust. Ledger Entry";
         SalesInvHeader: Record "Sales Invoice Header";
         SalesCrMemoHeader: Record "Sales Cr.Memo Header";
         isSuccess: Boolean;
+        CustEntrySetAppID: Codeunit "Cust. Entry-SetAppl.ID";
+        CustEntryApplyPostedEntries: Codeunit "CustEntry-Apply Posted Entries";
+        ApplicationDate: Date;
     begin
         isSuccess := true;
 
         SalesInvHeader.SetCurrentKey("No.", "Prepayment Order No.");
         SalesInvHeader.SetRange("Prepayment Order No.", SalesOrderNo);
+        SalesInvHeader.SetFilter("CRM Invoice No.", '=%1', '');
         if SalesInvHeader.FindSet(false, false) then
             repeat
                 SalesInvHeader.CalcFields("Remaining Amount");
@@ -718,15 +724,25 @@ codeunit 50001 "Prepayment Management"
                         SalesCrMemoHeader.SetCurrentKey("No.", "Prepayment Order No.");
                         SalesCrMemoHeader.SetRange("Prepayment Order No.", SalesOrderNo);
                         if SalesCrMemoHeader.FindFirst() then begin
-
-
-                            InvCustLedgEntry."Applies-to ID" := SalesOrderNo;
-                            InvCustLedgEntry.Modify();
+                            CrMCustLedgEntry.SetRange("Document No.", SalesCrMemoHeader."No.");
+                            CrMCustLedgEntry.SetRange("Posting Date", SalesCrMemoHeader."Posting Date");
+                            CrMCustLedgEntry.SetRange("Agreement No.", SalesCrMemoHeader."Agreement No.");
+                            CrMCustLedgEntry.SetRange(Prepayment, true);
+                            CrMCustLedgEntry.SetRange(Open, true);
+                            if CrMCustLedgEntry.FindFirst() then begin
+                                getInvCustLedgEntry.Get(InvCustLedgEntry."Entry No.");
+                                getInvCustLedgEntry."Applies-to ID" := SalesOrderNo;
+                                getInvCustLedgEntry.Modify();
+                                getCrMCustLedgEntry.SetRange("Entry No.", CrMCustLedgEntry."Entry No.");
+                                getCrMCustLedgEntry.FindFirst();
+                                CustEntrySetAppID.SetApplId(getCrMCustLedgEntry, getInvCustLedgEntry, SalesOrderNo);
+                                ApplicationDate := CustEntryApplyPostedEntries.GetApplicationDate(getInvCustLedgEntry);
+                                CustEntryApplyPostedEntries.Apply(getInvCustLedgEntry, getInvCustLedgEntry."Document No.", ApplicationDate);
+                            end;
                         end;
                     end;
                 end;
             until SalesInvHeader.Next() = 0;
-
 
         exit(isSuccess);
     end;

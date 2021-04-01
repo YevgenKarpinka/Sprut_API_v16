@@ -62,7 +62,7 @@ table 50004 "Integration Log"
             DataClassification = CustomerContent;
             CaptionML = ENU = 'User Id', RUS = 'ИД пользователя';
         }
-        field(12; "Full Name"; Text[50])
+        field(12; "Full Name"; Text[80])
         {
             CaptionML = ENU = 'Full Name', RUS = 'Имя пользователя';
             FieldClass = FlowField;

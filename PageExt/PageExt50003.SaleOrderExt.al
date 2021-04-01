@@ -58,19 +58,24 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                 Image = Prepayment;
                 // Visible = UserId = 'YEKAR';
 
-                action(CRMTaskModificationSalerOrder)
+                action(ApplyInvoiceToCrMemo)
                 {
                     ApplicationArea = All;
-                    CaptionML = ENU = 'CRMTaskModificationSalerOrder',
-                                RUS = 'CRMTaskModificationSalerOrder';
-                    Image = MakeOrder;
+                    CaptionML = ENU = 'ApplyInvoiceToCrMemo',
+                                RUS = 'ApplyInvoiceToCrMemo';
+                    Image = ApplyEntries;
 
                     trigger OnAction()
                     var
-                        TaskModifyOrder: Codeunit "Task Modify Order";
+                        PrepMgt: Codeunit "Prepayment Management";
+                        SH: Record "Sales Header";
                     begin
-                        PrepaymentMgt.OnModifySalesOrderInTask("No.");
-                        Message('Task Modify Order Ok!')
+                        CurrPage.SetSelectionFilter(SH);
+                        SH.FindSet(false, false);
+                        repeat
+                            PrepMgt.CustPrepmtApply(SH."No.");
+                        until SH.Next() = 0;
+                        Message('Apply Invoice To Cr-Memo is Ok!')
                     end;
                 }
 

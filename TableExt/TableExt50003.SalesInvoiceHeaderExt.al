@@ -34,5 +34,27 @@ tableextension 50003 "Sales Invoice Header Ext" extends "Sales Invoice Header"
             CaptionML = ENU = 'CRM Source Type',
                         RUS = 'CRM Тип Источника';
         }
+        field(50005; "Create Date Time"; DateTime)
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Create Date Time',
+                        RUS = 'Дата и время создания';
+            Editable = false;
+        }
+        field(50006; "Create User ID"; Code[50])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Create Date Time',
+                        RUS = 'Дата и время создания';
+            Editable = false;
+        }
+        field(50007; "Modify User ID"; Code[50])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Create Date Time',
+                        RUS = 'Дата и время создания';
+            Editable = false;
+        }
     }
+
 }

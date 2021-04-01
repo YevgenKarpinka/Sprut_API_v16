@@ -43,6 +43,34 @@ tableextension 50006 "Customer Ext" extends Customer
                         RUS = 'Статус CRM';
             // Editable = false;
         }
+        field(50006; "Create Date Time"; DateTime)
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Create Date Time',
+                        RUS = 'Дата и время создания';
+            Editable = false;
+        }
+        field(50007; "Create User ID"; Code[50])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Create Date Time',
+                        RUS = 'Дата и время создания';
+            Editable = false;
+        }
+        // field(50008; "Last Modified Date Time"; DateTime)
+        // {
+        //     DataClassification = SystemMetadata;
+        //     CaptionML = ENU = 'Last Modified Date Time',
+        //                 RUS = 'Дата и время последнего изменения';
+        //     Editable = false;
+        // }
+        field(50009; "Modify User ID"; Code[50])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Create Date Time',
+                        RUS = 'Дата и время создания';
+            Editable = false;
+        }
     }
 
     trigger OnBeforeInsert()
@@ -53,6 +81,33 @@ tableextension 50006 "Customer Ext" extends Customer
         Customer.SetRange("CRM ID", "CRM ID");
         if not Customer.IsEmpty then
             Error(errCustomerWithCRMIDAlreadyExist, "CRM ID");
+    end;
+
+    trigger OnInsert()
+    begin
+        UpdateCreateDateTime();
+    end;
+
+    trigger OnModify()
+    begin
+        UpdateLastModifyDateTime();
+    end;
+
+    trigger OnRename()
+    begin
+        UpdateLastModifyDateTime();
+    end;
+
+    local procedure UpdateCreateDateTime()
+    begin
+        "Create Date Time" := CurrentDateTime;
+        "Create User ID" := UserId;
+    end;
+
+    local procedure UpdateLastModifyDateTime()
+    begin
+        "Last Modified Date Time" := CurrentDateTime;
+        "Modify User ID" := UserId;
     end;
 
     var

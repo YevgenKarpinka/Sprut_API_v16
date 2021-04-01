@@ -10,4 +10,5 @@ tableextension 50000 "Sales Order Entity Buffer Ext." extends "Sales Order Entit
         }
 
     }
+
 }

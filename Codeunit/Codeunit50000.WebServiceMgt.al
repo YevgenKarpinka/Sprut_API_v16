@@ -68,8 +68,11 @@ codeunit 50000 "Web Service Mgt."
     local procedure GetBodyFromSalesOrderNo(SalesOrderNo: Code[20]; var Body: Text)
     var
         JSObjectBody: JsonObject;
+        SalesHeader: Record "Sales Header";
     begin
+        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
         JSObjectBody.Add('document_no', SalesOrderNo);
+        // JSObjectBody.Add('crm_id', SalesHeader."CRM Header ID");
         JSObjectBody.WriteTo(Body);
     end;
 
@@ -502,12 +505,12 @@ codeunit 50000 "Web Service Mgt."
         ResponceTokenLine: Text;
         jsonLines: JsonArray;
         LineToken: JsonToken;
-    // LocationCode: Code[20];
+        LocationCode: Code[20];
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
-        // LocationCode := GetSpecificationLocationCode(ResponceToken);
+        LocationCode := GetSpecificationLocationCode(ResponceToken);
         SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
-        // if SalesHeader."Location Code" <> LocationCode then exit(true);
+        if SalesHeader."Location Code" <> LocationCode then exit(true);
 
         SalesHeader.CalcFields("Amount Including VAT");
         if SalesHeader."Amount Including VAT" <> SpecAmount then

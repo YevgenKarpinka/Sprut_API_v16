@@ -25,7 +25,63 @@ tableextension 50009 "Sales Line Ext" extends "Sales Line"
                     Error(errCRMIdForSalesLineAlreadyExist, "CRM ID");
             end;
         }
+        field(50003; "Create Date Time"; DateTime)
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Create Date Time',
+                        RUS = 'Дата и время создания';
+            Editable = false;
+        }
+        field(50004; "Create User ID"; Code[50])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Create Date Time',
+                        RUS = 'Дата и время создания';
+            Editable = false;
+        }
+        field(50005; "Last Modified Date Time"; DateTime)
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Last Modified Date Time',
+                        RUS = 'Дата и время последнего изменения';
+            Editable = false;
+        }
+        field(50006; "Modify User ID"; Code[50])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Create Date Time',
+                        RUS = 'Дата и время создания';
+            Editable = false;
+        }
     }
+
+    trigger OnInsert()
+    begin
+        UpdateCreateDateTime();
+    end;
+
+    trigger OnModify()
+    begin
+        UpdateLastDateTimeModified();
+    end;
+
+    trigger OnRename()
+    begin
+        UpdateLastDateTimeModified();
+    end;
+
+    local procedure UpdateCreateDateTime()
+    begin
+        "Create Date Time" := CurrentDateTime;
+        "Create User ID" := UserId;
+    end;
+
+    local procedure UpdateLastDateTimeModified()
+    begin
+        "Last Modified Date Time" := CurrentDateTime;
+        "Modify User ID" := UserId;
+    end;
+
     var
         errCRMIdForSalesLineAlreadyExist: Label 'CRM ID %1 for sales line already exist';
 }
