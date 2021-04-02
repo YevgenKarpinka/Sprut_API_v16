@@ -95,7 +95,7 @@ codeunit 50001 "Prepayment Management"
         OnDeleteSalesOrderLine(SalesOrderNo);
 
         // Update sales header location
-        UpdateSalesHeaderLocation(SalesOrderNo, SpecificationResponseText);
+        UpdateSalesHeaderLocation(SalesHeader, SpecificationResponseText);
 
         // insert sales line
         InsertSalesLineFromCRM(SalesOrderNo, SpecificationResponseText);
@@ -112,12 +112,12 @@ codeunit 50001 "Prepayment Management"
         SalesLine.Modify(true);
     end;
 
-    procedure UpdateSalesHeaderLocation(SalesOrderNo: Code[20]; SpecificationResponseText: Text)
+    procedure UpdateSalesHeaderLocation(SalesHeader: Record "Sales Header"; SpecificationResponseText: Text)
     var
         LocationCode: Code[20];
     begin
         LocationCode := WebServicesMgt.GetSpecificationLocationCode(SpecificationResponseText);
-        WebServicesMgt.ChangeSalesOrderLocationCode(SalesOrderNo, LocationCode);
+        WebServicesMgt.ChangeSalesOrderLocationCode(SalesHeader, LocationCode);
     end;
 
     procedure InsertSalesLineFromCRM(SalesOrderNo: Code[20]; responseText: Text)
@@ -244,157 +244,32 @@ codeunit 50001 "Prepayment Management"
         end;
     end;
 
-    // for test
-    // [EventSubscriber(ObjectType::Table, 37, 'OnBeforeUpdatePrepmtAmounts', '', false, false)]
-    // local procedure UpdatePrepaymentAmounts(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var IsHandled: Boolean)
-    // var
-    //     SalesLineUpdate: Record "Sales Line";
-    //     CurrentAdjPrepAmount: Decimal;
-    //     CurrentAdjPrepAmountIncVAT: Decimal;
-    //     AdjPrepAmount: Decimal;
-    //     AdjPrepAmountIncVAT: Decimal;
-    //     Ratio: Decimal;
-    // begin
-    //     GetSRSetup();
-    //     if not SRSetup."Allow Modifying" then exit;
-
-    //     if (SalesLine."Prepmt. Amt. Inv." = 0)
-    //         or (SalesHeader."Document Type" <> SalesHeader."Document Type"::Order) then
-    //         exit;
-
-    //     SalesLine."Prepmt. Line Amount" := SalesLine."Line Amount" * SalesLine."Prepayment %" / 100;
-    //     SalesLine.Modify();
-    //     if (SalesLine."Prepmt. Amt. Inv." < SalesLine."Prepmt. Line Amount") then begin
-    //         UpdatePrepmtAmountCurrLine(SalesHeader, SalesLine);
-    //         exit;
-    //     end;
-
-    //     Currency.Initialize(SalesHeader."Currency Code");
-
-    //     SalesLine."Prepmt. Line Amount" := ROUND(SalesLine."Line Amount" * SalesLine."Prepayment %" / 100, Currency."Amount Rounding Precision");
-    //     CurrentAdjPrepAmount := SalesLine."Prepmt. Amt. Inv." - SalesLine."Prepmt. Line Amount";
-    //     if SalesLine."Prepmt. Amount Inv. (LCY)" <> 0 then begin
-    //         Ratio := SalesLine."Prepmt. Amount Inv. (LCY)" / SalesLine."Prepmt. Amt. Inv.";
-    //     end else
-    //         Ratio := 0;
-
-    //     SalesLineUpdate.SetCurrentKey(Type, "Prepmt. Line Amount");
-    //     SalesLineUpdate.SetRange("Document Type", SalesHeader."Document Type");
-    //     SalesLineUpdate.SetRange("Document No.", SalesHeader."No.");
-    //     SalesLineUpdate.SetFilter(Type, '<>%1', SalesLineUpdate.Type::" ");
-    //     SalesLineUpdate.SetFilter("Prepmt. Line Amount", '<>0');
-    //     SalesLineUpdate.LockTable();
-    //     if SalesLineUpdate.FindSet() then
-    //         repeat
-    //             if SalesLineUpdate."Prepmt. Line Amount" > SalesLineUpdate."Prepmt. Amt. Inv." then begin
-    //                 AdjPrepAmount := SalesLineUpdate."Prepmt. Line Amount" - SalesLineUpdate."Prepmt. Amt. Inv.";
-
-    //                 if CurrentAdjPrepAmount > AdjPrepAmount then begin
-    //                     SalesLine."Prepmt. Amt. Inv." -= AdjPrepAmount;
-    //                     SalesLineUpdate."Prepmt. Amt. Inv." += AdjPrepAmount;
-    //                     CurrentAdjPrepAmount -= AdjPrepAmount;
-    //                 end else begin
-    //                     SalesLine."Prepmt. Amt. Inv." -= CurrentAdjPrepAmount;
-    //                     SalesLineUpdate."Prepmt. Amt. Inv." += CurrentAdjPrepAmount;
-    //                     CurrentAdjPrepAmount := 0;
-    //                 end;
-
-    //                 if SalesHeader."Prices Including VAT" then begin
-    //                     SalesLine."Prepmt. Amt. Incl. VAT" := SalesLine."Prepmt. Line Amount";
-    //                     SalesLine."Prepmt. VAT Base Amt." := SalesLine."Prepmt. Line Amount";
-    //                     SalesLine."Prepmt. Amount Inv. Incl. VAT" := SalesLine."Prepmt. Amt. Inv.";
-
-    //                     SalesLineUpdate."Prepmt. Amt. Incl. VAT" := SalesLineUpdate."Prepmt. Line Amount";
-    //                     SalesLineUpdate."Prepmt. VAT Base Amt." := SalesLineUpdate."Prepmt. Line Amount";
-    //                     SalesLineUpdate."Prepmt. Amount Inv. Incl. VAT" := SalesLineUpdate."Prepmt. Amt. Inv.";
-    //                 end else begin
-    //                     SalesLine."Prepmt. Amt. Incl. VAT" := Round(SalesLine."Prepmt. Line Amount" + SalesLine."Prepmt. Line Amount" * SalesLine."VAT %" / 100, Currency."Amount Rounding Precision");
-    //                     SalesLine."Prepmt. VAT Base Amt." := SalesLine."Prepmt. Line Amount";
-    //                     SalesLine."Prepmt. Amount Inv. Incl. VAT" := Round(SalesLine."Prepmt. Amt. Inv." + SalesLine."Prepmt. Amt. Inv." * SalesLine."VAT %" / 100, Currency."Amount Rounding Precision");
-
-    //                     SalesLineUpdate."Prepmt. Amt. Incl. VAT" := Round(SalesLineUpdate."Prepmt. Line Amount" + SalesLineUpdate."Prepmt. Line Amount" * SalesLineUpdate."VAT %" / 100, Currency."Amount Rounding Precision");
-    //                     SalesLineUpdate."Prepmt. VAT Base Amt." := SalesLineUpdate."Prepmt. Line Amount";
-    //                     SalesLineUpdate."Prepmt. Amount Inv. Incl. VAT" := Round(SalesLineUpdate."Prepmt. Amt. Inv." + SalesLineUpdate."Prepmt. Amt. Inv." * SalesLineUpdate."VAT %" / 100, Currency."Amount Rounding Precision");
-    //                 end;
-
-    //                 if Ratio <> 0 then begin
-    //                     SalesLineUpdate."Prepmt. Amount Inv. (LCY)" :=
-    //                         ROUND(SalesLineUpdate."Prepmt. Amt. Inv." * Ratio, Currency."Amount Rounding Precision");
-    //                     SalesLineUpdate."Prepmt. VAT Amount Inv. (LCY)" :=
-    //                         ROUND((SalesLineUpdate."Prepmt. Amount Inv. Incl. VAT" - SalesLineUpdate."Prepmt. Amt. Inv.") * Ratio, Currency."Amount Rounding Precision");
-
-    //                     SalesLine."Prepmt. Amount Inv. (LCY)" :=
-    //                         ROUND(SalesLine."Prepmt. Amt. Inv." * Ratio, Currency."Amount Rounding Precision");
-    //                     SalesLine."Prepmt. VAT Amount Inv. (LCY)" :=
-    //                         ROUND((SalesLine."Prepmt. Amount Inv. Incl. VAT" - SalesLine."Prepmt. Amt. Inv.") * Ratio, Currency."Amount Rounding Precision");
-    //                 end;
-
-    //                 SalesLineUpdate.Modify();
-    //                 SalesLine.Modify();
-    //             end;
-    //         until (SalesLineUpdate.Next() = 0) or (CurrentAdjPrepAmount = 0);
-    // end;
-
-    local procedure UpdatePrepmtAmountCurrLine(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line");
-    begin
-        if SalesHeader."Prices Including VAT" then begin
-            SalesLine."Prepmt. Amt. Incl. VAT" := SalesLine."Prepmt. Line Amount";
-            SalesLine."Prepmt. VAT Base Amt." := SalesLine."Prepmt. Line Amount";
-            // SalesLine."Prepmt. Amount Inv. Incl. VAT" := SalesLine."Prepmt. Amt. Inv.";
-        end else begin
-            // SalesLine."Line Amount" + SalesLine."Prepayment %" / 100
-            SalesLine."Prepmt. Amt. Incl. VAT" := Round(SalesLine."Prepmt. Line Amount" + SalesLine."Prepmt. Line Amount" * SalesLine."VAT %" / 100, Currency."Amount Rounding Precision");
-            SalesLine."Prepmt. VAT Base Amt." := SalesLine."Prepmt. Line Amount";
-            // SalesLine."Prepmt. Amount Inv. Incl. VAT" := Round(SalesLine."Prepmt. Amt. Inv." + SalesLine."Prepmt. Amt. Inv." * SalesLine."VAT %" / 100, Currency."Amount Rounding Precision");
-        end;
-        SalesLine.Modify();
-    end;
-
-    local procedure GetSRSetup()
-    begin
-        IF not SRSetup.Get() then begin
-            SRSetup.Init();
-            SRSetup.Insert();
-        end;
-    end;
-
-    procedure GetPrepaymentInvoices(PrepaymentOrderNo: Code[20]; var tempSalesInvoiceHeader: Record "Sales Invoice Header" temporary)
+    procedure GetPrepaymentInvoicesToUnApply(PrepaymentOrderNo: Code[20]; var tempSalesInvoiceHeader: Record "Sales Invoice Header" temporary)
     var
         SalesInvoiceHeader: Record "Sales Invoice Header";
     begin
         SalesInvoiceHeader.SetCurrentKey("Prepayment Order No.");
         SalesInvoiceHeader.SetRange("Prepayment Order No.", PrepaymentOrderNo);
-        if SalesInvoiceHeader.FindSet() then
+        // SalesInvoiceHeader.SetFilter("CRM Invoice No.", '<>%1', '');
+        if SalesInvoiceHeader.FindSet(false, false) then
             repeat
-                tempSalesInvoiceHeader := SalesInvoiceHeader;
-                tempSalesInvoiceHeader.Insert();
+                SalesInvoiceHeader.CalcFields("Remaining Amount", "Amount Including VAT");
+                if SalesInvoiceHeader."Remaining Amount" < SalesInvoiceHeader."Amount Including VAT" then begin
+                    tempSalesInvoiceHeader := SalesInvoiceHeader;
+                    tempSalesInvoiceHeader.Insert();
+                end;
             until SalesInvoiceHeader.Next() = 0;
-    end;
-
-    procedure GetLastPrepaymentCreditMemoNo(PrepaymentOrderNo: Code[20]; var DocumentNo: Code[20]; var PostingDate: Date)
-    var
-        SalesCreditMemoHeader: Record "Sales Cr.Memo Header";
-    begin
-        SalesCreditMemoHeader.SetCurrentKey("Prepayment Order No.");
-        SalesCreditMemoHeader.SetRange("Prepayment Order No.", PrepaymentOrderNo);
-        if SalesCreditMemoHeader.FindLast() then begin
-            DocumentNo := SalesCreditMemoHeader."No.";
-            PostingDate := SalesCreditMemoHeader."Posting Date";
-            exit;
-        end;
-        DocumentNo := '';
-        PostingDate := 0D;
     end;
 
     procedure UnApplyPayments(SalesOrderNo: Code[20])
     var
         tempSalesInvoiceHeader: Record "Sales Invoice Header" temporary;
     begin
-        GetPrepaymentInvoices(SalesOrderNo, tempSalesInvoiceHeader);
+        GetPrepaymentInvoicesToUnApply(SalesOrderNo, tempSalesInvoiceHeader);
         if tempSalesInvoiceHeader.FindLast() then
             repeat
                 UnApplyCustLedgEntry(GetCustomerLedgerEntryNo(tempSalesInvoiceHeader."No.", tempSalesInvoiceHeader."Posting Date"));
-            until tempSalesInvoiceHeader.Next() = 0;
+            until tempSalesInvoiceHeader.Next(-1) = 0;
     end;
 
     procedure GetCustomerLedgerEntryNo(DocumentNo: Code[20]; PostingDate: Date): Integer
@@ -570,11 +445,6 @@ codeunit 50001 "Prepayment Management"
             Commit();
     end;
 
-    /// <summary> 
-    /// Description for CheckPostingDate.
-    /// </summary>
-    /// <param name="PostingDate">Parameter of type Date.</param>
-    /// <param name="VAR MaxPostingDate">Parameter of type Date.</param>
     local procedure CheckPostingDate(PostingDate: Date; VAR MaxPostingDate: Date)
     var
         GenJnlCheckLine: Codeunit "Gen. Jnl.-Check Line";
@@ -607,11 +477,6 @@ codeunit 50001 "Prepayment Management"
                 ERROR(CannotUnapplyExchRateErr, NewPostingDate);
     end;
 
-    /// <summary> 
-    /// Description for FindLastApplTransactionEntry.
-    /// </summary>
-    /// <param name="CustLedgEntryNo">Parameter of type Integer.</param>
-    /// <returns>Return variable "Integer".</returns>
     local procedure FindLastApplTransactionEntry(CustLedgEntryNo: Integer): Integer
     var
         DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
@@ -632,11 +497,6 @@ codeunit 50001 "Prepayment Management"
         EXIT(LastTransactionNo);
     end;
 
-    /// <summary> 
-    /// Description for FindLastTransactionNo.
-    /// </summary>
-    /// <param name="CustLedgEntryNo">Parameter of type Integer.</param>
-    /// <returns>Return variable "Integer".</returns>
     local procedure FindLastTransactionNo(CustLedgEntryNo: Integer): Integer
     var
         DtldCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
@@ -655,11 +515,6 @@ codeunit 50001 "Prepayment Management"
         EXIT(LastTransactionNo);
     end;
 
-    /// <summary> 
-    /// Description for CollectAffectedLedgerEntries.
-    /// </summary>
-    /// <param name="VAR TempCustLedgerEntry">Parameter of type Record "Cust. Ledger Entry" temporary.</param>
-    /// <param name="DetailedCustLedgEntry2">Parameter of type Record "Detailed Cust. Ledg. Entry".</param>
     local procedure CollectAffectedLedgerEntries(VAR TempCustLedgerEntry: Record "Cust. Ledger Entry" temporary; DetailedCustLedgEntry2: Record "Detailed Cust. Ledg. Entry")
     var
         DetailedCustLedgEntry: Record "Detailed Cust. Ledg. Entry";
@@ -701,16 +556,19 @@ codeunit 50001 "Prepayment Management"
         getCrMCustLedgEntry: Record "Cust. Ledger Entry";
         SalesInvHeader: Record "Sales Invoice Header";
         SalesCrMemoHeader: Record "Sales Cr.Memo Header";
-        isSuccess: Boolean;
+        // isSuccess: Boolean;
         CustEntrySetAppID: Codeunit "Cust. Entry-SetAppl.ID";
         CustEntryApplyPostedEntries: Codeunit "CustEntry-Apply Posted Entries";
         ApplicationDate: Date;
+        SCrMNo: Code[20];
+        endOfTable: Integer;
     begin
-        isSuccess := true;
+        // isSuccess := false;
 
-        SalesInvHeader.SetCurrentKey("No.", "Prepayment Order No.");
+        SalesInvHeader.SetCurrentKey("Prepayment Order No.");
+        SalesCrMemoHeader.SetCurrentKey("Prepayment Order No.");
         SalesInvHeader.SetRange("Prepayment Order No.", SalesOrderNo);
-        SalesInvHeader.SetFilter("CRM Invoice No.", '=%1', '');
+        // SalesInvHeader.SetFilter("CRM Invoice No.", '=%1', '');
         if SalesInvHeader.FindSet(false, false) then
             repeat
                 SalesInvHeader.CalcFields("Remaining Amount");
@@ -721,9 +579,18 @@ codeunit 50001 "Prepayment Management"
                     InvCustLedgEntry.SetRange(Prepayment, true);
                     InvCustLedgEntry.SetRange(Open, true);
                     if InvCustLedgEntry.FindFirst() then begin
-                        SalesCrMemoHeader.SetCurrentKey("No.", "Prepayment Order No.");
+
                         SalesCrMemoHeader.SetRange("Prepayment Order No.", SalesOrderNo);
-                        if SalesCrMemoHeader.FindFirst() then begin
+                        if SalesCrMemoHeader.FindSet(false, false) then begin
+                            repeat
+                                SalesCrMemoHeader.CalcFields("Remaining Amount");
+                                if SalesCrMemoHeader."Remaining Amount" < 0 then
+                                    SCrMNo := SalesCrMemoHeader."No."
+                                else begin
+                                    SCrMNo := '';
+                                    endOfTable := SalesCrMemoHeader.Next();
+                                end;
+                            until (SCrMNo <> '') or (endOfTable = 0);
                             CrMCustLedgEntry.SetRange("Document No.", SalesCrMemoHeader."No.");
                             CrMCustLedgEntry.SetRange("Posting Date", SalesCrMemoHeader."Posting Date");
                             CrMCustLedgEntry.SetRange("Agreement No.", SalesCrMemoHeader."Agreement No.");
@@ -731,19 +598,24 @@ codeunit 50001 "Prepayment Management"
                             CrMCustLedgEntry.SetRange(Open, true);
                             if CrMCustLedgEntry.FindFirst() then begin
                                 getInvCustLedgEntry.Get(InvCustLedgEntry."Entry No.");
+                                getInvCustLedgEntry.CalcFields("Remaining Amount");
+                                getInvCustLedgEntry."Amount to Apply" := getInvCustLedgEntry."Remaining Amount";
                                 getInvCustLedgEntry."Applies-to ID" := SalesOrderNo;
                                 getInvCustLedgEntry.Modify();
-                                getCrMCustLedgEntry.SetRange("Entry No.", CrMCustLedgEntry."Entry No.");
-                                getCrMCustLedgEntry.FindFirst();
-                                CustEntrySetAppID.SetApplId(getCrMCustLedgEntry, getInvCustLedgEntry, SalesOrderNo);
-                                ApplicationDate := CustEntryApplyPostedEntries.GetApplicationDate(getInvCustLedgEntry);
-                                CustEntryApplyPostedEntries.Apply(getInvCustLedgEntry, getInvCustLedgEntry."Document No.", ApplicationDate);
+
+                                getCrMCustLedgEntry.Get(CrMCustLedgEntry."Entry No.");
+                                getCrMCustLedgEntry.CalcFields("Remaining Amount");
+                                getCrMCustLedgEntry."Amount to Apply" := getCrMCustLedgEntry."Remaining Amount";
+                                getCrMCustLedgEntry."Applies-to ID" := SalesOrderNo;
+                                getCrMCustLedgEntry.Modify();
+
+                                CustEntryApplyPostedEntries.Apply(getInvCustLedgEntry, getInvCustLedgEntry."Document No.", getInvCustLedgEntry."Posting Date");
                             end;
                         end;
                     end;
                 end;
             until SalesInvHeader.Next() = 0;
 
-        exit(isSuccess);
+        exit(true);
     end;
 }

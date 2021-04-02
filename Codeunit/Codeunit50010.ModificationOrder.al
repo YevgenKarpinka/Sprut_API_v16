@@ -30,6 +30,8 @@ codeunit 50010 "Modification Order"
             // create credit memo for prepayment invoice
             if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
                 SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
+            // Applying Prepayment Entries
+            PrepmMgt.CustPrepmtApply(SalesOrderNo);
             // Get Specification From CRM
             WebServicesMgt.GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
             // Open Sales Order
@@ -38,7 +40,7 @@ codeunit 50010 "Modification Order"
             PrepmMgt.OnDeleteSalesOrderLine(SalesOrderNo);
 
             // Update sales header location
-            PrepmMgt.UpdateSalesHeaderLocation(SalesOrderNo, SpecificationResponseText);
+            PrepmMgt.UpdateSalesHeaderLocation(SalesHeader, SpecificationResponseText);
 
             // insert sales line
             PrepmMgt.InsertSalesLineFromCRM(SalesOrderNo, SpecificationResponseText);

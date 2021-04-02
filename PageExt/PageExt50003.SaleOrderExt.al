@@ -79,6 +79,25 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     end;
                 }
 
+                action(OnModifySalesOrderInTask)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'OnModifySalesOrderInTask',
+                                RUS = 'OnModifySalesOrderInTask';
+                    Image = MakeOrder;
+
+                    trigger OnAction()
+                    var
+                        SalesHeader: Record "Sales Header";
+                    begin
+                        CurrPage.SetSelectionFilter(SalesHeader);
+                        SalesHeader.FindSet(false, false);
+                        repeat
+                            PrepaymentMgt.OnModifySalesOrderInTask(SalesHeader."No.")
+                        until SalesHeader.Next() = 0;
+                        Message('Task Modify Order Ok!')
+                    end;
+                }
                 action(OnTaskModificationSalerOrder)
                 {
                     ApplicationArea = All;

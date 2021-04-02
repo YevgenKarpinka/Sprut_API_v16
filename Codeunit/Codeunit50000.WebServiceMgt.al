@@ -72,7 +72,7 @@ codeunit 50000 "Web Service Mgt."
     begin
         SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
         JSObjectBody.Add('document_no', SalesOrderNo);
-        // JSObjectBody.Add('crm_id', SalesHeader."CRM Header ID");
+        JSObjectBody.Add('crm_id', LowerCase(DelChr(SalesHeader."CRM Header ID", '<>', '{}')));
         JSObjectBody.WriteTo(Body);
     end;
 
@@ -438,12 +438,8 @@ codeunit 50000 "Web Service Mgt."
             SalesHeader.Modify();
         end;
 
-        // SalesHeader.CalcFields("Amount Including VAT");
-        // if SpecAmount < SalesHeader."Amount Including VAT" then
-        //     exit(true);
-
         LocationCode := WebServiceMgt.GetSpecificationLocationCode(ResponceToken);
-        ChangeSalesOrderLocationCode(SalesOrderNo, LocationCode);
+        ChangeSalesOrderLocationCode(SalesHeader, LocationCode);
 
         // update sales line
         foreach LineToken in jsonLines do begin
@@ -931,24 +927,23 @@ codeunit 50000 "Web Service Mgt."
         exit('');
     end;
 
-    procedure ChangeSalesOrderLocationCode(SalesOrderNo: Code[20]; LocationCode: Code[20])
+    procedure ChangeSalesOrderLocationCode(var SalesHeader: Record "Sales Header"; LocationCode: Code[20])
     var
         Location: Record Location;
-        SalesHeader: Record "Sales Header";
         SalesLine: Record "Sales Line";
         newSalesLine: Record "Sales Line";
         Item: Record Item;
     begin
         Location.Get(LocationCode);
-        SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
-        if LocationCode = SalesHeader."Location Code" then exit;
+        // SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
+        if Location.Code = SalesHeader."Location Code" then exit;
 
-        SalesHeader."Location Code" := LocationCode;
+        SalesHeader."Location Code" := Location.Code;
         SalesHeader.Modify();
 
         SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
-        SalesLine.SetRange("Document No.", SalesOrderNo);
-        SalesLine.SetFilter("Location Code", '<>%1', LocationCode);
+        SalesLine.SetRange("Document No.", SalesHeader."No.");
+        SalesLine.SetFilter("Location Code", '<>%1', Location.Code);
         if SalesLine.FindSet(false, false) then
             repeat
                 if Item.Get(SalesLine."No.")
