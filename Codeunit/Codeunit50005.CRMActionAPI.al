@@ -8,14 +8,20 @@ codeunit 50005 "CRM Action API"
         errUndefinedSourceType: Label 'undefined "sourceType" %1';
         errCRMInvoiceAmountMustBeEqualBCInvoiceAmount: Label 'CRM invoice amount %1 must be equal BC invoice amount %2';
         errCRM_IdNotAllowed: Label 'CRM Id is Null not allowed %1';
+        errCRM_IdMustBeEqualTo: Label '''crm_id'' must be equal to %1 in Sales Order %2. Current value is %3';
 
 
 
-    procedure OnAfterChangedSalesOrder(sourceType: Text[50]; salesOrderId: Text[50]): Text
+    procedure OnAfterChangedSalesOrder(sourceType: Text[50]; salesOrderId: Text[50]; crm_id: Guid): Text
     var
         SalesHeader: Record "Sales Header";
+    // currCRM_ID: Text[50];
     begin
         SalesHeader.Get(SalesHeader."Document Type"::Order, salesOrderId);
+        SalesHeader.TestField("CRM Header ID", crm_id);
+        // currCRM_ID := LowerCase(DelChr(SalesHeader."CRM Header ID", '<>', '{}'));
+        // if currCRM_ID <> crm_id then
+        //     Error(errCRM_IdMustBeEqualTo, currCRM_ID, salesOrderId, crm_id);
         // for test
         // exit(StrSubstNo(msgSalesOrderGetIsOk, sourceType, SalesHeader."No."));
 

@@ -300,16 +300,17 @@ codeunit 50000 "Web Service Mgt."
         PrepmInvAmount: Decimal;
     begin
         GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
-        // check sales order for change need
-        if SalesOrderChangeNeed(SalesOrderNo, SpecificationResponseText) then
-            exit(true);
-
         GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
         SpecAmount := CheckSpecificationAmount(SpecificationResponseText);
         PrepmInvAmount := GetPrepaymentInvoicesAmount(InvoicesResponseText);
         // check Specification Amount and Prepayment Amount
         if SpecAmount < PrepmInvAmount then
             Error(errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount, SpecAmount, PrepmInvAmount);
+
+        // check sales order for change need
+        if SalesOrderChangeNeed(SalesOrderNo, SpecificationResponseText) then
+            exit(true);
+
         // check prepayment invoices for change need
         if PrepaymentInvoicesChangesNeed(SalesOrderNo, InvoicesResponseText) then
             exit(true);
@@ -424,19 +425,19 @@ codeunit 50000 "Web Service Mgt."
             end;
         end;
 
-        SalesLine.MarkedOnly(true);
-        if SalesLine.FindSet(false, false) then
-            repeat
-                if SalesLine."Prepmt. Amt. Inv." <> 0 then exit(true);
-            until SalesLine.Next() = 0;
-        SalesLine.DeleteAll(true);
-
         SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
         if SalesHeader.Status <> SalesHeader.Status::Open then begin
             statusSH := SalesHeader.Status;
             SalesHeader.Status := SalesHeader.Status::Open;
             SalesHeader.Modify();
         end;
+
+        SalesLine.MarkedOnly(true);
+        if SalesLine.FindSet(false, false) then
+            repeat
+                if SalesLine."Prepmt. Amt. Inv." <> 0 then exit(true);
+            until SalesLine.Next() = 0;
+        SalesLine.DeleteAll(true);
 
         LocationCode := WebServiceMgt.GetSpecificationLocationCode(ResponceToken);
         ChangeSalesOrderLocationCode(SalesHeader, LocationCode);
@@ -482,7 +483,7 @@ codeunit 50000 "Web Service Mgt."
 
         if statusSH <> statusSH::Open then begin
             SalesHeader.Status := statusSH;
-            SalesHeader.Modify();
+            SalesHeader.Modify(true);
         end;
 
         exit(false);
@@ -502,11 +503,15 @@ codeunit 50000 "Web Service Mgt."
         jsonLines: JsonArray;
         LineToken: JsonToken;
         LocationCode: Code[20];
+        Location: Record Location;
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
         LocationCode := GetSpecificationLocationCode(ResponceToken);
+        if LocationCode <> '' then
+            Location.Get(LocationCode);
         SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
-        if SalesHeader."Location Code" <> LocationCode then exit(true);
+        if (LocationCode <> '') and (SalesHeader."Location Code" <> LocationCode) then
+            exit(true);
 
         SalesHeader.CalcFields("Amount Including VAT");
         if SalesHeader."Amount Including VAT" <> SpecAmount then
@@ -934,12 +939,12 @@ codeunit 50000 "Web Service Mgt."
         newSalesLine: Record "Sales Line";
         Item: Record Item;
     begin
-        Location.Get(LocationCode);
+        if not Location.Get(LocationCode) then exit;
         // SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo);
         if Location.Code = SalesHeader."Location Code" then exit;
 
         SalesHeader."Location Code" := Location.Code;
-        SalesHeader.Modify();
+        SalesHeader.Modify(true);
 
         SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
         SalesLine.SetRange("Document No.", SalesHeader."No.");
