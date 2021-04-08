@@ -79,9 +79,6 @@ table 50006 "Integration Entity"
         }
     }
 
-    var
-        errDeleteNotAllowed: Label 'Delete Not Allowed!';
-
     trigger OnInsert()
     begin
         "Create Date Time" := CurrentDateTime;
@@ -103,4 +100,29 @@ table 50006 "Integration Entity"
         "Last Modify Date Time" := CurrentDateTime;
     end;
 
+    var
+        Window: Dialog;
+        ConfirmDeletingEntriesQst: TextConst ENU = 'Are you sure that you want to delete job queue log entries?',
+                                            RUS = 'Вы действительно хотите удалить записи журнала очереди работ?';
+        DeletingMsg: TextConst ENU = 'Deleting Entries...',
+                                RUS = 'Удаление операций...';
+        DeletedMsg: TextConst ENU = 'Entries have been deleted.',
+                                RUS = 'Операции удалены.';
+        errDeleteNotAllowed: Label 'Delete Not Allowed!';
+
+    procedure DeleteEntries(DaysOld: Integer)
+    begin
+        if not Confirm(ConfirmDeletingEntriesQst) then
+            exit;
+        Window.Open(DeletingMsg);
+        // SetRange(Status, Status::Done);
+        // SetRange("Work Status", "Work Status"::Done);
+        IF DaysOld > 0 THEN
+            SetFilter("Create Date Time", '<=%1', CreateDateTime(Today - DaysOld, Time));
+        DeleteAll();
+        Window.Close;
+        SetRange("Create Date Time");
+        // SetRange(Status);
+        Message(DeletedMsg);
+    end;
 }

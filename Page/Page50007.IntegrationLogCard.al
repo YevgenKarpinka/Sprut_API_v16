@@ -15,37 +15,37 @@ page 50007 "Integration Log Card"
             {
                 Editable = false;
 
-                field("Entry No."; Rec."Entry No.")
+                field("Entry No."; "Entry No.")
                 {
                     ApplicationArea = Warehouse;
                     ToolTipML = ENU = 'Specifies the operation integration number.',
                                 RUS = 'Определяет номер операции интеграции.';
                 }
-                field("Operation Date"; Rec."Operation Date")
+                field("Operation Date"; "Operation Date")
                 {
                     ApplicationArea = Warehouse;
                     ToolTipML = ENU = 'Specifies the operation integration date and time.',
                                 RUS = 'Определяет дату и время операции интеграции.';
                 }
-                field("Source Operation"; Rec."Source Operation")
+                field("Source Operation"; "Source Operation")
                 {
                     ApplicationArea = Warehouse;
                     ToolTipML = ENU = 'Specifies the source integration code.',
                                 RUS = 'Определяет код источника интеграции.';
                 }
-                field(Success; Rec.Success)
+                field(Success; Success)
                 {
                     ApplicationArea = Warehouse;
                     ToolTipML = ENU = 'Specifies the status the operation integration.',
                                 RUS = 'Определяет статус операции интеграции.';
                 }
-                field(Autorization; Rec.Autorization)
+                field(Autorization; Autorization)
                 {
                     ApplicationArea = Warehouse;
                     ToolTipML = ENU = 'Specifies the Autorization the operation integration.',
                                 RUS = 'Определяет авторизацию операции интеграции.';
                 }
-                field(URL; Rec.URL)
+                field(URL; URL)
                 {
                     ApplicationArea = Warehouse;
                     ToolTipML = ENU = 'Specifies the URL the operation integration.',
@@ -65,7 +65,7 @@ page 50007 "Integration Log Card"
 
                         trigger OnValidate()
                         begin
-                            Rec.SetRequest(_Request);
+                            SetRequest(_Request);
                         end;
                     }
                 }
@@ -83,7 +83,7 @@ page 50007 "Integration Log Card"
 
                         trigger OnValidate()
                         begin
-                            Rec.SetResponse(_Response);
+                            SetResponse(_Response);
                         end;
                     }
                 }
@@ -93,8 +93,8 @@ page 50007 "Integration Log Card"
 
     trigger OnAfterGetRecord()
     begin
-        _Request := Rec.GetRequest();
-        _Response := Rec.GetResponse();
+        _Request := GetRequest();
+        _Response := GetResponse();
     end;
 
     var

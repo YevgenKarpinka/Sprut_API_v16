@@ -81,6 +81,15 @@ table 50004 "Integration Log"
         { }
     }
 
+    var
+        Window: Dialog;
+        ConfirmDeletingEntriesQst: TextConst ENU = 'Are you sure that you want to delete job queue log entries?',
+                                            RUS = 'Вы действительно хотите удалить записи журнала очереди работ?';
+        DeletingMsg: TextConst ENU = 'Deleting Entries...',
+                                RUS = 'Удаление операций...';
+        DeletedMsg: TextConst ENU = 'Entries have been deleted.',
+                                RUS = 'Операции удалены.';
+
     procedure SetRequest(NewRequest: Text)
     var
         OutStream: OutStream;
@@ -149,5 +158,20 @@ table 50004 "Integration Log"
         if LastIntegrationLog.FindLast() then
             exit(LastIntegrationLog."Entry No.");
         exit(0);
+    end;
+
+    procedure DeleteEntries(DaysOld: Integer)
+    begin
+        if not Confirm(ConfirmDeletingEntriesQst) then
+            exit;
+        Window.Open(DeletingMsg);
+        // SetRange(Status, Status::"In Process");
+        IF DaysOld > 0 THEN
+            SetFilter("Operation Date", '<=%1', CreateDateTime(Today - DaysOld, Time));
+        DeleteAll();
+        Window.Close;
+        SetRange("Operation Date");
+        // SetRange(Status);
+        Message(DeletedMsg);
     end;
 }

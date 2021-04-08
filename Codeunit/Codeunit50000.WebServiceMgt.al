@@ -12,8 +12,7 @@ codeunit 50000 "Web Service Mgt."
         errReportNotSavedToPDF: Label 'Report %1 not saved to PDF';
         errWrong_CRM_Id: Label 'Wrong CRM Id %1';
         WebServiceMgt: Codeunit "Web Service Mgt.";
-
-
+        ModificationOrder: Codeunit "Modification Order";
         PrepmtMgt: Codeunit "Prepayment Management";
 
 
@@ -301,6 +300,7 @@ codeunit 50000 "Web Service Mgt."
     begin
         GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
         GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+
         SpecAmount := CheckSpecificationAmount(SpecificationResponseText);
         PrepmInvAmount := GetPrepaymentInvoicesAmount(InvoicesResponseText);
         // check Specification Amount and Prepayment Amount
@@ -332,12 +332,16 @@ codeunit 50000 "Web Service Mgt."
         SpecAmount: Decimal;
         PrepmInvAmount: Decimal;
     begin
-        GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
+        // GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
+        SpecificationResponseText := ModificationOrder.GetSpecificationFromTask(SalesOrderNo);
+
         // check sales order for change need
         if SalesOrderFullChangesNeed(SalesOrderNo, SpecificationResponseText) then
             exit(true);
 
-        GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+        // GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+        InvoicesResponseText := ModificationOrder.GetInvoicesFromTask(SalesOrderNo);
+
         // check prepayment invoices for change need
         if PrepaymentInvoicesChangesNeed(SalesOrderNo, InvoicesResponseText) then
             exit(true);
@@ -356,12 +360,8 @@ codeunit 50000 "Web Service Mgt."
         SpecAmount: Decimal;
         PrepmInvAmount: Decimal;
     begin
-        // GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
-        // check sales order for change need
-        // if SalesOrderFullChangesNeed(SalesOrderNo, SpecificationResponseText) then
-        //     exit(true);
-
-        GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+        // GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
+        InvoicesResponseText := ModificationOrder.GetInvoicesFromTask(SalesOrderNo);
         // check prepayment invoices for change need
         if PrepaymentInvoicesAddedNeed(SalesOrderNo, InvoicesResponseText) then
             exit(true);

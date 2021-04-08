@@ -55,6 +55,14 @@ table 50002 "Task Modify Order"
                 ClearLastError();
             end;
         }
+        field(11; "CRM Specification"; Blob)
+        {
+            DataClassification = CustomerContent;
+        }
+        field(12; "CRM Invoice"; Blob)
+        {
+            DataClassification = CustomerContent;
+        }
     }
 
     keys
@@ -78,16 +86,71 @@ table 50002 "Task Modify Order"
         "Modify Date Time" := CurrentDateTime;
     end;
 
-    trigger OnDelete()
-    begin
 
+    var
+        Window: Dialog;
+        ConfirmDeletingEntriesQst: TextConst ENU = 'Are you sure that you want to delete job queue log entries?',
+                                            RUS = 'Вы действительно хотите удалить записи журнала очереди работ?';
+        DeletingMsg: TextConst ENU = 'Deleting Entries...',
+                                RUS = 'Удаление операций...';
+        DeletedMsg: TextConst ENU = 'Entries have been deleted.',
+                                RUS = 'Операции удалены.';
+
+    procedure SetCRMSpecification(NewSpecification: Text)
+    var
+        OutStream: OutStream;
+    begin
+        Clear("CRM Specification");
+        "CRM Specification".CreateOutStream(OutStream, TEXTENCODING::UTF8);
+        OutStream.WriteText(NewSpecification);
+        Modify();
     end;
 
-    trigger OnRename()
+    procedure GetCRMSpecification(): Text
+    var
+        TypeHelper: Codeunit "Type Helper";
+        InStream: InStream;
     begin
-
+        CalcFields("CRM Specification");
+        "CRM Specification".CreateInStream(InStream, TEXTENCODING::UTF8);
+        exit(TypeHelper.ReadAsTextWithSeparator(InStream, TypeHelper.LFSeparator));
     end;
 
+    procedure SetCRMInvoices(NewInvoice: Text)
+    var
+        OutStream: OutStream;
+    begin
+        Clear("CRM Invoice");
+        "CRM Invoice".CreateOutStream(OutStream, TEXTENCODING::UTF8);
+        OutStream.WriteText(NewInvoice);
+        Modify();
+    end;
+
+    procedure GetCRMInvoices(): Text
+    var
+        TypeHelper: Codeunit "Type Helper";
+        InStream: InStream;
+    begin
+        CalcFields("CRM Invoice");
+        "CRM Invoice".CreateInStream(InStream, TEXTENCODING::UTF8);
+        exit(TypeHelper.ReadAsTextWithSeparator(InStream, TypeHelper.LFSeparator));
+    end;
+
+    procedure DeleteEntries(DaysOld: Integer)
+    begin
+        if not Confirm(ConfirmDeletingEntriesQst) then
+            exit;
+        Window.Open(DeletingMsg);
+        SetRange(Status, Status::Done);
+        // SetRange("Work Status", "Work Status"::Done);
+        IF DaysOld > 0 THEN
+            SetFilter("Create Date Time", '<=%1', CreateDateTime(Today - DaysOld, Time));
+        DeleteAll();
+        Window.Close;
+        SetRange("Create Date Time");
+        SetRange(Status);
+        Message(DeletedMsg);
+    end;
 }
 
 enum 50002 TaskStatus

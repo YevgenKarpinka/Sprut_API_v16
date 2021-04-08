@@ -119,10 +119,10 @@ codeunit 50006 "Task Modify Order"
         exit(recTaskModifyOrder.FindFirst());
     end;
 
-    procedure CreateTaskModifyOrder(SalesOrderNo: Code[20])
+    procedure CreateTaskModifyOrder(SalesOrderNo: Code[20]; SpecificationResponseText: Text; InvoicesResponseText: Text)
     begin
         recTaskModifyOrder.Reset();
-        recTaskModifyOrder.SetCurrentKey("Work Status", "Order No.");
+        recTaskModifyOrder.SetCurrentKey(Status, "Order No.");
         recTaskModifyOrder.SetRange("Order No.", SalesOrderNo);
         recTaskModifyOrder.SetFilter(Status, '<>%1', recTaskModifyOrder.Status::Done);
         if recTaskModifyOrder.FindFirst() then begin
@@ -131,12 +131,16 @@ codeunit 50006 "Task Modify Order"
             recTaskModifyOrder.Status := recTaskModifyOrder.Status::OnModifyOrder;
             ResetTaskModifyOrderAttempt();
             recTaskModifyOrder.Modify(true);
+            recTaskModifyOrder.SetCRMSpecification(SpecificationResponseText);
+            recTaskModifyOrder.SetCRMInvoices(InvoicesResponseText);
             exit;
         end;
 
         recTaskModifyOrder.Init();
         recTaskModifyOrder."Order No." := SalesOrderNo;
         recTaskModifyOrder.Insert(true);
+        recTaskModifyOrder.SetCRMSpecification(SpecificationResponseText);
+        recTaskModifyOrder.SetCRMInvoices(InvoicesResponseText);
     end;
 
     local procedure GetJobQueueMaxAttempts(): Integer

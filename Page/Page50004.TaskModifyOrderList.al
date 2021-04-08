@@ -57,7 +57,16 @@ page 50004 "Task Modify Order List"
                 }
             }
         }
+        area(FactBoxes)
+        {
+            part("Responce CRM"; "Responce CRM FactBox")
+            {
+                ApplicationArea = Basic, Suite;
+                SubPageLink = "Entry No." = field("Entry No.");
+            }
+        }
     }
+
     actions
     {
         area(Processing)

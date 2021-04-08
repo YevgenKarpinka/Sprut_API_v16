@@ -66,7 +66,7 @@ codeunit 50001 "Prepayment Management"
             Error(NoModificationRequiredOnSalesOrderErr, SalesOrderNo);
 
         // Create Task Modify Order
-        TaskModifyOrder.CreateTaskModifyOrder(SalesOrderNo);
+        TaskModifyOrder.CreateTaskModifyOrder(SalesOrderNo, SpecificationResponseText, InvoicesResponseText);
     end;
 
     procedure OnModifySalesOrderOneLine(SalesOrderNo: Code[20])

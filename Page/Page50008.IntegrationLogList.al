@@ -55,5 +55,36 @@ page 50008 "Integration Log List"
     }
 
     actions
-    { }
+    {
+        area(Processing)
+        {
+            group(DeleteEntries)
+            {
+                CaptionML = ENU = 'Delete Entries',
+                            RUS = 'Удалить операции';
+                action(DeleteSevenDaysOld)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Delete 7 Days Old',
+                                RUS = 'Удалить старше 7ми дней';
+
+                    trigger OnAction()
+                    begin
+                        DeleteEntries(7);
+                    end;
+                }
+                action(DeleteAll)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Delete All',
+                                RUS = 'Удалить все';
+
+                    trigger OnAction()
+                    begin
+                        DeleteEntries(0);
+                    end;
+                }
+            }
+        }
+    }
 }
