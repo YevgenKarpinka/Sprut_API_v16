@@ -158,8 +158,9 @@ table 50003 "Task Payment Send"
 
     procedure DeleteEntries(DaysOld: Integer)
     begin
-        if not Confirm(ConfirmDeletingEntriesQst) then
-            exit;
+        if GuiAllowed then
+            if not Confirm(ConfirmDeletingEntriesQst) then
+                exit;
         Window.Open(DeletingMsg);
         SetRange(Status, Status::Done);
         // SetRange("Work Status", "Work Status"::Done);

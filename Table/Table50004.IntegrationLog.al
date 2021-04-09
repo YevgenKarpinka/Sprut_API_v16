@@ -162,8 +162,9 @@ table 50004 "Integration Log"
 
     procedure DeleteEntries(DaysOld: Integer)
     begin
-        if not Confirm(ConfirmDeletingEntriesQst) then
-            exit;
+        if GuiAllowed then
+            if not Confirm(ConfirmDeletingEntriesQst) then
+                exit;
         Window.Open(DeletingMsg);
         // SetRange(Status, Status::"In Process");
         IF DaysOld > 0 THEN
