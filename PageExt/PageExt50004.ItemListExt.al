@@ -100,7 +100,7 @@ pageextension 50004 "Item List Ext." extends "Item List"
                                     if not IsNullGuid(_Item."CRM Item Id") then begin
                                         requestMethod := PATCHrequestMethod;
                                         _jsonItem := WebServiceMgt.jsonItemsToPatch(_Item."No.");
-                                        entityTypeValue := StrSubstNo('%1(%2)', entityType, _Item."CRM Item Id");
+                                        entityTypeValue := StrSubstNo('%1(%2)', entityType, LowerCase(DelChr(_Item."CRM Item Id", '<>', '{}')));
                                     end else begin
                                         requestMethod := POSTrequestMethod;
                                         _jsonItem := WebServiceMgt.jsonItemsToPost(_Item."No.");
@@ -117,6 +117,7 @@ pageextension 50004 "Item List Ext." extends "Item List"
                                     if not WebServiceMgt.CreateProductInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText) then begin
                                         _jsonErrorItemList.Add(_jsonItem);
                                         _jsonItem.ReadFrom(_jsonText);
+                                        _jsonItem.Add('entityTypeValue', entityTypeValue);
                                         _jsonErrorItemList.Add(_jsonItem);
                                     end else
                                         // add CRM product ID to Item

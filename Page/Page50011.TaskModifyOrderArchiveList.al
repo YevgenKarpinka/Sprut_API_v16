@@ -49,6 +49,14 @@ page 50011 "Task Modify Order Archive List"
                 }
             }
         }
+        area(FactBoxes)
+        {
+            part("Responce CRM"; "Responce CRM FactBox")
+            {
+                ApplicationArea = Basic, Suite;
+                SubPageLink = "Entry No." = field("Entry No.");
+            }
+        }
     }
     actions
     {
