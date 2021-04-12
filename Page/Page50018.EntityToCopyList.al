@@ -7,7 +7,7 @@ page 50018 "Entity To Copy List"
     ApplicationArea = All;
     PageType = List;
     UsageCategory = History;
-    Editable = false;
+    // Editable = false;
 
     layout
     {

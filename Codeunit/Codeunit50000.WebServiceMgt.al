@@ -805,6 +805,7 @@ codeunit 50000 "Web Service Mgt."
             JSObjectLine.Add('quantitydecimal', quantityDecimal);
             JSObjectLine.Add('tct_bc_product_number', locItems."No.");
             JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
+            JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
         end;
         exit(JSObjectLine);
     end;
@@ -821,13 +822,13 @@ codeunit 50000 "Web Service Mgt."
         quantitydecimal := 2;
         if locItems.Get(ItemNo) then begin
             JSObjectLine.Add('tct_salestypecode', salesTypeCode);
-            // JSObjectLine.Add('productnumber', locItems."No.");
             JSObjectLine.Add('name', locItems.Description);
             JSObjectLine.Add('defaultuomscheduleid@odata.bind', defaultUoMScheduleId);
             JSObjectLine.Add('defaultuomid@odata.bind', defaultUoMId);
             JSObjectLine.Add('quantitydecimal', quantityDecimal);
             JSObjectLine.Add('tct_bc_product_number', locItems."No.");
             JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
+            JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
         end;
         exit(JSObjectLine);
     end;
@@ -930,6 +931,16 @@ codeunit 50000 "Web Service Mgt."
         if CustLedgEntry.FindFirst() then
             exit(CustLedgEntry."Document No.");
         exit('');
+    end;
+
+    local procedure GetStateCode(ItemNo: Code[20]): Integer
+    var
+        Item: Record Item;
+    begin
+        Item.Get(ItemNo);
+        if Item.Blocked or Item."Sales Blocked" then
+            exit(1);
+        exit(0);
     end;
 
     procedure ChangeSalesOrderLocationCode(var SalesHeader: Record "Sales Header"; LocationCode: Code[20])

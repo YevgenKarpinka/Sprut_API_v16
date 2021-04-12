@@ -31,8 +31,16 @@ tableextension 50004 "Item Ext" extends Item
         CheckModifyItemAllowed();
     end;
 
+    trigger OnDelete()
+    begin
+        // check Delete item allowed
+        CheckModifyItemAllowed();
+        CheckDeleteItemAllowed();
+    end;
+
     var
         CopyItemFromMainCompany: Boolean;
+        blankGuid: Guid;
 
     local procedure CheckModifyItemAllowed();
     var
@@ -45,6 +53,11 @@ tableextension 50004 "Item Ext" extends Item
         CompIntegr.FindFirst();
         CompIntegr.TestField("Copy Items To", false);
         CompIntegr.TestField("Copy Items From", true);
+    end;
+
+    local procedure CheckDeleteItemAllowed()
+    begin
+        TestField("CRM Item Id", blankGuid);
     end;
 
     procedure InitToCopyItem(xCopyItemFromMainCompany: Boolean)

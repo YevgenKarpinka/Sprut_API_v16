@@ -74,7 +74,8 @@ codeunit 50008 "Copy Items to All Companies"
         if Rec.Description = '' then exit(false);
         if Rec."Base Unit of Measure" = '' then exit(false);
         // if Rec."CRM Item Id" = blankGuid then exit(false);
-        if Rec."Inventory Posting Group" = '' then exit(false);
+        if Rec.IsInventoriableType() then
+            if Rec."Inventory Posting Group" = '' then exit(false);
         if Rec."VAT Prod. Posting Group" = '' then exit(false);
         if Rec."Gen. Prod. Posting Group" = '' then exit(false);
         if Rec."Sales Unit of Measure" = '' then exit(false);
