@@ -37,6 +37,9 @@ codeunit 50006 "Task Modify Order"
                     if not Codeunit.Run(Codeunit::"Modification Order", SalesHeader) then begin
                         if recTaskModifyOrder."Attempts Send" >= GetJobQueueMaxAttempts then begin
                             UpdateWorkStatus(recTaskModifyOrder."Work Status"::Error)
+                            // send notification to CRM
+                            // to do
+
                         end else begin
                             IncTaskModifyOrderAttempt();
                             UpdateWorkStatus(recTaskModifyOrder."Work Status"::WaitingForWork);

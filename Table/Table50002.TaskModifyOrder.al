@@ -49,7 +49,7 @@ table 50002 "Task Modify Order"
 
             trigger OnValidate()
             begin
-                if xRec."Attempts Send" >= Rec."Attempts Send" then exit;
+                if xRec."Attempts Send" >= "Attempts Send" then exit;
 
                 "Error Text" := CopyStr(GetLastErrorText, 1, MaxStrLen("Error Text"));
                 ClearLastError();
@@ -90,7 +90,7 @@ table 50002 "Task Modify Order"
     var
         Window: Dialog;
         ConfirmDeletingEntriesQst: TextConst ENU = 'Are you sure that you want to delete job queue log entries?',
-                                            RUS = 'Вы действительно хотите удалить записи журнала очереди работ?';
+                                                RUS = 'Вы действительно хотите удалить записи журнала очереди работ?';
         DeletingMsg: TextConst ENU = 'Deleting Entries...',
                                 RUS = 'Удаление операций...';
         DeletedMsg: TextConst ENU = 'Entries have been deleted.',
