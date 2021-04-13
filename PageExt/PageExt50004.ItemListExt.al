@@ -38,6 +38,22 @@ pageextension 50004 "Item List Ext." extends "Item List"
                 CaptionML = ENU = 'CRM', RUS = 'CRM';
                 Image = SuggestCustomerPayments;
 
+                action(OnCopyAllItems)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'On Copy All Items', RUS = 'Запуск копирования всех товаров';
+                    Image = CopyItem;
+
+                    trigger OnAction()
+                    var
+                        CopyItems: Codeunit "Copy Items to All Companies";
+                        msgOk: Label 'Все товары скопированы во все компании';
+                    begin
+                        CopyItems.CopyAllItemsToClone();
+                        CopyItems.Run();
+                        Message(msgOk);
+                    end;
+                }
                 action(OnCopyItems)
                 {
                     ApplicationArea = All;
@@ -80,10 +96,12 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         APIResult: Text;
                         requestMethod: Text[20];
                         entityTypeValue: Text;
+                        CopyItem: Codeunit "Copy Items to All Companies";
                     begin
                         CurrPage.SetSelectionFilter(_Item);
 
                         Counter := 0;
+                        _Item.SetFilter(Description, '<>%1', '');
                         TotalCount := _Item.Count;
                         ConfigProgressBarRecord.Init(TotalCount, Counter, STRSUBSTNO(ApplyingURLMsg, _Item.TableCaption));
 
@@ -96,32 +114,35 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         if _jsonErrorItemList.Count = 0 then
                             if _Item.FindSet(false, false) then
                                 repeat
-                                    // Create JSON for CRM
-                                    if not IsNullGuid(_Item."CRM Item Id") then begin
-                                        requestMethod := PATCHrequestMethod;
-                                        _jsonItem := WebServiceMgt.jsonItemsToPatch(_Item."No.");
-                                        entityTypeValue := StrSubstNo('%1(%2)', entityType, LowerCase(DelChr(_Item."CRM Item Id", '<>', '{}')));
-                                    end else begin
-                                        requestMethod := POSTrequestMethod;
-                                        _jsonItem := WebServiceMgt.jsonItemsToPost(_Item."No.");
-                                        entityTypeValue := entityType;
-                                    end;
+                                    if CopyItem.CheckItemFieldsFilled(_Item) then begin
+                                        // Create JSON for CRM
+                                        if not IsNullGuid(_Item."CRM Item Id") then begin
+                                            requestMethod := PATCHrequestMethod;
+                                            _jsonItem := WebServiceMgt.jsonItemsToPatch(_Item."No.");
+                                            entityTypeValue := StrSubstNo('%1(%2)', entityType, LowerCase(DelChr(_Item."CRM Item Id", '<>', '{}')));
+                                        end else begin
+                                            requestMethod := POSTrequestMethod;
+                                            _jsonItem := WebServiceMgt.jsonItemsToPost(_Item."No.");
+                                            entityTypeValue := entityType;
+                                        end;
 
-                                    _jsonItem.WriteTo(_jsonText);
-                                    Counter += 1;
+                                        _jsonItem.WriteTo(_jsonText);
+                                        Counter += 1;
 
-                                    ConfigProgressBarRecord.Update(STRSUBSTNO(RecordsXofYMsg, Counter, TotalCount));
+                                        ConfigProgressBarRecord.Update(STRSUBSTNO(RecordsXofYMsg, Counter, TotalCount));
 
-                                    IsSuccessStatusCode := true;
-                                    // try send to CRM
-                                    if not WebServiceMgt.CreateProductInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText) then begin
-                                        _jsonErrorItemList.Add(_jsonItem);
-                                        _jsonItem.ReadFrom(_jsonText);
-                                        _jsonItem.Add('entityTypeValue', entityTypeValue);
-                                        _jsonErrorItemList.Add(_jsonItem);
+                                        IsSuccessStatusCode := true;
+                                        // try send to CRM
+                                        if not WebServiceMgt.CreateProductInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText) then begin
+                                            _jsonErrorItemList.Add(_jsonItem);
+                                            _jsonItem.ReadFrom(_jsonText);
+                                            _jsonItem.Add('entityTypeValue', entityTypeValue);
+                                            _jsonErrorItemList.Add(_jsonItem);
+                                        end else
+                                            // add CRM product ID to Item
+                                            WebServiceMgt.AddCRMproductIdToItem(_jsonText);
                                     end else
-                                        // add CRM product ID to Item
-                                        WebServiceMgt.AddCRMproductIdToItem(_jsonText);
+                                        CopyItem.GetErrorFillingItem(_Item);
                                 until _Item.Next() = 0;
                         ConfigProgressBarRecord.Close;
                         if _jsonErrorItemList.Count > 0 then begin

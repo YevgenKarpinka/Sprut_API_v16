@@ -5,8 +5,12 @@ codeunit 50008 "Copy Items to All Companies"
         // check main company
         if CheckMainCompany() then exit;
 
-        // Send Items to CRM
-        SendItemToCRM();
+        sentToCRM := false;
+        if Confirm(qstSendItemsToCRM, false) then begin
+            // Send Items to CRM
+            SendItemToCRM();
+            sentToCRM := true;
+        end;
 
         // Copy Item From Main Company
         CopyItemFromMainCompany();
@@ -68,7 +72,7 @@ codeunit 50008 "Copy Items to All Companies"
             AddEntityToCopy(entityType::Item, Rec."No.");
     end;
 
-    local procedure CheckItemFieldsFilled(Rec: Record Item): Boolean
+    procedure CheckItemFieldsFilled(Rec: Record Item): Boolean
     begin
         if Rec."No." = '' then exit(false);
         if Rec.Description = '' then exit(false);
@@ -82,6 +86,19 @@ codeunit 50008 "Copy Items to All Companies"
         if Rec."Purch. Unit of Measure" = '' then exit(false);
 
         exit(true);
+    end;
+
+    procedure GetErrorFillingItem(Rec: Record Item)
+    begin
+        Rec.TestField("No.");
+        Rec.TestField(Description);
+        Rec.TestField("Base Unit of Measure");
+        if Rec.IsInventoriableType() then
+            Rec.TestField("Inventory Posting Group");
+        Rec.TestField("VAT Prod. Posting Group");
+        Rec.TestField("Gen. Prod. Posting Group");
+        Rec.TestField("Sales Unit of Measure");
+        Rec.TestField("Purch. Unit of Measure");
     end;
 
     local procedure CheckMainCompany(): Boolean
@@ -255,6 +272,22 @@ codeunit 50008 "Copy Items to All Companies"
         end;
     end;
 
+    procedure CopyAllItemsToClone()
+    var
+        Item: Record Item;
+    begin
+        if Item.FindSet(false, false) then
+            repeat
+                if CheckItemFieldsFilled(Item) then
+                    AddEntityToCopy(entityType::Item, Item."No.");
+            until Item.Next() = 0;
+    end;
+
+    procedure InitSentToCRM(newSentToCRM: Boolean)
+    begin
+        sentToCRM := newSentToCRM;
+    end;
+
     var
         CompIntegrFrom: Record "Company Integration";
         ConfProgressBar: Codeunit "Config Progress Bar";
@@ -267,4 +300,6 @@ codeunit 50008 "Copy Items to All Companies"
         entityType: Enum EntityType;
         Base64Convert: Codeunit "Base64 Convert";
 
+        qstSendItemsToCRM: TextConst ENU = 'Send Items To CRM?', RUS = 'Отправлять товары в CRM?';
+        sentToCRM: Boolean;
 }

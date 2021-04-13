@@ -8,6 +8,7 @@ codeunit 50013 "Task Deduplicate Customers"
 
     var
         PDFToEmail: Codeunit "Email Invoice As PDF Method";
+        blankGuid: Guid;
 
     local procedure Execute()
     begin
@@ -19,7 +20,7 @@ codeunit 50013 "Task Deduplicate Customers"
         Cust: Record Customer;
     begin
         Cust.SetCurrentKey("Deduplicate Id");
-        Cust.SetFilter("Deduplicate Id", '<>%1', '00000000-0000-0000-0000-000000000000');
+        Cust.SetFilter("Deduplicate Id", '<>%1', blankGuid);
         exit(not Cust.IsEmpty);
     end;
 }
