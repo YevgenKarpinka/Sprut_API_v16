@@ -6,11 +6,14 @@ codeunit 50008 "Copy Items to All Companies"
         if CheckMainCompany() then exit;
 
         sentToCRM := false;
-        if Confirm(qstSendItemsToCRM, false) then begin
-            // Send Items to CRM
+        if GuiAllowed then begin
+            if Confirm(qstSendItemsToCRM, false) then begin
+                // Send Items to CRM
+                SendItemToCRM();
+                sentToCRM := true;
+            end;
+        end else
             SendItemToCRM();
-            sentToCRM := true;
-        end;
 
         // Copy Item From Main Company
         CopyItemFromMainCompany();
@@ -241,10 +244,15 @@ codeunit 50008 "Copy Items to All Companies"
         requestMethod: Text[20];
         entityTypeValue: Text;
         ItemToCopy: Record "Entity To Copy";
+        TotalCount: Integer;
+        Counter: Integer;
     begin
         ItemToCopy.SetRange(Type, ItemToCopy.Type::Item);
         if ItemToCopy.IsEmpty then exit;
         WebServiceMgt.GetOauthToken(TokenType, AccessToken, APIResult);
+
+        TotalCount := ItemToCopy.Count;
+        ConfigProgressBarRecord.Init(TotalCount, Counter, STRSUBSTNO(ApplyingURLMsg, ItemToCopy.TableCaption));
 
         if ItemToCopy.FindSet(false, false) then begin
             repeat
@@ -261,6 +269,9 @@ codeunit 50008 "Copy Items to All Companies"
                 end;
 
                 _jsonItem.WriteTo(_jsonText);
+                Counter += 1;
+                ConfigProgressBarRecord.Update(STRSUBSTNO(RecordsXofYMsg, Counter, TotalCount));
+
                 // try send to CRM
                 if WebServiceMgt.CreateProductInCRM(entityTypeValue, requestMethod, TokenType, AccessToken, _jsonText) then
                     WebServiceMgt.AddCRMproductIdToItem(_jsonText)
@@ -269,6 +280,7 @@ codeunit 50008 "Copy Items to All Companies"
                     // _jsonText
                 end;
             until ItemToCopy.Next() = 0;
+            ConfigProgressBarRecord.Close;
         end;
     end;
 
@@ -301,5 +313,10 @@ codeunit 50008 "Copy Items to All Companies"
         Base64Convert: Codeunit "Base64 Convert";
 
         qstSendItemsToCRM: TextConst ENU = 'Send Items To CRM?', RUS = 'Отправлять товары в CRM?';
+        ApplyingURLMsg: TextConst ENU = 'Sending Table %1',
+                                RUS = 'Пересылается таблица %1';
+        RecordsXofYMsg: TextConst ENU = 'Records: %1 of %2',
+                                RUS = 'Запись: %1 из %2';
         sentToCRM: Boolean;
+        ConfigProgressBarRecord: Codeunit "Config Progress Bar";
 }
