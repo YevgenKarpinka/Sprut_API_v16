@@ -79,8 +79,8 @@ tableextension 50006 "Customer Ext" extends Customer
     begin
         Customer.SetCurrentKey("CRM ID");
         Customer.SetRange("CRM ID", "CRM ID");
-        if not Customer.IsEmpty then
-            Error(errCustomerWithCRMIDAlreadyExist, "CRM ID");
+        if Customer.FindFirst() then
+            Error(errCustomerWithCRMIDAlreadyExist, "No.", "CRM ID");
     end;
 
     trigger OnInsert()
@@ -111,6 +111,6 @@ tableextension 50006 "Customer Ext" extends Customer
     end;
 
     var
-        errCustomerWithCRMIDAlreadyExist: TextConst ENU = 'Customer With CRM_ID %1 Already Exist!',
-                                                    RUS = 'Клиент с CRM ID %1 уже существует!';
+        errCustomerWithCRMIDAlreadyExist: TextConst ENU = 'Customer %1 with CRM_ID %2 already exist!',
+                                                    RUS = 'Клиент %1 с CRM ID %2 уже существует!';
 }
