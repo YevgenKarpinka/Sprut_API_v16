@@ -31,8 +31,8 @@ codeunit 50016 "Copy Vend. to All Companies"
         CompIntegrTo.SetRange("Copy Items To", true);
         if CompIntegrTo.IsEmpty then exit;
 
-        VendorFrom.LockTable();
-        VendorBankAccountFrom.LockTable();
+        // VendorFrom.LockTable();
+        // VendorBankAccountFrom.LockTable();
         if VendorFrom.FindSet(false, false) then
             repeat
                 if CompIntegrTo.FindSet(false, false) then

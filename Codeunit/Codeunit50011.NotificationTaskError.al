@@ -27,7 +27,7 @@ codeunit 50011 "Notification Task Error"
 
     local procedure UpdateWorkStatus(newWorkStatus: Enum WorkStatus)
     begin
-        recTaskModifyOrder.LockTable();
+        // recTaskModifyOrder.LockTable();
         recTaskModifyOrder.Validate("Work Status", newWorkStatus);
         recTaskModifyOrder.Modify(true);
         Commit();

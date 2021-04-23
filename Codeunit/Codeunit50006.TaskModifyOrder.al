@@ -107,7 +107,7 @@ codeunit 50006 "Task Modify Order"
 
     local procedure UpdateWorkStatus(newWorkStatus: Enum WorkStatus)
     begin
-        recTaskModifyOrder.LockTable();
+        // recTaskModifyOrder.LockTable();
         recTaskModifyOrder.Validate("Work Status", newWorkStatus);
         recTaskModifyOrder.Modify(true);
         Commit();

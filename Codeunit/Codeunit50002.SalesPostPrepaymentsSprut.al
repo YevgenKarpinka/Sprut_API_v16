@@ -216,7 +216,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         TempVATAmountLine.DeductVATAmountLine(TempVATAmountLineDeduct);
         UpdateVATOnLines(SalesHeader, SalesLine, TempVATAmountLine, DocumentType);
         BuildInvLineBuffer(SalesHeader, SalesLine, DocumentType, TempPrepmtInvLineBuffer, true);
-        TempPrepmtInvLineBuffer.Find('-');
+        TempPrepmtInvLineBuffer.FindSet();
         repeat
             LineCount := LineCount + 1;
             if TempPrepmtInvLineBuffer."Line No." <> 0 then
@@ -260,7 +260,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
 
         TempPrepmtInvLineBuffer.Reset();
         TempPrepmtInvLineBuffer.SetCurrentKey(Adjustment);
-        TempPrepmtInvLineBuffer.Find('+');
+        TempPrepmtInvLineBuffer.FindLast();
         repeat
             LineCount := LineCount + 1;
 
@@ -370,7 +370,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesLine: Record "Sales Line";
     begin
         ApplyFilter(SalesHeader, DocumentType, SalesLine);
-        if SalesLine.Find('-') then
+        if SalesLine.FindSet(true) then
             repeat
                 if not Found then
                     Found := PrepmtAmount(SalesLine, DocumentType) <> 0;
@@ -448,7 +448,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         TempGlobalPrepmtInvLineBuf.DeleteAll();
         SalesSetup.Get();
         ApplyFilter(SalesHeader, DocumentType, SalesLine);
-        if SalesLine.Find('-') then
+        if SalesLine.FindSet() then
             repeat
                 if PrepmtAmount(SalesLine, DocumentType) <> 0 then begin
                     if SalesLine.Quantity < 0 then
@@ -725,14 +725,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
 
     end;
 
-    /// <summary> 
-    /// Description for InsertInvoiceRounding.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="PrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
-    /// <param name="TotalPrepmtInvLineBuf">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
-    /// <param name="PrevLineNo">Parameter of type Integer.</param>
-    /// <returns>Return variable "Boolean".</returns>
     local procedure InsertInvoiceRounding(SalesHeader: Record "Sales Header"; var PrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; TotalPrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer"; PrevLineNo: Integer): Boolean
     var
         SalesLine: Record "Sales Line";
@@ -827,14 +819,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
-    /// <summary> 
-    /// Description for CopyLineCommentLines.
-    /// </summary>
-    /// <param name="FromNumber">Parameter of type Code[20].</param>
-    /// <param name="ToDocType">Parameter of type Integer.</param>
-    /// <param name="ToNumber">Parameter of type Code[20].</param>
-    /// <param name="FromLineNo">Parameter of type Integer.</param>
-    /// <param name="ToLineNo">Parameter of type Integer.</param>
     local procedure CopyLineCommentLines(FromNumber: Code[20]; ToDocType: Integer; ToNumber: Code[20]; FromLineNo: Integer; ToLineNo: Integer)
     var
         SalesCommentLine: Record "Sales Comment Line";
@@ -850,15 +834,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
-    /// <summary> 
-    /// Description for InsertExtendedText.
-    /// </summary>
-    /// <param name="TabNo">Parameter of type Integer.</param>
-    /// <param name="DocNo">Parameter of type Code[20].</param>
-    /// <param name="GLAccNo">Parameter of type Code[20].</param>
-    /// <param name="DocDate">Parameter of type Date.</param>
-    /// <param name="LanguageCode">Parameter of type Code[10].</param>
-    /// <param name="PrevLineNo">Parameter of type Integer.</param>
     local procedure InsertExtendedText(TabNo: Integer; DocNo: Code[20]; GLAccNo: Code[20]; DocDate: Date; LanguageCode: Code[10]; var PrevLineNo: Integer)
     var
         TempExtTextLine: Record "Extended Text Line" temporary;
@@ -868,7 +843,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         NextLineNo: Integer;
     begin
         TransferExtText.PrepmtGetAnyExtText(GLAccNo, TabNo, DocDate, LanguageCode, TempExtTextLine);
-        if TempExtTextLine.Find('-') then begin
+        if TempExtTextLine.FindSet() then begin
             NextLineNo := PrevLineNo + 10000;
             repeat
                 case TabNo of
@@ -895,13 +870,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
-    /// <summary> 
-    /// Description for UpdateVATOnLines.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
-    /// <param name="VATAmountLine">Parameter of type Record "VAT Amount Line".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
     procedure UpdateVATOnLines(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var VATAmountLine: Record "VAT Amount Line"; DocumentType: Option Invoice,"Credit Memo",Statistic)
     var
         TempVATAmountLineRemainder: Record "VAT Amount Line" temporary;
@@ -918,10 +886,9 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         Currency.Initialize(SalesHeader."Currency Code");
 
         ApplyFilter(SalesHeader, DocumentType, SalesLine);
-        SalesLine.LockTable();
         SalesLine.CalcSums("Prepmt. Line Amount", "Prepmt. Amt. Inv.");
         PrepmtAmtToInvTotal := SalesLine."Prepmt. Line Amount" - SalesLine."Prepmt. Amt. Inv.";
-        if SalesLine.FindSet then
+        if SalesLine.FindSet(true, false) then
             repeat
                 PrepmtAmt := PrepmtAmount(SalesLine, DocumentType);
                 if PrepmtAmt <> 0 then begin
@@ -1009,13 +976,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
 
     end;
 
-    /// <summary> 
-    /// Description for CalcVATAmountLines.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
-    /// <param name="VATAmountLine">Parameter of type Record "VAT Amount Line".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
     procedure CalcVATAmountLines(var SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var VATAmountLine: Record "VAT Amount Line"; DocumentType: Option Invoice,"Credit Memo",Statistic)
     var
         Currency: Record Currency;
@@ -1027,7 +987,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         VATAmountLine.DeleteAll();
 
         ApplyFilter(SalesHeader, DocumentType, SalesLine);
-        if SalesLine.Find('-') then
+        if SalesLine.FindSet() then
             repeat
                 NewAmount := PrepmtAmount(SalesLine, DocumentType);
                 if NewAmount <> 0 then begin
@@ -1060,15 +1020,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
 
     end;
 
-    /// <summary> 
-    /// Description for SumPrepmt.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
-    /// <param name="VATAmountLine">Parameter of type Record "VAT Amount Line".</param>
-    /// <param name="TotalAmount">Parameter of type Decimal.</param>
-    /// <param name="TotalVATAmount">Parameter of type Decimal.</param>
-    /// <param name="VATAmountText">Parameter of type Text[30].</param>
     procedure SumPrepmt(SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; var VATAmountLine: Record "VAT Amount Line"; var TotalAmount: Decimal; var TotalVATAmount: Decimal; var VATAmountText: Text[30])
     var
         TempPrepmtInvLineBuf: Record "Prepayment Inv. Line Buffer" temporary;
@@ -1080,7 +1031,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         CalcVATAmountLines(SalesHeader, SalesLine, VATAmountLine, 2);
         UpdateVATOnLines(SalesHeader, SalesLine, VATAmountLine, 2);
         BuildInvLineBuffer(SalesHeader, SalesLine, 2, TempPrepmtInvLineBuf, false);
-        if TempPrepmtInvLineBuf.Find('-') then begin
+        if TempPrepmtInvLineBuf.FindSet() then begin
             PrevVATPct := TempPrepmtInvLineBuf."VAT %";
             repeat
                 RoundAmounts(SalesHeader, TempPrepmtInvLineBuf, TotalPrepmtInvLineBuf, TotalPrepmtInvLineBufLCY);
@@ -1097,12 +1048,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             VATAmountText := StrSubstNo(Text015, PrevVATPct);
     end;
 
-    /// <summary> 
-    /// Description for GetSalesLines.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
-    /// <param name="ToSalesLine">Parameter of type Record "Sales Line".</param>
     procedure GetSalesLines(SalesHeader: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo",Statistic; var ToSalesLine: Record "Sales Line")
     var
         SalesSetup: Record "Sales & Receivables Setup";
@@ -1113,7 +1058,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         NextLineNo: Integer;
     begin
         ApplyFilter(SalesHeader, DocumentType, FromSalesLine);
-        if FromSalesLine.Find('-') then begin
+        if FromSalesLine.FindSet() then begin
             repeat
                 ToSalesLine := FromSalesLine;
                 ToSalesLine.Insert();
@@ -1147,12 +1092,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
-    /// <summary> 
-    /// Description for ApplyFilter.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
-    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
     local procedure ApplyFilter(SalesHeader: Record "Sales Header"; DocumentType: Option Invoice,"Credit Memo",Statistic; var SalesLine: Record "Sales Line")
     begin
         SalesLine.Reset;
@@ -1165,12 +1104,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             SalesLine.SetFilter("Prepmt. Amt. Inv.", '<>0');
     end;
 
-    /// <summary> 
-    /// Description for PrepmtAmount.
-    /// </summary>
-    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
-    /// <returns>Return variable "Decimal".</returns>
     procedure PrepmtAmount(SalesLine: Record "Sales Line"; DocumentType: Option Invoice,"Credit Memo",Statistic): Decimal
     begin
         case DocumentType of
@@ -1183,18 +1116,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
-    /// <summary> 
-    /// Description for PostPrepmtInvLineBuffer.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
-    /// <param name="PostingDescription">Parameter of type Text[100].</param>
-    /// <param name="DocType">Parameter of type Enum "Gen. Journal Document Type".</param>
-    /// <param name="DocNo">Parameter of type Code[20].</param>
-    /// <param name="ExtDocNo">Parameter of type Text[35].</param>
-    /// <param name="SrcCode">Parameter of type Code[10].</param>
-    /// <param name="PostingNoSeriesCode">Parameter of type Code[20].</param>
     local procedure PostPrepmtInvLineBuffer(SalesHeader: Record "Sales Header"; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; DocumentType: Option Invoice,"Credit Memo"; PostingDescription: Text[100]; DocType: Enum "Gen. Journal Document Type"; DocNo: Code[20]; ExtDocNo: Text[35]; SrcCode: Code[10]; PostingNoSeriesCode: Code[20])
     var
         GenJnlLine: Record "Gen. Journal Line";
@@ -1216,20 +1137,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         RunGenJnlPostLine(GenJnlLine);
     end;
 
-    /// <summary> 
-    /// Description for PostCustomerEntry.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="TotalPrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
-    /// <param name="TotalPrepmtInvLineBufferLCY">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
-    /// <param name="PostingDescription">Parameter of type Text[100].</param>
-    /// <param name="DocType">Parameter of type Enum "Gen. Journal Document Type".</param>
-    /// <param name="DocNo">Parameter of type Code[20].</param>
-    /// <param name="ExtDocNo">Parameter of type Text[35].</param>
-    /// <param name="SrcCode">Parameter of type Code[10].</param>
-    /// <param name="PostingNoSeriesCode">Parameter of type Code[20].</param>
-    /// <param name="CalcPmtDisc">Parameter of type Boolean.</param>
     local procedure PostCustomerEntry(SalesHeader: Record "Sales Header"; TotalPrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; TotalPrepmtInvLineBufferLCY: Record "Prepayment Inv. Line Buffer"; DocumentType: Option Invoice,"Credit Memo"; PostingDescription: Text[100]; DocType: Enum "Gen. Journal Document Type"; DocNo: Code[20]; ExtDocNo: Text[35]; SrcCode: Code[10]; PostingNoSeriesCode: Code[20]; CalcPmtDisc: Boolean)
     var
         GenJnlLine: Record "Gen. Journal Line";
@@ -1265,20 +1172,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
-    /// <summary> 
-    /// Description for PostBalancingEntry.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="TotalPrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
-    /// <param name="TotalPrepmtInvLineBufferLCY">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
-    /// <param name="CustLedgEntry">Parameter of type Record "Cust. Ledger Entry".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
-    /// <param name="PostingDescription">Parameter of type Text[100].</param>
-    /// <param name="DocType">Parameter of type Enum "Gen. Journal Document Type".</param>
-    /// <param name="DocNo">Parameter of type Code[20].</param>
-    /// <param name="ExtDocNo">Parameter of type Text[35].</param>
-    /// <param name="SrcCode">Parameter of type Code[10].</param>
-    /// <param name="PostingNoSeriesCode">Parameter of type Code[20].</param>
     local procedure PostBalancingEntry(SalesHeader: Record "Sales Header"; TotalPrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; TotalPrepmtInvLineBufferLCY: Record "Prepayment Inv. Line Buffer"; CustLedgEntry: Record "Cust. Ledger Entry"; DocumentType: Option Invoice,"Credit Memo"; PostingDescription: Text[100]; DocType: Enum "Gen. Journal Document Type"; DocNo: Code[20]; ExtDocNo: Text[35]; SrcCode: Code[10]; PostingNoSeriesCode: Code[20])
     var
         GenJnlLine: Record "Gen. Journal Line";
@@ -1317,20 +1210,11 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         GenJnlPostLine.RunWithCheck(GenJnlLine);
     end;
 
-    /// <summary> 
-    /// Description for RunGenJnlPostLine.
-    /// </summary>
-    /// <param name="GenJnlLine">Parameter of type Record "Gen. Journal Line".</param>
     local procedure RunGenJnlPostLine(var GenJnlLine: Record "Gen. Journal Line")
     begin
         GenJnlPostLine.RunWithCheck(GenJnlLine);
     end;
 
-    /// <summary> 
-    /// Description for UpdatePrepmtAmountOnSaleslines.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="NewTotalPrepmtAmount">Parameter of type Decimal.</param>
     procedure UpdatePrepmtAmountOnSaleslines(SalesHeader: Record "Sales Header"; NewTotalPrepmtAmount: Decimal)
     var
         Currency: Record Currency;
@@ -1347,8 +1231,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         SalesLine.SetFilter(Type, '<>%1', SalesLine.Type::" ");
         SalesLine.SetFilter("Line Amount", '<>0');
         SalesLine.SetFilter("Prepayment %", '<>0');
-        SalesLine.LockTable();
-        if SalesLine.Find('-') then
+        if SalesLine.FindSet(false, false) then
             repeat
                 TotalLineAmount := TotalLineAmount + SalesLine."Line Amount";
                 TotalPrepmtAmtInv := TotalPrepmtAmtInv + SalesLine."Prepmt. Amt. Inv.";
@@ -1360,7 +1243,7 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             Error(Text013, NewTotalPrepmtAmount);
         if not (NewTotalPrepmtAmount in [TotalPrepmtAmtInv .. TotalLineAmount]) then
             Error(Text016, TotalPrepmtAmtInv, TotalLineAmount);
-        if SalesLine.Find('-') then
+        if SalesLine.FindSet(true, false) then
             repeat
                 if SalesLine."Line No." <> LastLineNo then
                     SalesLine.Validate(
@@ -1375,10 +1258,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             until SalesLine.Next = 0;
     end;
 
-    /// <summary> 
-    /// Description for CreateDimensions.
-    /// </summary>
-    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
     local procedure CreateDimensions(var SalesLine: Record "Sales Line")
     var
         SourceCodeSetup: Record "Source Code Setup";
@@ -1454,13 +1333,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
-    /// <summary> 
-    /// Description for UpdateSalesDocument.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
-    /// <param name="GenJnlLineDocNo">Parameter of type Code[20].</param>
     local procedure UpdateSalesDocument(var SalesHeader: Record "Sales Header"; var SalesLine: Record "Sales Line"; DocumentType: Option Invoice,"Credit Memo"; GenJnlLineDocNo: Code[20])
     begin
         SalesLine.Reset();
@@ -1570,13 +1442,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         CopyHeaderCommentLines(SalesHeader."No.", DATABASE::"Sales Invoice Header", GenJnlLineDocNo);
     end;
 
-    /// <summary> 
-    /// Description for InsertSalesInvLine.
-    /// </summary>
-    /// <param name="SalesInvHeader">Parameter of type Record "Sales Invoice Header".</param>
-    /// <param name="LineNo">Parameter of type Integer.</param>
-    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
     local procedure InsertSalesInvLine(SalesInvHeader: Record "Sales Invoice Header"; LineNo: Integer; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; SalesHeader: Record "Sales Header")
     var
         SalesInvLine: Record "Sales Invoice Line";

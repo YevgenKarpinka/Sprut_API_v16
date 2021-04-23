@@ -31,7 +31,7 @@ codeunit 50015 "Copy Whses. to All Companies"
         CompIntegrTo.SetRange("Copy Items To", true);
         if CompIntegrTo.IsEmpty then exit;
 
-        LocationFrom.LockTable();
+        // LocationFrom.LockTable();
         if CompIntegrTo.FindSet(false, false) then
             repeat
                 LocationTo.ChangeCompany(CompIntegrTo."Company Name");

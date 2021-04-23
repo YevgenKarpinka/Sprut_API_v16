@@ -8,9 +8,26 @@ codeunit 50005 "CRM Action API"
         errUndefinedSourceType: Label 'undefined "sourceType" %1';
         errCRMInvoiceAmountMustBeEqualBCInvoiceAmount: Label 'CRM invoice amount %1 must be equal BC invoice amount %2';
         errCRM_IdNotAllowed: Label 'CRM Id is Null not allowed %1';
-        errCRM_IdMustBeEqualTo: Label '''crm_id'' must be equal to %1 in Sales Order %2. Current value is %3';
+        errBlankPrepaymentAmount: Label 'The blank "prepaymentAmount" is not allowed.', Locked = true;
+        errBlankInvoiceId: Label 'The blank "invoiceId" is not allowed.', Locked = true;
+        errPrepaymentPercentCannotBeLessOrEqual: Label 'The "prepaymentPercent" cannot be less or equal %1.', Locked = true;
+        errCRM_IDisNullNotAllowed: Label 'The blank "crmId" is not allowed.', Locked = true;
 
+    procedure OnCreatePrepaymentInvoice(orderNo: Code[20]; invoiceId: Text[50];
+                                        crmId: Guid; prepaymentAmount: Decimal)
+    var
+        salesInvoice: Page "APIV2 - Sales Invoice";
+    begin
+        CheckCRM_Id(crmId);
+        if invoiceId = '' then
+            Error(errBlankInvoiceId);
+        if prepaymentAmount <= 0 then
+            ERROR(errBlankPrepaymentAmount);
 
+        salesInvoice.SetInit(invoiceId, prepaymentAmount, crmId);
+        salesInvoice.CreatePrepaymentInvoice(orderNo);
+        Message('prepayment invoice created!');
+    end;
 
     procedure OnAfterChangedSalesOrder(sourceType: Text[50]; salesOrderId: Text[50]; crm_id: Guid): Text
     var
@@ -33,7 +50,7 @@ codeunit 50005 "CRM Action API"
         // exit(GetJsonSalesOrderLines(SalesHeader."No."));
     end;
 
-    procedure OnPostSalesOrder(salesOrderId: Text[50]; crmInvoiceId: Text[50]; crmId: Text[50]; crmInvoiceAmount: Decimal): Text
+    procedure OnPostSalesOrder(salesOrderId: Text[50]; crmInvoiceId: Text[50]; crmId: Guid; crmInvoiceAmount: Decimal): Text
     var
         SalesHeader: Record "Sales Header";
         Location: Record Location;
@@ -68,7 +85,7 @@ codeunit 50005 "CRM Action API"
         exit(StrSubstNo(msgSalesOrderGetIsOk, '', salesOrderId));
     end;
 
-    local procedure CheckCRM_Id(crmId: Text[50])
+    local procedure CheckCRM_Id(crmId: Guid)
     begin
         if IsNullGuid(crmId) then
             Error(errCRM_IdNotAllowed, crmId);

@@ -397,7 +397,7 @@ codeunit 50001 "Prepayment Management"
         DtldCustLedgEntry.SETRANGE("Customer No.", DtldCustLedgEntry2."Customer No.");
         DtldCustLedgEntry.SETFILTER("Entry Type", '<>%1', DtldCustLedgEntry."Entry Type"::"Initial Entry");
         DtldCustLedgEntry.SETRANGE(Unapplied, FALSE);
-        IF DtldCustLedgEntry.FIND('-') THEN
+        IF DtldCustLedgEntry.FindSet() THEN
             REPEAT
                 IF NOT AddCurrChecked THEN BEGIN
                     CheckAdditionalCurrency(PostingDate, DtldCustLedgEntry."Posting Date");
@@ -486,7 +486,7 @@ codeunit 50001 "Prepayment Management"
         DtldCustLedgEntry.SETRANGE("Cust. Ledger Entry No.", CustLedgEntryNo);
         DtldCustLedgEntry.SETRANGE("Entry Type", DtldCustLedgEntry."Entry Type"::Application);
         LastTransactionNo := 0;
-        IF DtldCustLedgEntry.FIND('-') THEN
+        IF DtldCustLedgEntry.FindSet() THEN
             REPEAT
                 IF NOT GLSetup."Enable Russian Accounting" OR
                    (GLSetup."Enable Russian Accounting" AND (NOT DtldCustLedgEntry."Prepmt. Diff."))
