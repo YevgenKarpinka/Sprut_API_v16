@@ -57,6 +57,7 @@ tableextension 50009 "Sales Line Ext" extends "Sales Line"
 
     trigger OnInsert()
     begin
+        Commit();
         UpdateCreateDateTime();
     end;
 

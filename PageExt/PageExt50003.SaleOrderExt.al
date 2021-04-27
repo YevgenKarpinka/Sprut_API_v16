@@ -43,7 +43,18 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                 Visible = false;
             }
         }
-
+        addafter(SalesLines)
+        {
+            part(SalesLinesExt; "Sales Order Subform Ext")
+            {
+                ApplicationArea = Basic, Suite;
+                // Editable = DynamicEditable;
+                // Enabled = "Sell-to Customer No." <> '';
+                Visible = false;
+                SubPageLink = "Document No." = FIELD("No.");
+                // UpdatePropagation = Both;
+            }
+        }
     }
 
     actions

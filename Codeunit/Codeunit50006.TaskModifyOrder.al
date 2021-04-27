@@ -2,8 +2,7 @@ codeunit 50006 "Task Modify Order"
 {
     trigger OnRun()
     begin
-        if GetFirstRecordForExecute() then
-            Execute();
+        GetRecordForExecute();
     end;
 
     var
@@ -113,13 +112,18 @@ codeunit 50006 "Task Modify Order"
         Commit();
     end;
 
-    local procedure GetFirstRecordForExecute(): Boolean
+    local procedure GetRecordForExecute()
     begin
         recTaskModifyOrder.Reset();
         recTaskModifyOrder.SetCurrentKey(Status, "Work Status");
         recTaskModifyOrder.SetFilter(Status, '<>%1', recTaskModifyOrder.Status::Done);
         recTaskModifyOrder.SetRange("Work Status", recTaskModifyOrder."Work Status"::WaitingForWork);
-        exit(recTaskModifyOrder.FindFirst());
+        if recTaskModifyOrder.FindSet(true) then
+            repeat
+                repeat
+                    Execute();
+                until recTaskModifyOrder.Next() = 0;
+            until not recTaskModifyOrder.FindSet(true);
     end;
 
     procedure CreateTaskModifyOrder(SalesOrderNo: Code[20]; SpecificationResponseText: Text; InvoicesResponseText: Text)
