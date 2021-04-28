@@ -31,9 +31,8 @@ codeunit 50000 "Web Service Mgt."
         // end;
 
         GetOauthToken(tokenType, accessToken, APIResult);
-        if OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then
-            exit(true);
-        Error(Body);
+        OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body);
+        exit(true);
     end;
 
     procedure CreateProductInCRM(entityType: Text; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
