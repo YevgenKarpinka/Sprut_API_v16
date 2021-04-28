@@ -133,15 +133,7 @@ codeunit 50008 "Copy Items to All Companies"
         CompIntegrTo.SetRange("Copy Items To", true);
         if CompIntegrTo.IsEmpty then exit;
 
-        // DaleteAllFlag := Confirm('DeleteAll Item of Measure?', true);
-        // ItemFrom.LockTable();
-        // ItemFrom.SetCurrentKey("CRM Item Id");
-        // ItemFrom.SetFilter("CRM Item Id", '<>%1', blankGuid);
-        // ItemUoMFrom.LockTable();
-        // ItemTo.LockTable();
-        // ItemUoMTo.LockTable();
-
-        if CompIntegrTo.FindSet(false, false) then
+        if CompIntegrTo.FindSet() then
             repeat
                 ItemTo.ChangeCompany(CompIntegrTo."Company Name");
                 ItemUoMTo.ChangeCompany(CompIntegrTo."Company Name");
@@ -149,23 +141,15 @@ codeunit 50008 "Copy Items to All Companies"
                                                             CompanyName,
                                                             CompIntegrTo."Company Name"));
 
-                // if DaleteAllFlag then begin
-                //     ItemUoMFrom.FindSet(false, false);
-                //     ItemUoMTo.DeleteAll();
-                //     repeat
-                //         ItemUoMTo := ItemUoMFrom;
-                //         ItemUoMTo.Insert();
-                //     until ItemUoMFrom.Next() = 0;
-                // end;
 
-                if ItemToCopy.FindSet(false, false) then
+                if ItemToCopy.FindSet() then
                     repeat
                         ItemFrom.Get(ItemToCopy."No.");
                         ConfProgressBar.Update(StrSubstNo(txtProcessHeader, ItemFrom."No."));
                         ItemTo.SetRange("No.", ItemFrom."No.");
                         // copy UoM before Items
                         UoMTo.ChangeCompany(CompIntegrTo."Company Name");
-                        if UoMFrom.FindSet(false, false) then
+                        if UoMFrom.FindSet() then
                             repeat
                                 if not UoMTo.Get(UoMFrom.Code)
                                 or (UoMTo."Last Modified Date Time" < UoMFrom."Last Modified Date Time") then begin
@@ -181,7 +165,7 @@ codeunit 50008 "Copy Items to All Companies"
                                 ItemUoMTo.DeleteAll();
 
                                 ItemUoMFrom.SetRange("Item No.", ItemFrom."No.");
-                                ItemUoMFrom.FindSet(false, false);
+                                ItemUoMFrom.FindSet();
                                 repeat
                                     ItemUoMTo := ItemUoMFrom;
                                     ItemUoMTo.Insert();
@@ -199,7 +183,7 @@ codeunit 50008 "Copy Items to All Companies"
                                     ItemUoMTo.DeleteAll();
 
                                     ItemUoMFrom.SetRange("Item No.", ItemFrom."No.");
-                                    ItemUoMFrom.FindSet(false, false);
+                                    ItemUoMFrom.FindSet();
                                     repeat
                                         ItemUoMTo := ItemUoMFrom;
                                         ItemUoMTo.Insert();
@@ -254,7 +238,7 @@ codeunit 50008 "Copy Items to All Companies"
         TotalCount := ItemToCopy.Count;
         ConfigProgressBarRecord.Init(TotalCount, Counter, STRSUBSTNO(ApplyingURLMsg, ItemToCopy.TableCaption));
 
-        if ItemToCopy.FindSet(false, false) then begin
+        if ItemToCopy.FindSet() then begin
             repeat
                 _Item.Get(ItemToCopy."No.");
                 // Create JSON for CRM
@@ -288,7 +272,7 @@ codeunit 50008 "Copy Items to All Companies"
     var
         Item: Record Item;
     begin
-        if Item.FindSet(false, false) then
+        if Item.FindSet() then
             repeat
                 if CheckItemFieldsFilled(Item) then
                     AddEntityToCopy(entityType::Item, Item."No.");

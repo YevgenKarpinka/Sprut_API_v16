@@ -14,6 +14,7 @@ codeunit 50000 "Web Service Mgt."
         WebServiceMgt: Codeunit "Web Service Mgt.";
         ModificationOrder: Codeunit "Modification Order";
         PrepmtMgt: Codeunit "Prepayment Management";
+        errDescriptionCannotBeEmpty: Label '''description'' cannot be empty';
 
 
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]; var Body: Text): Boolean
@@ -24,44 +25,41 @@ codeunit 50000 "Web Service Mgt."
         webServiceHeader: Record "Web Service Header";
         webServiceLine: Record "Web Service Line";
     begin
-        if not GetOauthToken(tokenType, accessToken, APIResult) then begin
-            Body := APIResult;
-            exit(false);
-        end;
+        // if not GetOauthToken(tokenType, accessToken, APIResult) then begin
+        //     Body := APIResult;
+        //     Error(Body);
+        // end;
 
-        if not OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then
-            exit(false);
-        exit(true);
+        GetOauthToken(tokenType, accessToken, APIResult);
+        if OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then
+            exit(true);
+        Error(Body);
     end;
 
     procedure CreateProductInCRM(entityType: Text; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
     begin
-        if not OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then
-            exit(false);
-        exit(true);
+        if OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then
+            exit(true);
     end;
 
     procedure CreatePaymentInCRM(entityType: Text; requestMethod: Code[20]; tokenType: Text; accessToken: Text; var Body: Text): Boolean
     begin
-        if not OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then
-            exit(false);
-        exit(true);
+        if OnAPIProcess(entityType, requestMethod, tokenType, accessToken, Body) then
+            exit(true);
     end;
 
     procedure GetSpecificationFromCRM(SalesOrderNo: Code[20]; entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
     begin
         GetBodyFromSalesOrderNo(SalesOrderNo, Body);
-        if not GetEntity(entityType, requestMethod, Body) then
-            exit(false);
-        exit(true);
+        if GetEntity(entityType, requestMethod, Body) then
+            exit(true);
     end;
 
     procedure GetInvoicesFromCRM(SalesOrderNo: Code[20]; entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
     begin
         GetBodyFromSalesOrderNo(SalesOrderNo, Body);
-        if not GetEntity(entityType, requestMethod, Body) then
-            exit(false);
-        exit(true);
+        if GetEntity(entityType, requestMethod, Body) then
+            exit(true);
     end;
 
     local procedure GetBodyFromSalesOrderNo(SalesOrderNo: Code[20]; var Body: Text)
@@ -179,8 +177,10 @@ codeunit 50000 "Web Service Mgt."
 
         // Insert Operation to Log
         IntegrationLog.InsertOperationToLog('CUSTOM_CRM_API', requestMethod, BaseURL, '', RequestBody, Body, ResponseMessage.IsSuccessStatusCode());
+        if ResponseMessage.IsSuccessStatusCode then
+            exit(ResponseMessage.IsSuccessStatusCode);
 
-        exit(ResponseMessage.IsSuccessStatusCode);
+        Error(Body);
     end;
 
     local procedure GetSpecificationAmount(ResponceToken: Text): Decimal
@@ -387,6 +387,7 @@ codeunit 50000 "Web Service Mgt."
         countSL: Integer;
         modifiedSL: Boolean;
         statusSH: Enum "Sales Document Status";
+        Description: Text[100];
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
 
@@ -405,6 +406,10 @@ codeunit 50000 "Web Service Mgt."
                 // exit(true);
                 LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
                 ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+
+                Description := GetJSToken(LineToken.AsObject(), 'description').AsValue().AsText();
+                if Description = '' then Error(errDescriptionCannotBeEmpty);
+
                 Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
                 UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
                 SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
@@ -412,6 +417,7 @@ codeunit 50000 "Web Service Mgt."
 
                 if SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then begin
                     if SalesLine."No." <> ItemNo then exit(true);
+                    if SalesLine.Description <> Description then exit(true);
                     if SalesLine.Quantity > Qty then exit(true);
                     if SalesLine."Unit Price" > UnitPrice then exit(true);
                     // if SalesLine."Line Amount" > SpecLineAmount then exit(true);
@@ -449,6 +455,7 @@ codeunit 50000 "Web Service Mgt."
             else
                 LineNo := 0;
             ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+            Description := GetJSToken(LineToken.AsObject(), 'description').AsValue().AsText();
             Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
             UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
             SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
@@ -457,6 +464,10 @@ codeunit 50000 "Web Service Mgt."
             if SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then begin
 
                 modifiedSL := false;
+                if SalesLine.Description <> Description then begin
+                    SalesLine.Validate(Description, Description);
+                    modifiedSL := true;
+                end;
                 if SalesLine.Quantity <> Qty then begin
                     SalesLine.Validate(Quantity, Qty);
                     modifiedSL := true;
@@ -477,7 +488,7 @@ codeunit 50000 "Web Service Mgt."
                 if modifiedSL then
                     SalesLine.Modify(true);
             end else begin
-                PrepmtMgt.InsertNewSalesLine(SalesOrderNo, ItemNo, Qty, UnitPrice, SpecLineAmount, crmLineID);
+                PrepmtMgt.InsertNewSalesLine(SalesOrderNo, ItemNo, Description, Qty, UnitPrice, SpecLineAmount, crmLineID);
             end;
         end;
 
@@ -504,6 +515,7 @@ codeunit 50000 "Web Service Mgt."
         LineToken: JsonToken;
         LocationCode: Code[20];
         Location: Record Location;
+        Description: Text[100];
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
         LocationCode := GetSpecificationLocationCode(ResponceToken);
@@ -525,12 +537,17 @@ codeunit 50000 "Web Service Mgt."
 
             LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
             ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+
+            Description := GetJSToken(LineToken.AsObject(), 'description').AsValue().AsText();
+            if Description = '' then Error(errDescriptionCannotBeEmpty);
+
             Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
             UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
             SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
 
             if not SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then exit(true);
             if SalesLine."No." <> ItemNo then exit(true);
+            if SalesLine.Description <> Description then exit(true);
             if SalesLine.Quantity <> Qty then exit(true);
             if SalesLine."Unit Price" <> UnitPrice then exit(true);
             if SalesLine."Line Amount" <> SpecLineAmount then exit(true);
@@ -550,32 +567,9 @@ codeunit 50000 "Web Service Mgt."
         CountInvoiceCRM: Integer;
         CountSalesInv: Integer;
     begin
-        // CountInvoiceCRM := 0;
-        // CountSalesInv := 0;
-        // SalesInvHeader.SetCurrentKey("CRM Invoice No.");
-
         jsonPrepmInv.ReadFrom(ResponceTokenLines);
         CountInvoiceCRM := jsonPrepmInv.Count;
 
-        // foreach PrepmInvToken in jsonPrepmInv do begin
-        //     CountInvoiceCRM += 1;
-        //     invoiceID := GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
-        //     PrepmInvAmount := Round(GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
-
-        //     SalesInvHeader.SetRange("CRM Invoice No.", invoiceID);
-        //     if SalesInvHeader.FindSet(false, false) then
-        //         repeat
-
-        //             SalesInvHeader.CalcFields("Amount Including VAT");
-        //             bcPrepmInvAmount += SalesInvHeader."Amount Including VAT";
-        //         until SalesInvHeader.Next() = 0;
-
-        //     if PrepmInvAmount < bcPrepmInvAmount then
-        //         exit(true);
-        // end;
-
-        // if crm invoice will be delete
-        // SalesInvHeader.Reset();
         SalesInvHeader.SetCurrentKey("Prepayment Order No.", "CRM Invoice No.");
         SalesInvHeader.SetRange("Prepayment Order No.", SalesOrderNo);
         SalesInvHeader.SetFilter("CRM Invoice No.", '<>%1', '');
@@ -596,12 +590,9 @@ codeunit 50000 "Web Service Mgt."
         CountInvoiceCRM: Integer;
         CountSalesInv: Integer;
     begin
-        // CountInvoiceCRM := 0;
-        // CountSalesInv := 0;
         SalesInvHeader.SetCurrentKey("CRM Invoice No.");
         jsonPrepmInv.ReadFrom(ResponceTokenLines);
         foreach PrepmInvToken in jsonPrepmInv do begin
-            // CountInvoiceCRM += 1;
             invoiceID := GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
             PrepmInvAmount := Round(GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
 
@@ -681,8 +672,10 @@ codeunit 50000 "Web Service Mgt."
 
         // Insert Operation to Log
         IntegrationLog.InsertOperationToLog('STANDART_CRM_API', requestMethod, BaseURL, '', RequestBody, Body, ResponseMessage.IsSuccessStatusCode());
+        if ResponseMessage.IsSuccessStatusCode then
+            exit(ResponseMessage.IsSuccessStatusCode);
 
-        exit(ResponseMessage.IsSuccessStatusCode);
+        Error(Body);
     end;
 
     procedure GetOauthToken(var TokenType: Text; var AccessToken: Text; var APIResult: Text): Boolean
@@ -742,7 +735,8 @@ codeunit 50000 "Web Service Mgt."
             GetTokenFromResponse(APIResult, TokenType, AccessToken);
             exit(true);
         end;
-        exit(false);
+
+        Error(APIResult);
     end;
 
     procedure GetResourceProductionNotAllowed(): Boolean
@@ -764,22 +758,12 @@ codeunit 50000 "Web Service Mgt."
         AccessToken := GetJSToken(jsonAPI, 'access_token').AsValue().AsText();
     end;
 
-    /// <summary> 
-    /// Description for GetJSToken.
-    /// </summary>
-    /// <param name="_JSONObject">Parameter of type JsonObject.</param>
-    /// <param name="TokenKey">Parameter of type Text.</param>
     procedure GetJSToken(_JSONObject: JsonObject; TokenKey: Text) _JSONToken: JsonToken
     begin
         if not _JSONObject.Get(TokenKey, _JSONToken) then
             Error('Could not find a token with key %1', TokenKey);
     end;
 
-    /// <summary> 
-    /// Description for SelectJSToken.
-    /// </summary>
-    /// <param name="_JSONObject">Parameter of type JsonObject.</param>
-    /// <param name="Path">Parameter of type Text.</param>
     local procedure SelectJSToken(_JSONObject: JsonObject; Path: Text) _JSONToken: JsonToken
     begin
         if not _JSONObject.SelectToken(Path, _JSONToken) then

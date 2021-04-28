@@ -123,6 +123,7 @@ codeunit 50001 "Prepayment Management"
     procedure InsertSalesLineFromCRM(SalesOrderNo: Code[20]; responseText: Text)
     var
         ItemNo: Code[20];
+        Description: Text[100];
         Qty: Decimal;
         UnitPrice: Decimal;
         LineAmount: Decimal;
@@ -138,11 +139,12 @@ codeunit 50001 "Prepayment Management"
         jsonLines.ReadFrom(ResponceTokenLine);
         foreach LineToken in jsonLines do begin
             ItemNo := WebServicesMgt.GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+            Description := WebServicesMgt.GetJSToken(LineToken.AsObject(), 'description').AsValue().AsText();
             Qty := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.01);
             UnitPrice := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
             LineAmount := Round(WebServicesMgt.GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
             crmLineID := WebServicesMgt.GetJSToken(LineToken.AsObject(), 'CRM_ID').AsValue().AsText();
-            InsertNewSalesLine(SalesOrderNo, ItemNo, Qty, UnitPrice, LineAmount, crmLineID);
+            InsertNewSalesLine(SalesOrderNo, ItemNo, Description, Qty, UnitPrice, LineAmount, crmLineID);
         end;
     end;
 
@@ -208,7 +210,7 @@ codeunit 50001 "Prepayment Management"
         exit(10000);
     end;
 
-    procedure InsertNewSalesLine(SalesOrderNo: Code[20]; ItemNo: Code[20]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal; crmLineID: Guid)
+    procedure InsertNewSalesLine(SalesOrderNo: Code[20]; ItemNo: Code[20]; Descr: Text[100]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal; crmLineID: Guid)
     var
         SalesHeader: Record "Sales Header";
         SalesLine: Record "Sales Line";
@@ -231,6 +233,7 @@ codeunit 50001 "Prepayment Management"
 
         SalesLine.Type := SalesLine.Type::Item;
         SalesLine.Validate("No.", ItemNo);
+        SalesLine.Validate(Description, Descr);
         SalesLine.Validate(Quantity, Qty);
         SalesLine.Validate("Unit Price", UnitPrice);
         SalesLine.Validate("Line Amount", LineAmount);
