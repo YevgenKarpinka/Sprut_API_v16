@@ -14,7 +14,7 @@ codeunit 50005 "CRM Action API"
         errCRM_IDisNullNotAllowed: Label 'The blank "crmId" is not allowed.', Locked = true;
 
     procedure OnCreatePrepaymentInvoice(orderNo: Code[20]; invoiceId: Text[50];
-                                        crmId: Guid; prepaymentAmount: Decimal)
+                                        crmId: Guid; prepaymentAmount: Decimal): Text
     var
         salesInvoice: Page "APIV2 - Sales Invoice";
     begin
@@ -26,7 +26,7 @@ codeunit 50005 "CRM Action API"
 
         salesInvoice.SetInit(invoiceId, prepaymentAmount, crmId);
         salesInvoice.CreatePrepaymentInvoice(orderNo);
-        Message('prepayment invoice created!');
+        exit(CreateJsonPrpmtSalesInvoice(orderNo, invoiceId, crmId, prepaymentAmount));
     end;
 
     procedure OnAfterChangedSalesOrder(sourceType: Text[50]; salesOrderId: Text[50]; crm_id: Guid): Text
@@ -108,7 +108,7 @@ codeunit 50005 "CRM Action API"
 
         SalesInvHeader.SetCurrentKey("Prepayment Order No.");
         SalesInvHeader.SetRange("Prepayment Order No.", salesOrderId);
-        if SalesInvHeader.FindSet(false, false) then
+        if SalesInvHeader.FindSet() then
             repeat
                 SalesInvHeader.CalcFields("Amount Including VAT");
                 InvAmount += SalesInvHeader."Amount Including VAT";
@@ -116,7 +116,7 @@ codeunit 50005 "CRM Action API"
 
         SalesCrMemoHeader.SetCurrentKey("Prepayment Order No.");
         SalesCrMemoHeader.SetRange("Prepayment Order No.", salesOrderId);
-        if SalesCrMemoHeader.FindSet(false, false) then
+        if SalesCrMemoHeader.FindSet() then
             repeat
                 SalesCrMemoHeader.CalcFields("Amount Including VAT");
                 CrMemoAmount += SalesCrMemoHeader."Amount Including VAT";
@@ -135,11 +135,12 @@ codeunit 50005 "CRM Action API"
         jsonSalesLines: JsonArray;
         txtSalesLines: Text;
     begin
+        SalesLines.SetCurrentKey(Type, Quantity);
         SalesLines.SetRange("Document Type", SalesLines."Document Type"::Order);
         SalesLines.SetRange("Document No.", SalesOrderNo);
         SalesLines.SetRange(Type, SalesLines.Type::Item);
         SalesLines.SetFilter(Quantity, '<>%1', 0);
-        if SalesLines.FindSet(false, false) then
+        if SalesLines.FindSet() then
             repeat
                 Clear(jsonSalesLine);
 
@@ -154,6 +155,28 @@ codeunit 50005 "CRM Action API"
 
         jsonSalesLines.WriteTo(txtSalesLines);
         exit(txtSalesLines);
+    end;
+
+    local procedure CreateJsonPrpmtSalesInvoice(orderNo: Code[20]; invoiceId: Text[50]; crmId: Text[50]; prepaymentAmount: Decimal): Text
+    var
+        SalesInvHeader: Record "Sales Invoice Header";
+        jsonSalesInvHeader: JsonObject;
+        txtSalesInvHeader: Text;
+    begin
+        SalesInvHeader.SetCurrentKey("Prepayment Order No.", "CRM Invoice No.", "CRM ID");
+        SalesInvHeader.SetRange("Prepayment Order No.", orderNo);
+        SalesInvHeader.SetRange("CRM Invoice No.", invoiceId);
+        SalesInvHeader.SetRange("CRM ID", crmId);
+        if SalesInvHeader.FindLast() then begin
+            jsonSalesInvHeader.Add('orderNo', orderNo);
+            jsonSalesInvHeader.Add('postedInvoiceNo', SalesInvHeader."No.");
+            jsonSalesInvHeader.Add('invoiceId', invoiceId);
+            jsonSalesInvHeader.Add('crmId', LowerCase(DelChr(crmId, '<>', '{}')));
+            jsonSalesInvHeader.Add('prepaymentAmount', prepaymentAmount);
+        end;
+
+        jsonSalesInvHeader.WriteTo(txtSalesInvHeader);
+        exit(txtSalesInvHeader);
     end;
 }
 

@@ -9,6 +9,14 @@ pageextension 50020 "Posted Sales Inv Subform Ext" extends "Posted Sales Invoice
             {
                 Visible = false;
             }
+            field("VAT Base Amount"; "VAT Base Amount")
+            {
+                Visible = false;
+            }
+            field("Amount Including VAT"; "Amount Including VAT")
+            {
+                Visible = false;
+            }
         }
     }
 

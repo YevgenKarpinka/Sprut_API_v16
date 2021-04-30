@@ -43,6 +43,16 @@ pageextension 50001 "Sales Order Subform Ext" extends "Sales Order Subform"
                 ApplicationArea = All;
                 Visible = false;
             }
+            field("VAT Base Amount"; "VAT Base Amount")
+            {
+                ApplicationArea = All;
+                Visible = false;
+            }
+            field("Amount Including VAT"; "Amount Including VAT")
+            {
+                ApplicationArea = All;
+                Visible = false;
+            }
         }
     }
     actions
