@@ -245,7 +245,7 @@ codeunit 50008 "Copy Items to All Companies"
                 if not IsNullGuid(_Item."CRM Item Id") then begin
                     requestMethod := PATCHrequestMethod;
                     _jsonItem := WebServiceMgt.jsonItemsToPatch(_Item."No.");
-                    entityTypeValue := StrSubstNo('%1(%2)', entityType, _Item."CRM Item Id");
+                    entityTypeValue := StrSubstNo('%1(%2)', entityType, LowerCase(DelChr(_Item."CRM Item Id", '<>', '{}')));
                 end else begin
                     requestMethod := POSTrequestMethod;
                     _jsonItem := WebServiceMgt.jsonItemsToPost(_Item."No.");
