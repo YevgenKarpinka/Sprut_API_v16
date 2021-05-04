@@ -2,8 +2,9 @@ codeunit 50012 "Task Payment To CRM"
 {
     trigger OnRun()
     begin
-        if GetFirstRecordForExecute() then
-            Execute();
+        // if GetFirstRecordForExecute() then
+        //     Execute();
+        GetRecordForExecute();
     end;
 
     var
@@ -88,6 +89,21 @@ codeunit 50012 "Task Payment To CRM"
         recTaskPaymentSend.SetFilter("Work Status", '%1|%2', recTaskPaymentSend."Work Status"::WaitingForWork,
                                                              recTaskPaymentSend."Work Status"::Error);
         exit(recTaskPaymentSend.FindFirst());
+    end;
+
+    local procedure GetRecordForExecute()
+    begin
+        recTaskPaymentSend.Reset();
+        recTaskPaymentSend.SetCurrentKey(Status, "Work Status");
+        recTaskPaymentSend.SetFilter(Status, '%1', recTaskPaymentSend.Status::OnPaymentSend);
+        recTaskPaymentSend.SetFilter("Work Status", '%1|%2', recTaskPaymentSend."Work Status"::WaitingForWork,
+                                                             recTaskPaymentSend."Work Status"::Error);
+        if recTaskPaymentSend.FindSet(true) then
+            repeat
+                repeat
+                    Execute();
+                until recTaskPaymentSend.Next() = 0;
+            until not recTaskPaymentSend.FindSet(true);
     end;
 
     local procedure GetJobQueueMaxAttempts(): Integer
