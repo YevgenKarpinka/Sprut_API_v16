@@ -53,6 +53,18 @@ tableextension 50009 "Sales Line Ext" extends "Sales Line"
                         RUS = 'Дата и время создания';
             Editable = false;
         }
+        field(50007; "Description Extended"; Text[350])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Description Extended',
+                        RUS = 'Описание расширенное';
+            // Editable = false;
+
+            trigger OnValidate()
+            begin
+                Description := CopyStr("Description Extended", 1, MaxStrLen(Description));
+            end;
+        }
     }
 
     trigger OnInsert()

@@ -54,6 +54,14 @@ pageextension 50001 "Sales Order Subform Ext" extends "Sales Order Subform"
                 Visible = false;
             }
         }
+        addafter(Description)
+        {
+            field("Description Extended"; "Description Extended")
+            {
+                ApplicationArea = All;
+                Visible = false;
+            }
+        }
     }
     actions
     {
