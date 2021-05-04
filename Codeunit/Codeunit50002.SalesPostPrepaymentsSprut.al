@@ -84,25 +84,19 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
     local procedure ClearAllCRMInvoiceNo(SalesOrderNo: Code[20])
     var
         SalesInvoiceHeader: Record "Sales Invoice Header";
+        blankGUID: Guid;
     begin
         SalesInvoiceHeader.SetCurrentKey("Prepayment Order No.");
         SalesInvoiceHeader.SetRange("Prepayment Order No.", SalesOrderNo);
         SalesInvoiceHeader.ModifyAll("CRM Invoice No.", '');
+        SalesInvoiceHeader.ModifyAll("CRM ID", blankGUID);
     end;
 
-    /// <summary> 
-    /// Description for SetDocumentType.
-    /// </summary>
-    /// <param name="DocumentType">Parameter of type Enum "Sales Document Type".</param>
     procedure SetDocumentType(DocumentType: Enum "Sales Document Type")
     begin
         PrepmtDocumentType := DocumentType;
     end;
 
-    /// <summary> 
-    /// Description for Execute.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
     local procedure Execute(var SalesHeader: Record "Sales Header")
     begin
         case PrepmtDocumentType of
