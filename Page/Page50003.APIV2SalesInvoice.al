@@ -74,6 +74,12 @@ page 50003 "APIV2 - Sales Invoice"
                     Caption = 'prepaymentAmount', Locked = true;
                     ShowMandatory = true;
                 }
+                field(invoiceNo1C; invoiceNo1C)
+                {
+                    ApplicationArea = All;
+                    Caption = 'invoiceNo1C', Locked = true;
+                    ShowMandatory = true;
+                }
             }
         }
     }
@@ -131,6 +137,7 @@ page 50003 "APIV2 - Sales Invoice"
         TotalOrderAmount: Decimal;
         TotalPrepaymentAmountInvoice: Decimal;
         postedInvoiceNo: Code[20];
+        invoiceNo1C: Code[50];
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
         errBlankPrepaymentAmount: Label 'The blank "prepaymentAmount" is not allowed.', Locked = true;
         errBlankInvoiceId: Label 'The blank "invoiceId" is not allowed.', Locked = true;
@@ -139,11 +146,12 @@ page 50003 "APIV2 - Sales Invoice"
         errPrepaymentInvoiceIsPosted: Label 'Prepayment invoice %1 has already been created.';
         errCRM_IDisNullNotAllowed: Label 'The blank "crmId" is not allowed.', Locked = true;
 
-    procedure SetInit(_invoiceID: Text[50]; _prepaymentAmount: Decimal; _crmId: Guid)
+    procedure SetInit(_invoiceID: Text[50]; _prepaymentAmount: Decimal; _crmId: Guid; _invoiceNo1C: Text[50])
     begin
         invoiceId := _invoiceID;
         crmId := _crmId;
         prepaymentAmount := _prepaymentAmount;
+        invoiceNo1C := _invoiceNo1C;
     end;
 
     procedure CreatePrepaymentInvoice(SalesOrderNo: Code[20])
@@ -219,6 +227,7 @@ page 50003 "APIV2 - Sales Invoice"
         // update prepayment percent sales header
         SalesHeader."CRM Invoice No." := invoiceId;
         SalesHeader."CRM ID" := crmId;
+        SalesHeader."Invoice No. 1C" := invoiceNo1C;
         // SalesHeader.Validate("Prepayment %", PrepaymentPercent);
         SalesHeader."Prepayment %" := PrepaymentPercent;
         SalesHeader.Modify();

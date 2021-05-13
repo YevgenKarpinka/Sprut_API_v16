@@ -163,7 +163,7 @@ codeunit 50001 "Prepayment Management"
             invoiceID := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
             PrepmInvAmount := Round(WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
             crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'crm_id').AsValue().AsText();
-            API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId);
+            API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId, '');
             API_SalesInvoice.CreatePrepaymentInvoice(SalesOrderNo);
         end;
     end;
@@ -184,7 +184,7 @@ codeunit 50001 "Prepayment Management"
             if not InvoiceIdExist(invoiceID) then begin
                 PrepmInvAmount := Round(WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
                 crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'crm_id').AsValue().AsText();
-                API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId);
+                API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId, '');
                 API_SalesInvoice.CreatePrepaymentInvoice(SalesOrderNo);
             end;
         end;

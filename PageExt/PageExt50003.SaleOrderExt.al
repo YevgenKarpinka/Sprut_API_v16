@@ -232,12 +232,14 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         invoiceID: Text[50];
                         prepaymentAmount: Decimal;
                         crmId: Guid;
+                        invoiceNo1C: Text[50];
                         API_SalesInvoice: Page "APIV2 - Sales Invoice";
                     begin
                         invoiceID := 'INV-01942-D4F6G1';
                         prepaymentAmount := 75;
                         crmId := '12b095da-4e2a-eb11-a813-000d3aba77ea';
-                        API_SalesInvoice.SetInit(invoiceID, prepaymentAmount, crmId);
+                        invoiceNo1C := 'Test1C';
+                        API_SalesInvoice.SetInit(invoiceID, prepaymentAmount, crmId, invoiceNo1C);
                         API_SalesInvoice.CreatePrepaymentInvoice("No.");
                     end;
                 }
@@ -337,7 +339,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                     var
                         cmrAction: Codeunit "CRM Action API";
                     begin
-                        cmrAction.OnPostSalesOrder("No.", 'Test01', '00000000-0000-0000-0000-000000000000', 21.07);
+                        cmrAction.OnPostSalesOrder("No.", 'Test01', '00000000-0000-0000-0000-000000000000', 21.07, '1CTest');
                     end;
                 }
             }

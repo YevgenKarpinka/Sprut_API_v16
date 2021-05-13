@@ -55,6 +55,13 @@ tableextension 50003 "Sales Invoice Header Ext" extends "Sales Invoice Header"
                         RUS = 'Дата и время создания';
             Editable = false;
         }
+        field(50008; "Invoice No. 1C"; Code[50])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Invoice No. 1C',
+                        RUS = 'Номер счета 1C';
+            Editable = false;
+        }
     }
 
 }

@@ -37,6 +37,11 @@ pageextension 50014 "Posted Sales Invoice Ext" extends "Posted Sales Invoice"
             {
                 Visible = false;
             }
+            field("Invoice No. 1C"; "Invoice No. 1C")
+            {
+                ApplicationArea = All;
+                Visible = false;
+            }
         }
     }
 

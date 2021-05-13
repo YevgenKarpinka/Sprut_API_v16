@@ -12,9 +12,11 @@ codeunit 50005 "CRM Action API"
         errBlankInvoiceId: Label 'The blank "invoiceId" is not allowed.', Locked = true;
         errPrepaymentPercentCannotBeLessOrEqual: Label 'The "prepaymentPercent" cannot be less or equal %1.', Locked = true;
         errCRM_IDisNullNotAllowed: Label 'The blank "crmId" is not allowed.', Locked = true;
+        msgInvoiceUpdated: Label 'Invoice %1 updated.', Locked = true;
 
     procedure OnCreatePrepaymentInvoice(orderNo: Code[20]; invoiceId: Text[50];
-                                        crmId: Guid; prepaymentAmount: Decimal): Text
+                                        crmId: Guid; prepaymentAmount: Decimal;
+                                        invoiceNo1C: Text[50]): Text
     var
         salesInvoice: Page "APIV2 - Sales Invoice";
     begin
@@ -24,7 +26,7 @@ codeunit 50005 "CRM Action API"
         if prepaymentAmount <= 0 then
             ERROR(errBlankPrepaymentAmount);
 
-        salesInvoice.SetInit(invoiceId, prepaymentAmount, crmId);
+        salesInvoice.SetInit(invoiceId, prepaymentAmount, crmId, invoiceNo1C);
         salesInvoice.CreatePrepaymentInvoice(orderNo);
         exit(CreateJsonPrpmtSalesInvoice(orderNo, invoiceId, crmId, prepaymentAmount));
     end;
@@ -50,7 +52,7 @@ codeunit 50005 "CRM Action API"
         // exit(GetJsonSalesOrderLines(SalesHeader."No."));
     end;
 
-    procedure OnPostSalesOrder(salesOrderId: Text[50]; crmInvoiceId: Text[50]; crmId: Guid; crmInvoiceAmount: Decimal): Text
+    procedure OnPostSalesOrder(salesOrderId: Text[50]; crmInvoiceId: Text[50]; crmId: Guid; crmInvoiceAmount: Decimal; invoiceNo1C: Text[50]): Text
     var
         SalesHeader: Record "Sales Header";
         Location: Record Location;
@@ -66,6 +68,7 @@ codeunit 50005 "CRM Action API"
             ReleaseSalesDoc.PerformManualRelease(SalesHeader);
         SalesHeader."CRM Invoice No." := crmInvoiceId;
         SalesHeader."CRM ID" := crmId;
+        SalesHeader."Invoice No. 1C" := invoiceNo1C;
         SalesHeader.Modify();
         if Location.RequireShipment(SalesHeader."Location Code") then begin
             recWhseShipmentLine.SetCurrentKey("Source Document", "Source No.");
@@ -177,6 +180,17 @@ codeunit 50005 "CRM Action API"
 
         jsonSalesInvHeader.WriteTo(txtSalesInvHeader);
         exit(txtSalesInvHeader);
+    end;
+
+    procedure OnUpdatePostedInvoiceInvoiceNo1C(postedInvoiceNo: Code[20]; invoiceNo1C: Text[50]): Text
+    var
+        SalesInvHeader: Record "Sales Invoice Header";
+    begin
+        if SalesInvHeader.Get(postedInvoiceNo) then begin
+            SalesInvHeader."Invoice No. 1C" := invoiceNo1C;
+            SalesInvHeader.Modify();
+        end;
+        exit(StrSubstNo(msgInvoiceUpdated, postedInvoiceNo));
     end;
 }
 

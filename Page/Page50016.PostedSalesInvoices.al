@@ -47,7 +47,9 @@ page 50016 "PostedSalesInvoices"
                 field("CRM ID"; "CRM ID")
                 {
                 }
-
+                field("Invoice No. 1C"; "Invoice No. 1C")
+                {
+                }
             }
         }
     }
