@@ -2,13 +2,12 @@ codeunit 50018 "Integration 1C"
 {
     trigger OnRun()
     begin
-        if IntegrationWith1CEnabled() then begin
-            // GetUoMIdFrom1C();
-            GetItemsIdFrom1C();
-            GetBankDirectoryIdFrom1C();
-            GetVendorIdFrom1C();
-            GetCustomerIdFrom1C();
-        end;
+        if IntegrationWith1CDisabled() then exit;
+        // GetUoMIdFrom1C();
+        GetItemsIdFrom1C();
+        GetBankDirectoryIdFrom1C();
+        GetVendorIdFrom1C();
+        GetCustomerIdFrom1C();
     end;
 
     var
@@ -360,7 +359,8 @@ codeunit 50018 "Integration 1C"
         CustBankAcc: Record "Customer Bank Account";
         CustAgreement: Record "Customer Agreement";
         lblLegalEntity: Label 'ЮридическоеЛицо';
-        lblCustomerParentKey: Label '5df557a2-80ae-11eb-b1ab-0022489ae653';
+        // lblCustomerParentKey: Label '5df557a2-80ae-11eb-b1ab-0022489ae653';
+        lblCustomerParentKey: Label 'c0a62194-b47b-11eb-b1b0-0022489ae653';
         requestMethodPATCH: Label 'PATCH';
         mainBankAccId: Text[40];
     begin
@@ -571,7 +571,8 @@ codeunit 50018 "Integration 1C"
     var
         Vendor: Record Vendor;
         lblLegalEntity: Label 'ЮридическоеЛицо';
-        lblVendorParentKey: Label '5df557a3-80ae-11eb-b1ab-0022489ae653';
+        // lblVendorParentKey: Label '5df557a3-80ae-11eb-b1ab-0022489ae653';
+        lblVendorParentKey: Label 'c0a62195-b47b-11eb-b1b0-0022489ae653';
         requestMethodPATCH: Label 'PATCH';
         mainBankAccId: Text[40];
     begin
@@ -1518,13 +1519,14 @@ codeunit 50018 "Integration 1C"
         exit(not CustAgreement.IsEmpty);
     end;
 
-    local procedure IntegrationWith1CEnabled(): Boolean
+    local procedure IntegrationWith1CDisabled(): Boolean
     var
         CompanyIntegration: Record "Company Integration";
     begin
-        CompanyIntegration.SetCurrentKey("Company Name");
+        CompanyIntegration.SetCurrentKey("Company Name", "Integration With 1C");
         CompanyIntegration.SetRange("Company Name", CompanyName);
-        exit(not CompanyIntegration.IsEmpty);
+        CompanyIntegration.SetRange("Integration With 1C", true);
+        exit(CompanyIntegration.IsEmpty);
     end;
 
     procedure Get1CRoot()
