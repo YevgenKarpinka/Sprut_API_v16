@@ -78,6 +78,12 @@ table 50005 "Company Integration"
                         RUS = 'Интеграция с 1С';
             DataClassification = CustomerContent;
         }
+        field(9; "Prefix"; Code[10])
+        {
+            CaptionML = ENU = 'Prefix',
+                        RUS = 'Префикс';
+            DataClassification = CustomerContent;
+        }
     }
 
     keys

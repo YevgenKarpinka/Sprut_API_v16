@@ -25,37 +25,34 @@ page 50009 "Company Integration List"
                 field("Company Name"; "Company Name")
                 {
                     ApplicationArea = All;
-
+                }
+                field(Prefix; Prefix)
+                {
+                    ApplicationArea = All;
                 }
                 field("Copy Items From"; "Copy Items From")
                 {
                     ApplicationArea = All;
-
                 }
                 field("Copy Items To"; "Copy Items To")
                 {
                     ApplicationArea = All;
-
                 }
                 field("Environment Production"; "Environment Production")
                 {
                     ApplicationArea = All;
-
                 }
                 field("Send Email UnApply Doc."; "Send Email UnApply Doc.")
                 {
                     ApplicationArea = All;
-
                 }
                 field("Send Email Error Tasks"; "Send Email Error Tasks")
                 {
                     ApplicationArea = All;
-
                 }
                 field("Integration With 1C"; "Integration With 1C")
                 {
                     ApplicationArea = All;
-
                 }
             }
         }

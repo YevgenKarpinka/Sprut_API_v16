@@ -4,17 +4,21 @@ codeunit 50018 "Integration 1C"
     begin
         if IntegrationWith1CDisabled() then exit;
         // GetUoMIdFrom1C();
-        GetItemsIdFrom1C();
+        GetCompanyIdFrom1C();
         GetBankDirectoryIdFrom1C();
-        GetVendorIdFrom1C();
+        if ItemCompanyFrom() then begin
+            GetItemsIdFrom1C();
+            GetVendorIdFrom1C();
+        end;
         GetCustomerIdFrom1C();
-        GetCustomerAgreementIdFrom1C(glCustAgreement);
+        // GetCustomerAgreementIdFrom1C(glCustAgreement);
     end;
 
     var
         IntegrationLog: Record "Integration Log";
         WebServiceMgt: Codeunit "Web Service Mgt.";
         glCustAgreement: Record "Customer Agreement";
+        glCompanyPrefix: Code[10];
 
     procedure GetCompanyIdFrom1C(): Boolean
     var
@@ -39,7 +43,7 @@ codeunit 50018 "Integration 1C"
         codeISO: Code[10];
     begin
         // create entity list for getting id from 1C
-        if CompanyIntegration.FindSet(false, false) then
+        if CompanyIntegration.FindSet() then
             repeat
                 CompanyInfo.ChangeCompany(CompanyIntegration."Company Name");
                 CompanyInfo.Get();
@@ -51,7 +55,7 @@ codeunit 50018 "Integration 1C"
 
         // link between 1C and BC
         // get entity from 1C
-        if tempCompanyIntegration.FindSet(false, false) then
+        if tempCompanyIntegration.FindSet() then
             repeat
                 CompanyInfo.ChangeCompany(tempCompanyIntegration."Company Name");
                 CompanyInfo.Get();
@@ -60,10 +64,13 @@ codeunit 50018 "Integration 1C"
                 jsonBody.ReadFrom(Body);
                 jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
                 if jsonLines.Count <> 0 then begin
-                    foreach LineToken in jsonLines do
+                    foreach LineToken in jsonLines do begin
                         AddIDToIntegrationEntity(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '',
                                                 WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText(),
                                                 tempCompanyIntegration."Company Name", CompanyName);
+
+                        AddCompanyIntegrationPrefix(tempCompanyIntegration."Company Name", WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Префикс').AsValue().AsText());
+                    end;
                 end;
                 Commit();
             until tempCompanyIntegration.Next() = 0;
@@ -112,7 +119,7 @@ codeunit 50018 "Integration 1C"
         // create Currency list for getting id from 1C
         CustomerAgreement.SetCurrentKey("CRM ID");
         CustomerAgreement.SetFilter("CRM ID", '<>%1', blankGuid);
-        if CustomerAgreement.FindSet(false, false) then
+        if CustomerAgreement.FindSet() then
             repeat
                 if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(CustomerAgreement."CRM ID"), '')
                 and Customer.Get(CustomerAgreement."Customer No.")
@@ -124,7 +131,7 @@ codeunit 50018 "Integration 1C"
 
         // link between 1C and BC
         // create entity in 1C or get it
-        if tempCustomerAgreement.FindSet(false, false) then
+        if tempCustomerAgreement.FindSet() then
             repeat
                 filterValue := StrSubstNo(lblfilter, 'CRM_ID', GuidToClearText(tempCustomerAgreement."CRM ID"));
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
@@ -152,7 +159,7 @@ codeunit 50018 "Integration 1C"
         // update entity in 1C
         // create list for updating in 1C
         tempCustomerAgreement.DeleteAll();
-        if CustomerAgreement.FindSet(false, false) then
+        if CustomerAgreement.FindSet() then
             repeat
                 if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(CustomerAgreement."CRM ID"), '')
                 and (IntegrationEntity."Last Modify Date Time" < CustomerAgreement."Last DateTime Modified") then begin
@@ -161,7 +168,7 @@ codeunit 50018 "Integration 1C"
                 end;
             until CustomerAgreement.Next() = 0;
 
-        if tempCustomerAgreement.FindSet(false, false) then
+        if tempCustomerAgreement.FindSet() then
             repeat
                 // create request body
                 CreateRequestBodyToCustomerAgreement(tempCustomerAgreement."Customer No.", tempCustomerAgreement."No.", jsonBody, entityTypePATCH);
@@ -259,27 +266,22 @@ codeunit 50018 "Integration 1C"
         limitStep: Integer;
         countStep: Integer;
     begin
-        // for testing
-        // limitStep := 3;
-        // countStep := 0;
-        // comment after testing
-
+        GetCompanyPrefix(CompanyName);
         // create Currency list for getting id from 1C
         Customer.SetCurrentKey("CRM ID");
         Customer.SetFilter("CRM ID", '<>%1', blankGuid);
-        if Customer.FindSet(false, false) then
+        if Customer.FindSet() then
             repeat
                 if not IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '')
                 and (countStep <= limitStep) then begin // comment after testing
                     tempCustomer := Customer;
                     tempCustomer.Insert();
-                    // countStep += 1;
                 end;
             until Customer.Next() = 0;
 
         // link between 1C and BC
         // create entity in 1C or get it
-        if tempCustomer.FindSet(false, false) then
+        if tempCustomer.FindSet() then
             repeat
                 filterValue := StrSubstNo(lblfilter, 'ID_CRM', GuidToClearText(tempCustomer."CRM ID"));
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
@@ -317,11 +319,16 @@ codeunit 50018 "Integration 1C"
                         GetCustomerBankAccountIdFrom1C(CustBankAcc);
                     end;
 
-                    if CustomerAgreementExist(tempCustomer."No.") then begin
-                        CustAgreement.SetRange("Customer No.", tempCustomer."No.");
-                        GetCustomerAgreementIdFrom1C(CustAgreement);
-                    end;
+                    // if CustomerAgreementExist(tempCustomer."No.") then begin
+                    //     CustAgreement.SetRange("Customer No.", tempCustomer."No.");
+                    //     GetCustomerAgreementIdFrom1C(CustAgreement);
+                    // end;
 
+                end;
+
+                if CustomerAgreementExist(tempCustomer."No.") then begin
+                    CustAgreement.SetRange("Customer No.", tempCustomer."No.");
+                    GetCustomerAgreementIdFrom1C(CustAgreement);
                 end;
 
                 Commit();
@@ -330,7 +337,7 @@ codeunit 50018 "Integration 1C"
         // update entity in 1C
         // create list for updating in 1C
         tempCustomer.DeleteAll();
-        if Customer.FindSet(false, false) then
+        if Customer.FindSet() then
             repeat
                 if IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '')
                 and (IntegrationEntity."Last Modify Date Time" < Customer."Last Modified Date Time") then begin
@@ -339,7 +346,7 @@ codeunit 50018 "Integration 1C"
                 end;
             until Customer.Next() = 0;
 
-        if tempCustomer.FindSet(false, false) then
+        if tempCustomer.FindSet() then
             repeat
                 // create request body
                 CreateRequestBodyToCustomer(tempCustomer."No.", jsonBody, requestMethodPATCH);
@@ -368,7 +375,7 @@ codeunit 50018 "Integration 1C"
     begin
         Customer.Get(CustomerNo);
         Clear(Body);
-        Body.Add('Code', Customer."No.");
+        Body.Add('Code', glCompanyPrefix + Customer."No.");
         Body.Add('Description', Customer.Name);
         Body.Add('НаименованиеПолное', Customer."Full Name");
         Body.Add('ЮридическоеФизическоеЛицо', lblLegalEntity);
@@ -423,7 +430,7 @@ codeunit 50018 "Integration 1C"
         end;
         ShipToAdress.SetCurrentKey("Customer No.");
         ShipToAdress.SetRange("Customer No.", CustomerNo);
-        if ShipToAdress.FindSet(false, false) then
+        if ShipToAdress.FindSet() then
             repeat
                 Clear(jsonContactInfoLine);
                 LineNo += 1;
@@ -484,7 +491,7 @@ codeunit 50018 "Integration 1C"
 
     begin
         // create Currency list for getting id from 1C
-        if Vendor.FindSet(false, false) then
+        if Vendor.FindSet() then
             repeat
                 if not IntegrationEntity.Get(lblSystemCode, Database::Vendor, Vendor."No.", '') then begin
                     tempVendor := Vendor;
@@ -494,7 +501,7 @@ codeunit 50018 "Integration 1C"
 
         // link between 1C and BC
         // create entity in 1C or get it
-        if tempVendor.FindSet(false, false) then
+        if tempVendor.FindSet() then
             repeat
                 filterValue := StrSubstNo(lblfilter, 'Code', tempVendor."No.");
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
@@ -541,7 +548,7 @@ codeunit 50018 "Integration 1C"
         // update entity in 1C
         // create list for updating in 1C
         tempVendor.DeleteAll();
-        if Vendor.FindSet(false, false) then
+        if Vendor.FindSet() then
             repeat
                 if IntegrationEntity.Get(lblSystemCode, Database::Vendor, Vendor."No.", '')
                 and (IntegrationEntity."Last Modify Date Time" < Vendor."Last Modified Date Time") then begin
@@ -550,7 +557,7 @@ codeunit 50018 "Integration 1C"
                 end;
             until Vendor.Next() = 0;
 
-        if tempVendor.FindSet(false, false) then
+        if tempVendor.FindSet() then
             repeat
                 // create request body
                 CreateRequestBodyToVendor(tempVendor."No.", jsonBody, requestMethodPATCH);
@@ -624,7 +631,7 @@ codeunit 50018 "Integration 1C"
         end;
         OrderAdress.SetCurrentKey("Vendor No.");
         OrderAdress.SetRange("Vendor No.", VendorNo);
-        if OrderAdress.FindSet(false, false) then
+        if OrderAdress.FindSet() then
             repeat
                 Clear(jsonContactInfoLine);
                 LineNo += 1;
@@ -683,7 +690,7 @@ codeunit 50018 "Integration 1C"
         codeISO: Code[10];
     begin
         // create Currency list for getting id from 1C
-        if VendBankAcc.FindSet(false, false) then
+        if VendBankAcc.FindSet() then
             repeat
                 if not IntegrationEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '')
                 and Vendor.Get(VendBankAcc."Vendor No.")
@@ -695,7 +702,7 @@ codeunit 50018 "Integration 1C"
 
         // link between 1C and BC
         // create entity in 1C or get it
-        if tempVendBankAcc.FindSet(false, false) then
+        if tempVendBankAcc.FindSet() then
             repeat
                 filterValue := StrSubstNo(lblfilter, 'НомерСчета', tempVendBankAcc.IBAN);
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
@@ -723,7 +730,7 @@ codeunit 50018 "Integration 1C"
         // update entity in 1C
         // create list for updating in 1C
         tempVendBankAcc.DeleteAll();
-        if VendBankAcc.FindSet(false, false) then
+        if VendBankAcc.FindSet() then
             repeat
                 if IntegrationEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '')
                 and (IntegrationEntity."Last Modify Date Time" < VendBankAcc."Last DateTime Modified") then begin
@@ -732,7 +739,7 @@ codeunit 50018 "Integration 1C"
                 end;
             until VendBankAcc.Next() = 0;
 
-        if tempVendBankAcc.FindSet(false, false) then
+        if tempVendBankAcc.FindSet() then
             repeat
                 // create request body
                 CreateRequestBodyToVendorBankAccount(tempVendBankAcc.IBAN, jsonBody);
@@ -755,7 +762,7 @@ codeunit 50018 "Integration 1C"
     begin
         VendorBankAccount.SetCurrentKey(IBAN);
         VendorBankAccount.SetRange(IBAN, VendBankAccIBAN);
-        VendorBankAccount.FindSet(false, false);
+        VendorBankAccount.FindSet();
         Clear(Body);
         Body.Add('НомерСчета', VendorBankAccount.IBAN);
         Body.Add('НомерСчетаУстаревший', VendorBankAccount."Bank Account No.");
@@ -789,7 +796,7 @@ codeunit 50018 "Integration 1C"
         codeISO: Code[10];
     begin
         // create Currency list for getting id from 1C
-        if CustBankAcc.FindSet(false, false) then
+        if CustBankAcc.FindSet() then
             repeat
 
                 if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '')
@@ -802,7 +809,7 @@ codeunit 50018 "Integration 1C"
 
         // link between 1C and BC
         // create entity in 1C or get it
-        if tempCustBankAcc.FindSet(false, false) then
+        if tempCustBankAcc.FindSet() then
             repeat
                 filterValue := StrSubstNo(lblfilter, 'НомерСчета', tempCustBankAcc.IBAN);
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
@@ -830,7 +837,7 @@ codeunit 50018 "Integration 1C"
         // update entity in 1C
         // create list for updating in 1C
         tempCustBankAcc.DeleteAll();
-        if CustBankAcc.FindSet(false, false) then
+        if CustBankAcc.FindSet() then
             repeat
                 if IntegrationEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '')
                 and (IntegrationEntity."Last Modify Date Time" < CustBankAcc."Last DateTime Modified") then begin
@@ -839,7 +846,7 @@ codeunit 50018 "Integration 1C"
                 end;
             until CustBankAcc.Next() = 0;
 
-        if tempCustBankAcc.FindSet(false, false) then
+        if tempCustBankAcc.FindSet() then
             repeat
                 // create request body
                 CreateRequestBodyToCustomerBankAccount(tempCustBankAcc.IBAN, jsonBody);
@@ -862,7 +869,7 @@ codeunit 50018 "Integration 1C"
     begin
         CustomerBankAccount.SetCurrentKey(IBAN);
         CustomerBankAccount.SetRange(IBAN, CustBankAccIBAN);
-        CustomerBankAccount.FindSet(false, false);
+        CustomerBankAccount.FindSet();
         Clear(Body);
         Body.Add('НомерСчета', CustomerBankAccount.IBAN);
         Body.Add('НомерСчетаУстаревший', CustomerBankAccount."Bank Account No.");
@@ -904,7 +911,7 @@ codeunit 50018 "Integration 1C"
         codeISO: Code[10];
     begin
         // create Currency list for getting id from 1C
-        if Currency.FindSet(false, false) then
+        if Currency.FindSet() then
             repeat
                 if not IntegrationEntity.Get(lblSystemCode, Database::Currency, Currency."ISO Numeric Code", '') then begin
                     tempCurrency := Currency;
@@ -914,7 +921,7 @@ codeunit 50018 "Integration 1C"
 
         // link between 1C and BC
         // create entity in 1C or get it
-        if tempCurrency.FindSet(false, false) then
+        if tempCurrency.FindSet() then
             repeat
                 filterValue := StrSubstNo(lblfilter, 'Code', tempCurrency."ISO Numeric Code");
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
@@ -942,7 +949,7 @@ codeunit 50018 "Integration 1C"
         // update entity in 1C
         // create list for updating in 1C
         tempCurrency.DeleteAll();
-        if Currency.FindSet(false, false) then
+        if Currency.FindSet() then
             repeat
                 if IntegrationEntity.Get(lblSystemCode, Database::Currency, Currency."ISO Numeric Code", '')
                 and (IntegrationEntity."Last Modify Date Time" < Currency."Last Modified Date Time") then begin
@@ -951,7 +958,7 @@ codeunit 50018 "Integration 1C"
                 end;
             until Currency.Next() = 0;
 
-        if tempCurrency.FindSet(false, false) then
+        if tempCurrency.FindSet() then
             repeat
                 // create request body
                 CreateRequestBodyToCurrency(tempCurrency."ISO Numeric Code", jsonBody);
@@ -973,7 +980,7 @@ codeunit 50018 "Integration 1C"
     begin
         Currency.SetCurrentKey("ISO Numeric Code");
         Currency.SetRange("ISO Numeric Code", ISONumericCode);
-        Currency.FindSet(false, false);
+        Currency.FindSet();
         Clear(Body);
         Body.Add('Code', ISONumericCode);
         Body.Add('Description', Currency.Code);
@@ -1004,7 +1011,7 @@ codeunit 50018 "Integration 1C"
         tempcodeBIC1C: Text[10];
     begin
         // create UoMs list for getting id from 1C
-        if BankDirectory.FindSet(false, false) then
+        if BankDirectory.FindSet() then
             repeat
                 if not IntegrationEntity.Get(lblSystemCode, Database::"Bank Directory", BankDirectory.BIC, '') then begin
                     tempBankDirectory := BankDirectory;
@@ -1013,7 +1020,7 @@ codeunit 50018 "Integration 1C"
             until BankDirectory.Next() = 0;
 
         // link between 1C МФО and BIC in BC
-        if tempBankDirectory.FindSet(false, false) then
+        if tempBankDirectory.FindSet() then
             repeat
                 filterValue := StrSubstNo(lblfilter, 'Code', tempBankDirectory.BIC);
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
@@ -1041,7 +1048,7 @@ codeunit 50018 "Integration 1C"
         // update entity in 1C
         // create list for updating in 1C
         tempBankDirectory.DeleteAll();
-        if BankDirectory.FindSet(false, false) then
+        if BankDirectory.FindSet() then
             repeat
                 if IntegrationEntity.Get(lblSystemCode, Database::"Bank Directory", BankDirectory.BIC, '')
                 and (IntegrationEntity."Last Modify Date Time" < BankDirectory."Last DateTime Modified") then begin
@@ -1050,7 +1057,7 @@ codeunit 50018 "Integration 1C"
                 end;
             until BankDirectory.Next() = 0;
 
-        if tempBankDirectory.FindSet(false, false) then
+        if tempBankDirectory.FindSet() then
             repeat
                 // create request body
                 CreateRequestBodyToBankDirectory(tempBankDirectory.BIC, jsonBody);
@@ -1105,7 +1112,7 @@ codeunit 50018 "Integration 1C"
         codeUoM: Code[10];
     begin
         // create UoMs list for getting id from 1C
-        if UnitOfMeasure.FindSet(false, false) then
+        if UnitOfMeasure.FindSet() then
             repeat
                 if not IntegrationEntity.Get(lblSystemCode, Database::"Unit of Measure", UnitOfMeasure."Numeric Code", '') then begin
                     tempUnitOfMeasure := UnitOfMeasure;
@@ -1136,7 +1143,7 @@ codeunit 50018 "Integration 1C"
         Clear(jsonBody);
         Clear(jsonLines);
         tempUnitOfMeasure.Reset();
-        if tempUnitOfMeasure.FindSet(false, false) then
+        if tempUnitOfMeasure.FindSet() then
             repeat
                 // create request body
                 CreateRequestBodyToUoM(tempUnitOfMeasure.Code, jsonBody);
@@ -1154,7 +1161,7 @@ codeunit 50018 "Integration 1C"
         // update entity in 1C
         // create list for updating in 1C
         tempUnitOfMeasure.DeleteAll();
-        if UnitOfMeasure.FindSet(false, false) then
+        if UnitOfMeasure.FindSet() then
             repeat
                 if IntegrationEntity.Get(lblSystemCode, Database::"Unit of Measure", UnitOfMeasure."Numeric Code", '')
                 and (IntegrationEntity."Last Modify Date Time" < UnitOfMeasure."Last Modified Date Time") then begin
@@ -1163,7 +1170,7 @@ codeunit 50018 "Integration 1C"
                 end;
             until UnitOfMeasure.Next() = 0;
 
-        if tempUnitOfMeasure.FindSet(false, false) then
+        if tempUnitOfMeasure.FindSet() then
             repeat
                 // create request body
                 CreateRequestBodyToUoM(tempUnitOfMeasure.Code, jsonBody);
@@ -1238,7 +1245,7 @@ codeunit 50018 "Integration 1C"
         ItemNo: Code[20];
     begin
         // create Items list for getting id from 1C
-        if Item.FindSet(false, false) then
+        if Item.FindSet() then
             repeat
                 if not IntegrationEntity.Get(lblSystemCode, Database::Item, Item."No.", '') then begin
                     tempItem := Item;
@@ -1246,7 +1253,7 @@ codeunit 50018 "Integration 1C"
                 end;
             until Item.Next() = 0;
 
-        if tempItem.FindSet(false, false) then
+        if tempItem.FindSet() then
             repeat
                 // get item by code from 1C
                 filterValue := StrSubstNo(lblfilter, 'Code', tempItem."No.");
@@ -1285,7 +1292,7 @@ codeunit 50018 "Integration 1C"
         // update entity in 1C
         // create Items list for updating in 1C
         tempItem.DeleteAll();
-        if Item.FindSet(false, false) then
+        if Item.FindSet() then
             repeat
                 if IntegrationEntity.Get(lblSystemCode, Database::Item, Item."No.", '')
                 and (IntegrationEntity."Last Modify Date Time" < Item."Last DateTime Modified") then begin
@@ -1294,7 +1301,7 @@ codeunit 50018 "Integration 1C"
                 end;
             until Item.Next() = 0;
 
-        if tempItem.FindSet(false, false) then
+        if tempItem.FindSet() then
             repeat
                 // create request body
                 CreateRequestBodyToItems(tempItem."No.", jsonBody);
@@ -1364,7 +1371,7 @@ codeunit 50018 "Integration 1C"
         ItemUoM.SetCurrentKey("Item No.");
         ItemUoM.SetRange("Item No.", ItemNo);
         ItemUoM.SetFilter(Code, '<>%1', '');
-        if ItemUoM.FindSet(false, false) then begin
+        if ItemUoM.FindSet() then begin
             Clear(jsonUoMs);
             LineNo := 0;
             repeat
@@ -1531,6 +1538,36 @@ codeunit 50018 "Integration 1C"
         exit(CompanyIntegration.IsEmpty);
     end;
 
+    local procedure AddCompanyIntegrationPrefix(_CompanyName: Text[30]; _Prefix: Code[10])
+    var
+        CompIntegr: Record "Company Integration";
+    begin
+        CompIntegr.SetCurrentKey("Company Name");
+        CompIntegr.SetRange("Company Name", _CompanyName);
+        CompIntegr.ModifyAll(Prefix, _Prefix);
+    end;
+
+    local procedure GetCompanyPrefix(_CompanyName: Text[30])
+    var
+        CompIntegr: Record "Company Integration";
+    begin
+        CompIntegr.SetCurrentKey("Company Name");
+        CompIntegr.SetRange("Company Name", _CompanyName);
+        if CompIntegr.FindFirst() then
+            glCompanyPrefix := CompIntegr.Prefix;
+        Clear(glCompanyPrefix);
+    end;
+
+    local procedure ItemCompanyFrom(): Boolean
+    var
+        CompIntegr: Record "Company Integration";
+    begin
+        CompIntegr.SetRange("Company Name", CompanyName);
+        if CompIntegr.FindFirst() then
+            exit(CompIntegr."Copy Items From");
+        exit(false);
+    end;
+
     procedure Get1CRoot()
     var
         entityType: Text;
@@ -1614,7 +1651,7 @@ codeunit 50018 "Integration 1C"
         BankDirectory.ChangeCompany(newCompanyName);
 
         CustBankAccount.SetFilter(IBAN, '<>%1', '');
-        if CustBankAccount.FindSet(false, false) then begin
+        if CustBankAccount.FindSet() then begin
             repeat
                 if (CustBankAccount.BIC = '') then begin
                     if StrLen(CustBankAccount.IBAN) > 25 then begin
@@ -1639,7 +1676,7 @@ codeunit 50018 "Integration 1C"
         end;
 
         VendBankAccount.SetFilter(IBAN, '<>%1', '');
-        if VendBankAccount.FindSet(false, false) then begin
+        if VendBankAccount.FindSet() then begin
             repeat
                 if (VendBankAccount.BIC = '') then begin
                     if StrLen(VendBankAccount.IBAN) > 25 then begin
