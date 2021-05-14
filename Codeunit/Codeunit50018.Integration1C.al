@@ -8,11 +8,13 @@ codeunit 50018 "Integration 1C"
         GetBankDirectoryIdFrom1C();
         GetVendorIdFrom1C();
         GetCustomerIdFrom1C();
+        GetCustomerAgreementIdFrom1C(glCustAgreement);
     end;
 
     var
         IntegrationLog: Record "Integration Log";
         WebServiceMgt: Codeunit "Web Service Mgt.";
+        glCustAgreement: Record "Customer Agreement";
 
     procedure GetCompanyIdFrom1C(): Boolean
     var
