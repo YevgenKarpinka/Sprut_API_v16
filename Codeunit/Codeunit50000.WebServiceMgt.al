@@ -780,7 +780,7 @@ codeunit 50000 "Web Service Mgt."
     begin
         quantitydecimal := 2;
         if locItems.Get(ItemNo) then begin
-            JSObjectLine.Add('tct_salestypecode', salesTypeCode);
+            // JSObjectLine.Add('tct_salestypecode', salesTypeCode);
             JSObjectLine.Add('productnumber', locItems."No.");
             JSObjectLine.Add('name', locItems.Description);
             JSObjectLine.Add('defaultuomscheduleid@odata.bind', defaultUoMScheduleId);
@@ -804,7 +804,7 @@ codeunit 50000 "Web Service Mgt."
     begin
         quantitydecimal := 2;
         if locItems.Get(ItemNo) then begin
-            JSObjectLine.Add('tct_salestypecode', salesTypeCode);
+            // JSObjectLine.Add('tct_salestypecode', salesTypeCode);
             JSObjectLine.Add('name', locItems.Description);
             JSObjectLine.Add('defaultuomscheduleid@odata.bind', defaultUoMScheduleId);
             JSObjectLine.Add('defaultuomid@odata.bind', defaultUoMId);
