@@ -118,7 +118,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    if Integration1C.GetBankDirectoryIdFrom1C() then
+                    if Integration1C.GetBankDirectoryIdFrom1C(CompanyName) then
                         Message('Ok!')
                     else
                         Message('Error!');
@@ -134,7 +134,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    if Integration1C.GetCurrencyIdFrom1C() then
+                    if Integration1C.GetCurrencyIdFrom1C(CompanyName) then
                         Message('Ok!')
                     else
                         Message('Error!');
@@ -166,7 +166,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    if Integration1C.GetCustomerIdFrom1C() then
+                    if Integration1C.GetCustomerIdFrom1C(CompanyName) then
                         Message('Ok!')
                     else
                         Message('Error!');
@@ -198,7 +198,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    if Integration1C.GetCustomerBankAccountIdFrom1C(CustBankAcc) then
+                    if Integration1C.GetCustomerBankAccountIdFrom1C(CustBankAcc, CompanyName) then
                         Message('Ok!')
                     else
                         Message('Error!');
@@ -230,7 +230,23 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    if Integration1C.GetCustomerAgreementIdFrom1C(CustAgreement) then
+                    if Integration1C.GetCustomerAgreementIdFrom1C(CustAgreement, CompanyName) then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
+            action(GetAllIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get All Id From 1C', RUS = 'Get All Id From 1C';
+                ToolTipML = ENU = 'Get All Id From 1C',
+                            RUS = 'Get All Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.Run() then
                         Message('Ok!')
                     else
                         Message('Error!');
