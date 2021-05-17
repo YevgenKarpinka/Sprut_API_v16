@@ -14,19 +14,19 @@ codeunit 50005 "CRM Action API"
         errCRM_IDisNullNotAllowed: Label 'The blank "crmId" is not allowed.', Locked = true;
         msgInvoiceUpdated: Label 'Invoice %1 updated.', Locked = true;
 
-    procedure OnCreatePrepaymentInvoice(orderNo: Code[20]; invoiceId: Text[50];
-                                        crmId: Guid; prepaymentAmount: Decimal;
-                                        invoiceNo1C: Text[50]): Text
+    procedure OnCreatePrepaymentInvoice(orderNo: Code[20]; invoiceId: Text[50]; crmId: Guid;
+                                        prepaymentAmount: Decimal; invoiceNo1C: Text[50];
+                                        postingDate: Date; dueDate: Date): Text
     var
         salesInvoice: Page "APIV2 - Sales Invoice";
     begin
-        CheckCRM_Id(crmId);
+        CheckCRM_Id(crmId, prepaymentAmount);
         if invoiceId = '' then
             Error(errBlankInvoiceId);
         if prepaymentAmount <= 0 then
             ERROR(errBlankPrepaymentAmount);
 
-        salesInvoice.SetInit(invoiceId, prepaymentAmount, crmId, invoiceNo1C);
+        salesInvoice.SetInit(invoiceId, prepaymentAmount, crmId, invoiceNo1C, postingDate, dueDate);
         salesInvoice.CreatePrepaymentInvoice(orderNo);
         exit(CreateJsonPrpmtSalesInvoice(orderNo, invoiceId, crmId, prepaymentAmount));
     end;
@@ -52,24 +52,42 @@ codeunit 50005 "CRM Action API"
         // exit(GetJsonSalesOrderLines(SalesHeader."No."));
     end;
 
-    procedure OnPostSalesOrder(salesOrderId: Text[50]; crmInvoiceId: Text[50]; crmId: Guid; crmInvoiceAmount: Decimal; invoiceNo1C: Text[50]): Text
+    procedure OnPostSalesOrder(salesOrderId: Text[50]; crmInvoiceId: Text[50]; crmId: Guid;
+                                crmInvoiceAmount: Decimal; invoiceNo1C: Text[50];
+                                postingDate: Date; dueDate: Date): Text
     var
         SalesHeader: Record "Sales Header";
         Location: Record Location;
         ReleaseSalesDoc: Codeunit "Release Sales Document";
     begin
         CheckCRMInvoiceAmount(salesOrderId, crmInvoiceAmount);
-        CheckCRM_Id(crmId);
+        CheckCRM_Id(crmId, crmInvoiceAmount);
 
         SalesHeader.SetRange("Document Type", SalesHeader."Document Type"::Order);
         SalesHeader.SetRange("No.", salesOrderId);
         SalesHeader.FindFirst();
         if SalesHeader.TestStatusIsNotReleased() then
             ReleaseSalesDoc.PerformManualRelease(SalesHeader);
-        SalesHeader."CRM Invoice No." := crmInvoiceId;
-        SalesHeader."CRM ID" := crmId;
-        SalesHeader."Invoice No. 1C" := invoiceNo1C;
+        if crmInvoiceId <> '' then
+            SalesHeader."CRM Invoice No." := crmInvoiceId
+        else
+            if SalesHeader."External Document No." <> '' then
+                SalesHeader."CRM Invoice No." := SalesHeader."External Document No.";
+
+        if not IsNullGuid(crmId) then
+            SalesHeader."CRM ID" := crmId
+        else
+            if not IsNullGuid(SalesHeader."CRM Header ID") then
+                SalesHeader."CRM ID" := SalesHeader."CRM Header ID";
+
+        if invoiceNo1C <> '' then
+            SalesHeader."Invoice No. 1C" := invoiceNo1C;
+
+        SalesHeader."Document Date" := postingDate;
+        SalesHeader."Posting Date" := postingDate;
+        SalesHeader."Due Date" := dueDate;
         SalesHeader.Modify();
+
         if Location.RequireShipment(SalesHeader."Location Code") then begin
             recWhseShipmentLine.SetCurrentKey("Source Document", "Source No.");
             recWhseShipmentLine.SetRange("Source Document", recWhseShipmentLine."Source Document"::"Sales Order");
@@ -88,9 +106,9 @@ codeunit 50005 "CRM Action API"
         exit(StrSubstNo(msgSalesOrderGetIsOk, '', salesOrderId));
     end;
 
-    local procedure CheckCRM_Id(crmId: Guid)
+    local procedure CheckCRM_Id(crmId: Guid; crmInvoiceAmount: Decimal)
     begin
-        if IsNullGuid(crmId) then
+        if (crmInvoiceAmount <> 0) and IsNullGuid(crmId) then
             Error(errCRM_IdNotAllowed, crmId);
     end;
 

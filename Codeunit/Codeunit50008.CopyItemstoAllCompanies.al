@@ -272,6 +272,7 @@ codeunit 50008 "Copy Items to All Companies"
     var
         Item: Record Item;
     begin
+        if UserId <> 'EKAR' then exit;
         if Item.FindSet() then
             repeat
                 if CheckItemFieldsFilled(Item) then

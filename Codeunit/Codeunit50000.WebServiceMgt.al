@@ -807,7 +807,7 @@ codeunit 50000 "Web Service Mgt."
             // JSObjectLine.Add('tct_salestypecode', salesTypeCode);
             JSObjectLine.Add('name', locItems.Description);
             JSObjectLine.Add('defaultuomscheduleid@odata.bind', defaultUoMScheduleId);
-            JSObjectLine.Add('defaultuomid@odata.bind', defaultUoMId);
+            // JSObjectLine.Add('defaultuomid@odata.bind', defaultUoMId);
             JSObjectLine.Add('quantitydecimal', quantityDecimal);
             JSObjectLine.Add('tct_bc_product_number', locItems."No.");
             JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");

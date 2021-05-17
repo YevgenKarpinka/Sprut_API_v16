@@ -152,6 +152,8 @@ codeunit 50001 "Prepayment Management"
     var
         invoiceID: Text[50];
         crmId: Guid;
+        postingDate: Date;
+        dueDate: Date;
         API_SalesInvoice: Page "APIV2 - Sales Invoice";
         PrepmInvAmount: Decimal;
         jsonPrepmInv: JsonArray;
@@ -163,7 +165,9 @@ codeunit 50001 "Prepayment Management"
             invoiceID := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
             PrepmInvAmount := Round(WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
             crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'crm_id').AsValue().AsText();
-            API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId, '');
+            postingDate := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'posting_date').AsValue().AsDate();
+            dueDate := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'due_date').AsValue().AsDate();
+            API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId, '', postingDate, dueDate);
             API_SalesInvoice.CreatePrepaymentInvoice(SalesOrderNo);
         end;
     end;
@@ -172,6 +176,8 @@ codeunit 50001 "Prepayment Management"
     var
         invoiceID: Text[50];
         crmId: Guid;
+        postingDate: Date;
+        dueDate: Date;
         API_SalesInvoice: Page "APIV2 - Sales Invoice";
         PrepmInvAmount: Decimal;
         jsonPrepmInv: JsonArray;
@@ -184,7 +190,9 @@ codeunit 50001 "Prepayment Management"
             if not InvoiceIdExist(invoiceID) then begin
                 PrepmInvAmount := Round(WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
                 crmId := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'crm_id').AsValue().AsText();
-                API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId, '');
+                postingDate := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'posting_date').AsValue().AsDate();
+                dueDate := WebServicesMgt.GetJSToken(PrepmInvToken.AsObject(), 'due_date').AsValue().AsDate();
+                API_SalesInvoice.SetInit(invoiceID, PrepmInvAmount, crmId, '', postingDate, dueDate);
                 API_SalesInvoice.CreatePrepaymentInvoice(SalesOrderNo);
             end;
         end;

@@ -249,7 +249,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                     if Integration1C.Run() then
                         Message('Ok!')
                     else
-                        Message('Error!');
+                        Message(GetLastErrorText());
                 end;
             }
         }

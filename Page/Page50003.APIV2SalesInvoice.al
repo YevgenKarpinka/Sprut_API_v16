@@ -80,6 +80,18 @@ page 50003 "APIV2 - Sales Invoice"
                     Caption = 'invoiceNo1C', Locked = true;
                     ShowMandatory = true;
                 }
+                field(postingDate; postingDate)
+                {
+                    ApplicationArea = All;
+                    Caption = 'postingDate', Locked = true;
+                    ShowMandatory = true;
+                }
+                field(dueDate; dueDate)
+                {
+                    ApplicationArea = All;
+                    Caption = 'dueDate', Locked = true;
+                    ShowMandatory = true;
+                }
             }
         }
     }
@@ -145,13 +157,18 @@ page 50003 "APIV2 - Sales Invoice"
         errTotalAmountLessPrepaymentAmount: Label 'Total order amount less prepayment invoice amount.';
         errPrepaymentInvoiceIsPosted: Label 'Prepayment invoice %1 has already been created.';
         errCRM_IDisNullNotAllowed: Label 'The blank "crmId" is not allowed.', Locked = true;
+        postingDate: Date;
+        dueDate: Date;
 
-    procedure SetInit(_invoiceID: Text[50]; _prepaymentAmount: Decimal; _crmId: Guid; _invoiceNo1C: Text[50])
+    procedure SetInit(_invoiceID: Text[50]; _prepaymentAmount: Decimal; _crmId: Guid;
+        _invoiceNo1C: Text[50]; _postingDate: Date; _dueDate: Date)
     begin
         invoiceId := _invoiceID;
         crmId := _crmId;
         prepaymentAmount := _prepaymentAmount;
         invoiceNo1C := _invoiceNo1C;
+        postingDate := _postingDate;
+        dueDate := _dueDate;
     end;
 
     procedure CreatePrepaymentInvoice(SalesOrderNo: Code[20])
@@ -168,6 +185,9 @@ page 50003 "APIV2 - Sales Invoice"
 
         // Set Order Status Open
         SetSalesOrderStatusOpen(SalesOrderNo);
+
+        // Update Date in Order
+        UpdateDateSalesOrder(SalesOrderNo);
 
         // Update Prepayment Amount in Sales Order
         UpdatePrepaymentAmountInSalesOrder(SalesOrderNo, PrepaymentAmount);
@@ -205,6 +225,29 @@ page 50003 "APIV2 - Sales Invoice"
         if SalesHeader.Status = SalesHeader.Status::Open then exit;
         SalesHeader.Status := SalesHeader.Status::Open;
         SalesHeader.Modify();
+    end;
+
+    local procedure UpdateDateSalesOrder(SalesOrderNo: Code[20])
+    var
+        orderModified: Boolean;
+    begin
+        orderModified := false;
+
+        if SalesHeader."Document Date" <> postingDate then begin
+            SalesHeader."Document Date" := postingDate;
+            orderModified := true;
+        end;
+        if SalesHeader."Posting Date" <> postingDate then begin
+            SalesHeader."Posting Date" := postingDate;
+            orderModified := true;
+        end;
+        if SalesHeader."Prepayment Due Date" <> dueDate then begin
+            SalesHeader."Prepayment Due Date" := dueDate;
+            orderModified := true;
+        end;
+
+        if orderModified then
+            SalesHeader.Modify();
     end;
 
     local procedure UpdatePrepaymentAmountInSalesOrder(SalesOrderNo: Code[20]; PrepaymentAmount: Decimal)

@@ -37,12 +37,14 @@ pageextension 50004 "Item List Ext." extends "Item List"
             {
                 CaptionML = ENU = 'CRM', RUS = 'CRM';
                 Image = SuggestCustomerPayments;
+                Visible = CRMEnable;
 
                 action(OnCopyAllItems)
                 {
                     ApplicationArea = All;
                     CaptionML = ENU = 'On Copy All Items', RUS = 'Запуск копирования всех товаров';
                     Image = CopyItem;
+                    // Visible = UserId = 'ekar';
 
                     trigger OnAction()
                     var
@@ -405,6 +407,11 @@ pageextension 50004 "Item List Ext." extends "Item List"
         }
     }
 
+    trigger OnOpenPage()
+    begin
+        CRMEnable := UserId = 'EKAR';
+    end;
+
     var
         WebServiceMgt: Codeunit "Web Service Mgt.";
         RecordsXofYMsg: TextConst ENU = 'Records: %1 of %2',
@@ -420,4 +427,5 @@ pageextension 50004 "Item List Ext." extends "Item List"
         ConfigProgressBarRecord: Codeunit "Config Progress Bar";
         CaptionMgt: Codeunit "Caption Mgt.";
         IsSuccessStatusCode: Boolean;
+        CRMEnable: Boolean;
 }
