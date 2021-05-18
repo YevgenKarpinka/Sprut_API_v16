@@ -58,7 +58,8 @@ codeunit 50018 "Integration 1C"
             repeat
                 CompanyInfo.ChangeCompany(CompanyIntegration."Company Name");
                 CompanyInfo.Get();
-                if not IntegrationEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '') then begin
+                if not IntegrationEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '')
+                and (CompanyIntegration."Copy Items To" or CompanyIntegration."Copy Items From") then begin
                     tempCompanyIntegration := CompanyIntegration;
                     tempCompanyIntegration.Insert();
                 end;
@@ -68,14 +69,14 @@ codeunit 50018 "Integration 1C"
         // get entity from 1C
         if tempCompanyIntegration.FindSet(true) then
             repeat
-                IntegrationEntity.LockTable();
                 CompanyInfo.ChangeCompany(tempCompanyIntegration."Company Name");
                 CompanyInfo.Get();
                 filterValue := StrSubstNo(lblfilter, 'КодПоЕДРПОУ', CompanyInfo."OKPO Code");
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
                 jsonBody.ReadFrom(Body);
                 jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
-                if jsonLines.Count <> 0 then begin
+                // Message(Body);
+                if jsonLines.Count <> 0 then
                     foreach LineToken in jsonLines do begin
                         AddIDToIntegrationEntity(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '',
                                                 WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText(),
@@ -83,8 +84,6 @@ codeunit 50018 "Integration 1C"
 
                         AddCompanyIntegrationPrefix(tempCompanyIntegration."Company Name", WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Префикс').AsValue().AsText());
                     end;
-                end;
-            // Commit();
             until tempCompanyIntegration.Next() = 0;
 
         exit(true);
@@ -135,7 +134,7 @@ codeunit 50018 "Integration 1C"
         tempCustomerAgreement.DeleteAll();
 
         // create Currency list for getting id from 1C
-        CustomerAgreement.SetCurrentKey("CRM ID");
+        CustomerAgreement.SetCurrentKey("No.", "CRM ID");
         CustomerAgreement.SetFilter("CRM ID", '<>%1', blankGuid);
         if CustomerAgreement.FindSet(true) then
             repeat
@@ -151,7 +150,6 @@ codeunit 50018 "Integration 1C"
         // create entity in 1C or get it
         if tempCustomerAgreement.FindSet(true) then
             repeat
-                // IntegrationEntity.LockTable();
                 filterValue := StrSubstNo(lblfilter, 'CRM_ID', GuidToClearText(tempCustomerAgreement."CRM ID"));
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
                 jsonBody.ReadFrom(Body);
@@ -293,7 +291,7 @@ codeunit 50018 "Integration 1C"
 
         GetCompanyPrefix(_CompanyName);
         // create Currency list for getting id from 1C
-        Customer.SetCurrentKey("CRM ID");
+        Customer.SetCurrentKey("No.", "CRM ID");
         Customer.SetFilter("CRM ID", '<>%1', GuidToClearText(blankGuid));
         if Customer.FindSet(true) then
             repeat
@@ -343,17 +341,17 @@ codeunit 50018 "Integration 1C"
                         GetCustomerBankAccountIdFrom1C(CustBankAcc, _CompanyName);
                     end;
 
-                    // if CustomerAgreementExist(tempCustomer."No.") then begin
-                    //     CustAgreement.SetRange("Customer No.", tempCustomer."No.");
-                    //     GetCustomerAgreementIdFrom1C(CustAgreement);
-                    // end;
+                    if CustomerAgreementExist(tempCustomer."No.", _CompanyName) then begin
+                        CustAgreement.SetRange("Customer No.", tempCustomer."No.");
+                        GetCustomerAgreementIdFrom1C(CustAgreement, _CompanyName);
+                    end;
 
                 end;
 
-                if CustomerAgreementExist(tempCustomer."No.", _CompanyName) then begin
-                    CustAgreement.SetRange("Customer No.", tempCustomer."No.");
-                    GetCustomerAgreementIdFrom1C(CustAgreement, _CompanyName);
-                end;
+            // if CustomerAgreementExist(tempCustomer."No.", _CompanyName) then begin
+            //     CustAgreement.SetRange("Customer No.", tempCustomer."No.");
+            //     GetCustomerAgreementIdFrom1C(CustAgreement, _CompanyName);
+            // end;
 
             // Commit();
             until tempCustomer.Next() = 0;
@@ -494,7 +492,7 @@ codeunit 50018 "Integration 1C"
         if CompanyName <> _CompanyName then
             CustBankAcc.ChangeCompany(_CompanyName);
 
-        // if not CustBankAcc.Get(CustNo, CustomerDefaultBankCode) then exit('');
+        if not CustBankAcc.Get(CustNo, CustomerDefaultBankCode) then exit('');
         CustBankAcc.Get(CustNo, CustomerDefaultBankCode);
 
         if IntegrEntity.Get(lblSystemCode, Database::"Customer Bank Account", CustBankAcc.IBAN, '') then
@@ -857,7 +855,6 @@ codeunit 50018 "Integration 1C"
         // create entity in 1C or get it
         if tempCustBankAcc.FindSet(true) then
             repeat
-                IntegrationEntity.LockTable();
                 filterValue := StrSubstNo(lblfilter, 'НомерСчета', tempCustBankAcc.IBAN);
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
                 jsonBody.ReadFrom(Body);

@@ -68,6 +68,7 @@ codeunit 50005 "CRM Action API"
         SalesHeader.FindFirst();
         if SalesHeader.TestStatusIsNotReleased() then
             ReleaseSalesDoc.PerformManualRelease(SalesHeader);
+
         if crmInvoiceId <> '' then
             SalesHeader."CRM Invoice No." := crmInvoiceId
         else
@@ -83,6 +84,7 @@ codeunit 50005 "CRM Action API"
         if invoiceNo1C <> '' then
             SalesHeader."Invoice No. 1C" := invoiceNo1C;
 
+        // to do 
         SalesHeader."Document Date" := postingDate;
         SalesHeader."Posting Date" := postingDate;
         SalesHeader."Due Date" := dueDate;

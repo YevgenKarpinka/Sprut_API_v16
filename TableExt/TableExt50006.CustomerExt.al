@@ -57,13 +57,6 @@ tableextension 50006 "Customer Ext" extends Customer
                         RUS = 'Дата и время создания';
             Editable = false;
         }
-        // field(50008; "Last Modified Date Time"; DateTime)
-        // {
-        //     DataClassification = SystemMetadata;
-        //     CaptionML = ENU = 'Last Modified Date Time',
-        //                 RUS = 'Дата и время последнего изменения';
-        //     Editable = false;
-        // }
         field(50009; "Modify User ID"; Code[50])
         {
             DataClassification = SystemMetadata;
