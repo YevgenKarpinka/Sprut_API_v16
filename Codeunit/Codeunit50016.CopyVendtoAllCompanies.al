@@ -8,6 +8,16 @@ codeunit 50016 "Copy Vend. to All Companies"
         // Copy Item From Main Company
         CopyVendFromMainCompany();
 
+        DeleteVendorsAfterCopy();
+    end;
+
+    local procedure DeleteVendorsAfterCopy()
+    var
+        ItemToCopy: Record "Entity To Copy";
+    begin
+        ItemToCopy.SetRange(Type, ItemToCopy.Type::Vendor);
+        if ItemToCopy.IsEmpty then exit;
+        ItemToCopy.DeleteAll();
     end;
 
     local procedure CheckMainCompany(): Boolean

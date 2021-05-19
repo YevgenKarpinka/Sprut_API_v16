@@ -28,7 +28,7 @@ codeunit 50005 "CRM Action API"
 
         salesInvoice.SetInit(invoiceId, prepaymentAmount, crmId, invoiceNo1C, postingDate, dueDate);
         salesInvoice.CreatePrepaymentInvoice(orderNo);
-        exit(CreateJsonPrpmtSalesInvoice(orderNo, invoiceId, crmId, prepaymentAmount));
+        exit(CreateJsonPrpmtSalesInvoice(orderNo, invoiceId, crmId, prepaymentAmount, true));
     end;
 
     procedure OnAfterChangedSalesOrder(sourceType: Text[50]; salesOrderId: Text[50]; crm_id: Guid): Text
@@ -52,22 +52,59 @@ codeunit 50005 "CRM Action API"
         // exit(GetJsonSalesOrderLines(SalesHeader."No."));
     end;
 
-    procedure OnPostSalesOrder(salesOrderId: Text[50]; crmInvoiceId: Text[50]; crmId: Guid;
+    procedure OnPostSalesOrder(salesOrderId: Text[20]; crmInvoiceId: Text[50]; crmId: Guid;
                                 crmInvoiceAmount: Decimal; invoiceNo1C: Text[50];
-                                postingDate: Date; dueDate: Date): Text
+                                postingDate: Date; dueDate: Date;
+                                shippingNo: Text[20]; shipmentDate: Text[10]): Text
     var
         SalesHeader: Record "Sales Header";
-        Location: Record Location;
-        ReleaseSalesDoc: Codeunit "Release Sales Document";
     begin
         CheckCRMInvoiceAmount(salesOrderId, crmInvoiceAmount);
         CheckCRM_Id(crmId, crmInvoiceAmount);
+        UpdateSalesOrder(SalesHeader, salesOrderId, crmInvoiceId, crmId,
+                                crmInvoiceAmount, invoiceNo1C,
+                                postingDate, dueDate,
+                                shippingNo, shipmentDate);
+        PostSalesOrder(SalesHeader);
 
+        exit(CreateJsonPrpmtSalesInvoice(SalesHeader."No.", SalesHeader."CRM Invoice No.",
+                                            SalesHeader."CRM ID", crmInvoiceAmount, false));
+        // exit(StrSubstNo(msgSalesOrderGetIsOk, '', salesOrderId));
+    end;
+
+    local procedure PostSalesOrder(var SalesHeader: Record "Sales Header")
+    var
+        Location: Record Location;
+    begin
+        if Location.RequireShipment(SalesHeader."Location Code") then begin
+            recWhseShipmentLine.SetCurrentKey("Source Document", "Source No.");
+            recWhseShipmentLine.SetRange("Source Document", recWhseShipmentLine."Source Document"::"Sales Order");
+            recWhseShipmentLine.SetRange("Source No.", SalesHeader."No.");
+            recWhseShipmentLine.FindFirst();
+
+            WhsePostShipment.SetPostingSettings(true);
+            WhsePostShipment.SetPrint(false);
+            WhsePostShipment.RUN(recWhseShipmentLine);
+        end else begin
+            SalesHeader.Invoice := true;
+            SalesHeader.Ship := true;
+            CODEUNIT.RUN(CODEUNIT::"Sales-Post", SalesHeader);
+        end;
+    end;
+
+    local procedure UpdateSalesOrder(var SalesHeader: Record "Sales Header"; salesOrderId: Text[20];
+                                    crmInvoiceId: Text[50]; crmId: Guid;
+                                    crmInvoiceAmount: Decimal; invoiceNo1C: Text[50];
+                                    postingDate: Date; dueDate: Date;
+                                    shippingNo: Text[20]; shipmentDate: Text[10])
+    var
+        ReleaseSalesDoc: Codeunit "Release Sales Document";
+    begin
         SalesHeader.SetRange("Document Type", SalesHeader."Document Type"::Order);
         SalesHeader.SetRange("No.", salesOrderId);
         SalesHeader.FindFirst();
-        if SalesHeader.TestStatusIsNotReleased() then
-            ReleaseSalesDoc.PerformManualRelease(SalesHeader);
+        if SalesHeader.Status <> SalesHeader.Status::Open then
+            ReleaseSalesDoc.Reopen(SalesHeader);
 
         if crmInvoiceId <> '' then
             SalesHeader."CRM Invoice No." := crmInvoiceId
@@ -84,28 +121,20 @@ codeunit 50005 "CRM Action API"
         if invoiceNo1C <> '' then
             SalesHeader."Invoice No. 1C" := invoiceNo1C;
 
-        // to do 
         SalesHeader."Document Date" := postingDate;
         SalesHeader."Posting Date" := postingDate;
         SalesHeader."Due Date" := dueDate;
+        if shippingNo <> '' then
+            SalesHeader."Shipping No." := shippingNo;
+        if Evaluate(SalesHeader."Shipment Date", shipmentDate) then
+            if SalesHeader."Shipment Date" < CalcDate('<-CM >', Today) then
+                SalesHeader.Validate("Shipment Date", Today)
+            else
+                SalesHeader.Validate("Shipment Date");
         SalesHeader.Modify();
 
-        if Location.RequireShipment(SalesHeader."Location Code") then begin
-            recWhseShipmentLine.SetCurrentKey("Source Document", "Source No.");
-            recWhseShipmentLine.SetRange("Source Document", recWhseShipmentLine."Source Document"::"Sales Order");
-            recWhseShipmentLine.SetRange("Source No.", salesOrderId);
-            recWhseShipmentLine.FindFirst();
-
-            WhsePostShipment.SetPostingSettings(true);
-            WhsePostShipment.SetPrint(false);
-            WhsePostShipment.RUN(recWhseShipmentLine);
-        end else begin
-            SalesHeader.Invoice := true;
-            SalesHeader.Ship := true;
-            CODEUNIT.RUN(CODEUNIT::"Sales-Post", SalesHeader);
-        end;
-
-        exit(StrSubstNo(msgSalesOrderGetIsOk, '', salesOrderId));
+        if SalesHeader.TestStatusIsNotReleased() then
+            ReleaseSalesDoc.PerformManualRelease(SalesHeader);
     end;
 
     local procedure CheckCRM_Id(crmId: Guid; crmInvoiceAmount: Decimal)
@@ -116,6 +145,7 @@ codeunit 50005 "CRM Action API"
 
     local procedure CheckCRMInvoiceAmount(salesOrderId: Text[50]; crmInvoiceAmount: Decimal)
     var
+        SalesHeader: Record "Sales Header";
         SalesLine: Record "Sales Line";
         SalesInvHeader: Record "Sales Invoice Header";
         SalesCrMemoHeader: Record "Sales Cr.Memo Header";
@@ -124,6 +154,8 @@ codeunit 50005 "CRM Action API"
         CrMemoAmount: Decimal;
         errOrderAmountInvAmountCrMemoAmount: Label 'Order Amount %1 Inv Amount %2 CrMemo Amount %3';
     begin
+        SalesHeader.Get(SalesHeader."Document Type"::Order, salesOrderId);
+
         SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
         SalesLine.SetRange("Document No.", salesOrderId);
         SalesLine.CalcSums("Amount Including VAT");
@@ -180,14 +212,19 @@ codeunit 50005 "CRM Action API"
         exit(txtSalesLines);
     end;
 
-    local procedure CreateJsonPrpmtSalesInvoice(orderNo: Code[20]; invoiceId: Text[50]; crmId: Text[50]; prepaymentAmount: Decimal): Text
+    local procedure CreateJsonPrpmtSalesInvoice(orderNo: Code[20]; invoiceId: Text[50]; crmId: Text[50]; prepaymentAmount: Decimal; prepaymentInvoice: Boolean): Text
     var
         SalesInvHeader: Record "Sales Invoice Header";
         jsonSalesInvHeader: JsonObject;
         txtSalesInvHeader: Text;
     begin
-        SalesInvHeader.SetCurrentKey("Prepayment Order No.", "CRM Invoice No.", "CRM ID");
-        SalesInvHeader.SetRange("Prepayment Order No.", orderNo);
+        if prepaymentInvoice then begin
+            SalesInvHeader.SetCurrentKey("Prepayment Order No.", "CRM Invoice No.", "CRM ID");
+            SalesInvHeader.SetRange("Prepayment Order No.", orderNo);
+        end else begin
+            SalesInvHeader.SetCurrentKey("Order No.", "CRM Invoice No.", "CRM ID");
+            SalesInvHeader.SetRange("Order No.", orderNo);
+        end;
         SalesInvHeader.SetRange("CRM Invoice No.", invoiceId);
         SalesInvHeader.SetRange("CRM ID", crmId);
         if SalesInvHeader.FindLast() then begin
