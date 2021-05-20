@@ -548,7 +548,7 @@ codeunit 50018 "Integration 1C"
                     foreach LineToken in jsonLines do
                         AddIDToIntegrationEntity(lblSystemCode, Database::Vendor, tempVendor."No.", '',
                                                     WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText(),
-                                                    Vendor."No.", CompanyName);
+                                                    tempVendor."No.", CompanyName);
                 end else begin
                     // create request body
                     CreateRequestBodyToVendor(tempVendor."No.", jsonBody, requestMethodPOST);
@@ -558,7 +558,7 @@ codeunit 50018 "Integration 1C"
                     jsonBody.ReadFrom(Body);
                     AddIDToIntegrationEntity(lblSystemCode, Database::Vendor, tempVendor."No.", '',
                                                 WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText(),
-                                                Vendor."No.", CompanyName);
+                                                tempVendor."No.", CompanyName);
                 end;
 
                 // patch when bank account exist
@@ -639,7 +639,7 @@ codeunit 50018 "Integration 1C"
 
         Body.Add('НеЯвляетсяРезидентом', GetVendorResident(Vendor."No."));
         Body.Add('КонтактнаяИнформация', GetVendorContactInfo(Vendor."No."));
-        Body.Add('DeletionMark', Vendor.Blocked <> Vendor.Blocked::All);
+        Body.Add('DeletionMark', Vendor.Blocked = Vendor.Blocked::All);
     end;
 
     local procedure GetVendorContactInfo(VendorNo: Code[20]): JsonArray

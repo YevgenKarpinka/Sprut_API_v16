@@ -17,30 +17,30 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
         }
         field(50003; "Create Date Time"; DateTime)
         {
-            DataClassification = SystemMetadata;
+            DataClassification = CustomerContent;
             CaptionML = ENU = 'Create Date Time',
                         RUS = 'Дата и время создания';
             Editable = false;
         }
         field(50004; "Create User ID"; Code[50])
         {
-            DataClassification = SystemMetadata;
+            DataClassification = CustomerContent;
             CaptionML = ENU = 'Create Date Time',
                         RUS = 'Дата и время создания';
             Editable = false;
         }
-        // field(50008; "Last Modified Date Time"; DateTime)
-        // {
-        //     DataClassification = SystemMetadata;
-        //     CaptionML = ENU = 'Last Modified Date Time',
-        //                 RUS = 'Дата и время последнего изменения';
-        //     Editable = false;
-        // }
         field(50005; "Modify User ID"; Code[50])
         {
-            DataClassification = SystemMetadata;
+            DataClassification = CustomerContent;
             CaptionML = ENU = 'Create Date Time',
                         RUS = 'Дата и время создания';
+            Editable = false;
+        }
+        field(50006; "Init 1C"; Boolean)
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'Init 1C',
+                        RUS = 'Инициировано 1С';
             Editable = false;
         }
     }

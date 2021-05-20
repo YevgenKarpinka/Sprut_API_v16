@@ -35,7 +35,9 @@ codeunit 50001 "Prepayment Management"
         CannotUnapplyExchRateErr: TextConst ENU = 'You cannot unapply the entry with the posting date %1, because the exchange rate for the additional reporting currency has been changed.',
                                             RUS = 'Нельзя отменить операцию с датой учета %1, поскольку изменился курс дополнительной отчетной валюты.';
         NoModificationRequiredOnSalesOrderErr: TextConst ENU = 'No modification required on sales order %1',
-                                                        RUS = 'Заказу продажи %1 модификация не требуется ';
+                                                        RUS = 'Заказу продажи %1 модификация не требуется';
+        errPostingGreyOrderWithCRMAgreementNotAllowedOrConversely: TextConst ENU = 'Posting Grey Order With CRM Agreement Not Allowed Or Conversely!',
+                                                        RUS = 'Учет серого заказа с договором CRM и наоборот не разрешено!';
 
     procedure OnDeleteSalesOrderLine(SalesOrderNo: Code[20])
     var
@@ -628,5 +630,20 @@ codeunit 50001 "Prepayment Management"
             until SalesInvHeader.Next() = 0;
 
         exit(true);
+    end;
+
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::"Sales-Post", 'OnBeforePostSalesDoc', '', false, false)]
+    local procedure OnBeforePostSalesDoc(var SalesHeader: Record "Sales Header")
+    var
+        Cust: Record Customer;
+        CustAgr: Record "Customer Agreement";
+    begin
+        Cust.Get(SalesHeader."Sell-to Customer No.");
+        if Cust."Agreement Posting" = Cust."Agreement Posting"::Mandatory then begin
+            CustAgr.Get(SalesHeader."Sell-to Customer No.", SalesHeader."Agreement No.");
+            if (IsNullGuid(SalesHeader."CRM Header ID") and not IsNullGuid(CustAgr."CRM ID"))
+            or (not IsNullGuid(SalesHeader."CRM Header ID") and IsNullGuid(CustAgr."CRM ID")) then
+                Error(errPostingGreyOrderWithCRMAgreementNotAllowedOrConversely);
+        end;
     end;
 }
