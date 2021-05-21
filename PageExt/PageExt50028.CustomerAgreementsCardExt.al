@@ -28,6 +28,7 @@ pageextension 50028 "Customer Agreements Card Ext" extends "Customer Agreement C
             {
                 CaptionML = ENU = 'Integration with 1C',
                             RUS = 'Интеграция с 1С';
+                Visible = AllowGreyAgreement;
 
                 action(InitAgreement)
                 {
@@ -59,7 +60,15 @@ pageextension 50028 "Customer Agreements Card Ext" extends "Customer Agreement C
         }
     }
 
+    trigger OnOpenPage()
+    begin
+        SRSetup.Get();
+        AllowGreyAgreement := SRSetup."Allow Grey Agreement";
+    end;
+
     var
+        SRSetup: Record "Sales & Receivables Setup";
+        AllowGreyAgreement: Boolean;
         blankGuid: guid;
         errAgreementUsedInUnPostedSalesDocuments: TextConst ENU = 'Agreement Used In UnPosted Sales Documents',
                                                             RUS = 'Договор используется в неучтенных документах продажи';

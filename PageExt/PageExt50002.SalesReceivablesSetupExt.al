@@ -3,14 +3,14 @@ pageextension 50002 "Sales & Receivables Setup Ext" extends "Sales & Receivables
     layout
     {
         // Add changes to page layout here
-        addafter("Create Prepayment Invoice")
+        addafter("Customer Agreement Nos.")
         {
-            // field("Allow Modifying"; Rec."Allow Modifying")
-            // {
-            //     ApplicationArea = All;
-            //     ToolTipML = ENU = 'Specifies recalculation amounts if you want to modify prepayment invoice.',
-            //                 RUS = 'Пересчитывает суммы в строках при изменении счета на предоплату.';
-            // }
+            field("Allow Grey Agreement"; "Allow Grey Agreement")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies Allow Grey Agreements.',
+                            RUS = 'Разрешает создание серых договоров.';
+            }
         }
     }
 }

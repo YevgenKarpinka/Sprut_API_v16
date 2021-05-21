@@ -1,6 +1,7 @@
 codeunit 50005 "CRM Action API"
 {
     var
+        ModifyOrder: Codeunit "Modification Order";
         PrepaymentMgt: Codeunit "Prepayment Management";
         recWhseShipmentLine: Record "Warehouse Shipment Line";
         WhsePostShipment: Codeunit "Whse.-Post Shipment";
@@ -13,6 +14,17 @@ codeunit 50005 "CRM Action API"
         errPrepaymentPercentCannotBeLessOrEqual: Label 'The "prepaymentPercent" cannot be less or equal %1.', Locked = true;
         errCRM_IDisNullNotAllowed: Label 'The blank "crmId" is not allowed.', Locked = true;
         msgInvoiceUpdated: Label 'Invoice %1 updated.', Locked = true;
+        msgSalesOrderDeleted: Label 'Sales order %1 deleted.', Locked = true;
+
+    procedure OnDeleteOrder(salesOrderId: Code[20]): Text
+    begin
+        ModifyOrder.OnDeleteSalesOrder(salesOrderId);
+        // mark delete in 1C
+
+
+        exit(StrSubstNo(msgSalesOrderDeleted, salesOrderId));
+    end;
+
 
     procedure OnCreatePrepaymentInvoice(orderNo: Code[20]; invoiceId: Text[50]; crmId: Guid;
                                         prepaymentAmount: Decimal; invoiceNo1C: Text[50];

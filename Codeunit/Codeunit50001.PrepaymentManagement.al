@@ -635,9 +635,13 @@ codeunit 50001 "Prepayment Management"
     [EventSubscriber(ObjectType::Codeunit, Codeunit::"Sales-Post", 'OnBeforePostSalesDoc', '', false, false)]
     local procedure OnBeforePostSalesDoc(var SalesHeader: Record "Sales Header")
     var
+        SRSetup: Record "Sales & Receivables Setup";
         Cust: Record Customer;
         CustAgr: Record "Customer Agreement";
     begin
+        SRSetup.Get();
+        if not SRSetup."Allow Grey Agreement" then exit;
+
         Cust.Get(SalesHeader."Sell-to Customer No.");
         if Cust."Agreement Posting" = Cust."Agreement Posting"::Mandatory then begin
             CustAgr.Get(SalesHeader."Sell-to Customer No.", SalesHeader."Agreement No.");

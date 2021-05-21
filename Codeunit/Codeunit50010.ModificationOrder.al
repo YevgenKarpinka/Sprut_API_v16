@@ -17,6 +17,28 @@ codeunit 50010 "Modification Order"
         InvEntityType: Label 'invoice';
         POSTrequestMethod: Label 'POST';
 
+    procedure OnDeleteSalesOrder(SalesOrderNo: Code[20])
+    var
+        SalesHeader: Record "Sales Header";
+    begin
+        // Open Sales Order
+        OpenSalesOrder(SalesHeader, SalesOrderNo);
+
+        // create credit memo for prepayment invoice
+        if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
+            SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
+
+        // Open Sales Order
+        OpenSalesOrder(SalesHeader, SalesOrderNo);
+
+        OnDeleteSalesHeader(SalesHeader);
+    end;
+
+    procedure OnDeleteSalesHeader(var SalesHeader: Record "Sales Header")
+    begin
+        SalesHeader.Delete(true);
+    end;
+
     procedure OnModifyOrder(SalesOrderNo: Code[20])
     var
         SalesHeader: Record "Sales Header";

@@ -75,18 +75,54 @@ codeunit 50018 "Integration 1C"
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
                 jsonBody.ReadFrom(Body);
                 jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
-                // Message(Body);
-                if jsonLines.Count <> 0 then
-                    foreach LineToken in jsonLines do begin
+                if jsonLines.Count <> 0 then begin
+                    foreach LineToken in jsonLines do
                         AddIDToIntegrationEntity(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '',
                                                 WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText(),
                                                 tempCompanyIntegration."Company Name", CompanyName);
 
-                        AddCompanyIntegrationPrefix(tempCompanyIntegration."Company Name", WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Префикс').AsValue().AsText());
-                    end;
+                    AddCompanyIntegrationPrefix(tempCompanyIntegration."Company Name", WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Префикс').AsValue().AsText());
+                    // end else begin
+                    //     // create entity in 1C
+                    //     // create json for create company
+                    //     CreateRequestBodyToCompany(tempCompanyIntegration."Company Name", jsonBody, requestMethodPATCH, tempCompanyIntegration.Prefix);
+                    //     // get body from 1C
+                    //     jsonBody.WriteTo(Body);
+                    //     if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
+                    //     jsonBody.ReadFrom(Body);
+                    //     // jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
+                    //     AddIDToIntegrationEntity(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '',
+                    //                             WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText(),
+                    //                             tempCompanyIntegration."Company Name", CompanyName);
+                end;
             until tempCompanyIntegration.Next() = 0;
 
         exit(true);
+    end;
+
+    local procedure CreateRequestBodyToCompany(_CompanyName: Text[30]; var Body: JsonObject; requestMethodPATCH: Text[10]; prefixComp: Text[10]);
+    var
+        CompInfo: Record "Company Information";
+        lblLegalEntity: Label 'ЮридическоеЛицо';
+    begin
+        if CompanyName <> _CompanyName then
+            CompInfo.ChangeCompany(_CompanyName);
+
+        CompInfo.Get();
+        Clear(Body);
+        Body.Add('Description', CompInfo.Name);
+        Body.Add('КодПоЕДРПОУ', CompInfo."OKPO Code");
+        Body.Add('НаименованиеПолное', CompInfo."Full Name");
+        Body.Add('Префикс', prefixComp);
+        Body.Add('ЮридическоеФизическоеЛицо', lblLegalEntity);
+        Body.Add('КонтактнаяИнформация', GetContactInfoFromCompanyInfo());
+    end;
+
+    local procedure GetContactInfoFromCompanyInfo(): JsonArray
+    var
+        myInt: Integer;
+    begin
+
     end;
 
     local procedure GetCompanyIdFromIntegrEntity(): Text
@@ -134,15 +170,23 @@ codeunit 50018 "Integration 1C"
         tempCustomerAgreement.DeleteAll();
 
         // create Currency list for getting id from 1C
-        CustomerAgreement.SetCurrentKey("No.", "CRM ID");
-        CustomerAgreement.SetFilter("CRM ID", '<>%1', blankGuid);
         if CustomerAgreement.FindSet(true) then
             repeat
-                if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(CustomerAgreement."CRM ID"), '')
-                and Customer.Get(CustomerAgreement."Customer No.")
+                if Customer.Get(CustomerAgreement."Customer No.")
                 and IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '') then begin
-                    tempCustomerAgreement := CustomerAgreement;
-                    tempCustomerAgreement.Insert();
+
+                    if CustomerAgreement."Init 1C"
+                    and not IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(CustomerAgreement.SystemId), '') then begin
+                        tempCustomerAgreement := CustomerAgreement;
+                        tempCustomerAgreement."CRM ID" := CustomerAgreement.SystemId;
+                        tempCustomerAgreement.Insert();
+                    end;
+
+                    if (CustomerAgreement."CRM ID" <> blankGuid)
+                    and not IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(CustomerAgreement."CRM ID"), '') then begin
+                        tempCustomerAgreement := CustomerAgreement;
+                        if tempCustomerAgreement.Insert() then;
+                    end;
                 end;
             until CustomerAgreement.Next() = 0;
 
@@ -203,7 +247,8 @@ codeunit 50018 "Integration 1C"
         exit(true);
     end;
 
-    local procedure GetCustomerAgreementIdFromIntegrEntity(CustomerAgreementCRMID: Guid; _CompanyName: Text[30]): Text[50]
+    local procedure GetCustomerAgreementIdFromIntegrEntity(CustomerAgreementCRMID: Guid;
+_CompanyName: Text[30]): Text[50]
     var
         // CustomerAgreement: Record "Customer Agreement";
         IntegrEntity: Record "Integration Entity";
@@ -292,7 +337,7 @@ codeunit 50018 "Integration 1C"
         GetCompanyPrefix(_CompanyName);
         // create Currency list for getting id from 1C
         Customer.SetCurrentKey("No.", "CRM ID");
-        Customer.SetFilter("CRM ID", '<>%1', GuidToClearText(blankGuid));
+        Customer.SetFilter("CRM ID", '<>%1', blankGuid);
         if Customer.FindSet(true) then
             repeat
                 if not IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '') then begin
