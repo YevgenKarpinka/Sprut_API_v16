@@ -57,6 +57,18 @@ tableextension 50006 "Customer Ext" extends Customer
                         RUS = 'Дата и время создания';
             Editable = false;
         }
+        field(50008; "Init 1C"; Boolean)
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'Transfer to 1C',
+                        RUS = 'Переслать в 1С';
+
+            trigger OnValidate()
+            begin
+                if xRec."Init 1C" <> Rec."Init 1C" then
+                    CheckAgreementEntries();
+            end;
+        }
         field(50009; "Modify User ID"; Code[50])
         {
             DataClassification = SystemMetadata;
@@ -64,6 +76,7 @@ tableextension 50006 "Customer Ext" extends Customer
                         RUS = 'Дата и время создания';
             Editable = false;
         }
+
     }
 
     trigger OnBeforeInsert()
@@ -72,7 +85,7 @@ tableextension 50006 "Customer Ext" extends Customer
     begin
         Customer.SetCurrentKey("CRM ID");
         Customer.SetRange("CRM ID", "CRM ID");
-        if Customer.FindFirst() then
+        if not IsNullGuid("CRM ID") and not Customer.IsEmpty then
             Error(errCustomerWithCRMIDAlreadyExist, "No.", "CRM ID");
     end;
 
@@ -104,6 +117,34 @@ tableextension 50006 "Customer Ext" extends Customer
     end;
 
     var
+        errCustomerUsedInUnPostedSalesDocuments: TextConst ENU = 'Customer Used In UnPosted Sales Documents',
+                                                            RUS = 'Клиент используется в неучтенных документах продажи';
+
+        errCustomerUsedInPostedSalesDocuments: TextConst ENU = 'Customer Used In Posted Sales Documents',
+                                                        RUS = 'Клиент используется в учтенных документах продажи';
+        msgCustomerUsedInUnPostedSalesDocuments: TextConst ENU = 'Customer Used In UnPosted Sales Documents',
+                                                            RUS = 'Клиент используется в неучтенных документах продажи';
+        msgCustomerUsedInPostedSalesDocuments: TextConst ENU = 'Customer Used In Posted Sales Documents',
+                                                        RUS = 'Клиент используется в учтенных документах продажи';
+
         errCustomerWithCRMIDAlreadyExist: TextConst ENU = 'Customer %1 with CRM_ID %2 already exist!',
                                                     RUS = 'Клиент %1 с CRM ID %2 уже существует!';
+
+    local procedure CheckAgreementEntries()
+    var
+        SalesHeader: Record "Sales Header";
+        CustLE: Record "Cust. Ledger Entry";
+    begin
+        SalesHeader.SetCurrentKey("Sell-to Customer No.");
+        SalesHeader.SetRange("Sell-to Customer No.", "No.");
+        if not SalesHeader.IsEmpty then
+            // Error(errAgreementUsedInUnPostedSalesDocuments);
+            Message(msgCustomerUsedInUnPostedSalesDocuments);
+
+        CustLE.SetCurrentKey("Customer No.");
+        CustLE.SetRange("Customer No.", "No.");
+        if not CustLE.IsEmpty then
+            // Error(errAgreementUsedInPostedSalesDocuments);
+            Message(msgCustomerUsedInPostedSalesDocuments);
+    end;
 }

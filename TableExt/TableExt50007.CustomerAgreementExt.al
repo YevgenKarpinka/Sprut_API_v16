@@ -39,9 +39,15 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
         field(50006; "Init 1C"; Boolean)
         {
             DataClassification = CustomerContent;
-            CaptionML = ENU = 'Init 1C',
-                        RUS = 'Инициировано 1С';
-            Editable = false;
+            CaptionML = ENU = 'Transfer to 1C',
+                        RUS = 'Переслать в 1С';
+            // Editable = false;
+
+            trigger OnValidate()
+            begin
+                if xRec."Init 1C" <> Rec."Init 1C" then
+                    CheckAgreementEntries();
+            end;
         }
     }
 
@@ -51,7 +57,7 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
     begin
         CustomerAgr.SetCurrentKey("CRM ID");
         CustomerAgr.SetRange("CRM ID", "CRM ID");
-        if not CustomerAgr.IsEmpty then
+        if not IsNullGuid("CRM ID") and not CustomerAgr.IsEmpty then
             Error(errCustomerAgreementWithCRMIDAlreadyExist, "CRM ID");
 
         UpdateCreateDateTime();
@@ -80,8 +86,36 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
     end;
 
     var
+        errAgreementUsedInUnPostedSalesDocuments: TextConst ENU = 'Agreement Used In UnPosted Sales Documents',
+                                                            RUS = 'Договор используется в неучтенных документах продажи';
+
+        errAgreementUsedInPostedSalesDocuments: TextConst ENU = 'Agreement Used In Posted Sales Documents',
+                                                        RUS = 'Договор используется в учтенных документах продажи';
+        msgAgreementUsedInUnPostedSalesDocuments: TextConst ENU = 'Agreement Used In UnPosted Sales Documents',
+                                                            RUS = 'Договор используется в неучтенных документах продажи';
+        msgAgreementUsedInPostedSalesDocuments: TextConst ENU = 'Agreement Used In Posted Sales Documents',
+                                                        RUS = 'Договор используется в учтенных документах продажи';
+
         errCustomerAgreementWithCRMIDAlreadyExist: TextConst ENU = 'Customer Agreement With CRM_ID %1 Already Exist!',
                                                             RUS = 'Договор клиента с CRM ID %1 уже существует!';
+
+    local procedure CheckAgreementEntries()
+    var
+        SalesHeader: Record "Sales Header";
+        CustLE: Record "Cust. Ledger Entry";
+    begin
+        SalesHeader.SetCurrentKey("Agreement No.");
+        SalesHeader.SetRange("Agreement No.", "No.");
+        if not SalesHeader.IsEmpty then
+            // Error(errAgreementUsedInUnPostedSalesDocuments);
+            Message(msgAgreementUsedInUnPostedSalesDocuments);
+
+        CustLE.SetCurrentKey("Agreement No.");
+        CustLE.SetRange("Agreement No.", "No.");
+        if not CustLE.IsEmpty then
+            // Error(errAgreementUsedInPostedSalesDocuments);
+            Message(msgAgreementUsedInPostedSalesDocuments);
+    end;
 }
 
 enum 50001 AgreementStatus

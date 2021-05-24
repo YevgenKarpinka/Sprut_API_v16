@@ -1,4 +1,4 @@
-codeunit 50018 "Integration 1C"
+codeunit 50020 "Fast Integration 1C"
 {
     trigger OnRun()
     var
@@ -1881,5 +1881,30 @@ codeunit 50018 "Integration 1C"
             SRSetup.Init();
             SRSetup.Insert();
         end;
+    end;
+
+    procedure CopyAllEntitiesTo1C()
+    var
+        CompanyIntegration: Record "Company Integration";
+    begin
+        if IntegrationWith1CDisabled() then exit;
+
+        if ItemCompanyFrom() then begin
+            CopyCompany();
+            CopyItems();
+            CopyVendor();
+            CopyBankDirectory(CompanyName);
+            CopyCustomer(CompanyName);
+            CopyCustomerAgreement(CompanyName);
+        end;
+
+        CompanyIntegration.SetCurrentKey("Copy Items To");
+        CompanyIntegration.SetRange("Copy Items From", true);
+        if CompanyIntegration.FindSet(true) then
+            repeat
+                CopyBankDirectory(CompanyIntegration."Company Name");
+                CopyCustomer(CompanyIntegration."Company Name");
+                CopyCustomerAgreement(CompanyIntegration."Company Name");
+            until CompanyIntegration.Next() = 0;
     end;
 }

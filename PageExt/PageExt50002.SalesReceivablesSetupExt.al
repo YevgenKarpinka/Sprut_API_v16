@@ -3,7 +3,7 @@ pageextension 50002 "Sales & Receivables Setup Ext" extends "Sales & Receivables
     layout
     {
         // Add changes to page layout here
-        addafter("Customer Agreement Nos.")
+        addafter("Copy Line Descr. to G/L Entry")
         {
             field("Allow Grey Agreement"; "Allow Grey Agreement")
             {

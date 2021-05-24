@@ -2,6 +2,16 @@ pageextension 50005 "Customer Card Ext" extends "Customer Card"
 {
     layout
     {
+        addafter("Full Name")
+        {
+            field("Init 1C"; "Init 1C")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies transfer to 1C of the customer.',
+                            RUS = 'Указывает передавать ли клиента в 1С.';
+                Editable = AllowGreyAgreement;
+            }
+        }
         // Add changes to page layout here
         addafter("VAT Registration No.")
         {
@@ -37,4 +47,14 @@ pageextension 50005 "Customer Card Ext" extends "Customer Card"
             }
         }
     }
+
+    trigger OnOpenPage()
+    begin
+        SRSetup.Get();
+        AllowGreyAgreement := SRSetup."Allow Grey Agreement";
+    end;
+
+    var
+        SRSetup: Record "Sales & Receivables Setup";
+        AllowGreyAgreement: Boolean;
 }

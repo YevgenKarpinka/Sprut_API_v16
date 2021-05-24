@@ -252,10 +252,27 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                         Message(GetLastErrorText());
                 end;
             }
+            action(CopyAllEntitiesTo1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Copy All Entities To 1C', RUS = 'Copy All Entities To 1C';
+                ToolTipML = ENU = 'Copy All Entities To 1C',
+                            RUS = 'Copy All Entities To 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if fastIntegration1C.Run() then
+                        Message('Ok!')
+                    else
+                        Message(GetLastErrorText());
+                end;
+            }
         }
     }
 
     var
+        fastIntegration1C: Codeunit "Fast Integration 1C";
         WebServiceMgt: Codeunit "Web Service Mgt.";
         Integration1C: Codeunit "Integration 1C";
         TokenTypeAccessToken: Label 'Token Type: %1\\AccessToken:\\%2';
