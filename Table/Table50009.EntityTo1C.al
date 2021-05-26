@@ -18,13 +18,19 @@ table 50009 "Entity To 1C"
             CaptionML = ENU = 'Table ID',
                         RUS = 'ИД таблицы';
         }
-        field(3; "No."; Code[20])
+        field(3; "Key 1"; Code[20])
         {
             DataClassification = SystemMetadata;
-            CaptionML = ENU = 'No.',
-                        RUS = 'Но.';
+            CaptionML = ENU = 'Key 1',
+                        RUS = 'Ключ 1';
         }
-        field(4; "Description"; Text[100])
+        field(4; "Key 2"; Code[20])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Key 2',
+                        RUS = 'Ключ 2';
+        }
+        field(5; "Description"; Text[100])
         {
             CaptionML = ENU = 'Description',
                         RUS = 'Описание';
@@ -37,7 +43,7 @@ table 50009 "Entity To 1C"
 
     keys
     {
-        key(PK; "Company Name", "Table ID", "No.")
+        key(PK; "Company Name", "Table ID", "Key 1", "Key 2")
         {
             Clustered = true;
         }

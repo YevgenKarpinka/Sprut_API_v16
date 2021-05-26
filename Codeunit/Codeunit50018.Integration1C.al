@@ -83,18 +83,18 @@ codeunit 50018 "Integration 1C"
                                                 tempCompanyIntegration."Company Name", CompanyName);
 
                     AddCompanyIntegrationPrefix(tempCompanyIntegration."Company Name", WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Префикс').AsValue().AsText());
-                    // end else begin
-                    //     // create entity in 1C
-                    //     // create json for create company
-                    //     CreateRequestBodyToCompany(tempCompanyIntegration."Company Name", jsonBody, requestMethodPATCH, tempCompanyIntegration.Prefix);
-                    //     // get body from 1C
-                    //     jsonBody.WriteTo(Body);
-                    //     if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
-                    //     jsonBody.ReadFrom(Body);
-                    //     // jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
-                    //     AddIDToIntegrationEntity(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '',
-                    //                             WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText(),
-                    //                             tempCompanyIntegration."Company Name", CompanyName);
+                end else begin
+                    // create entity in 1C
+                    // create json for create company
+                    CreateRequestBodyToCompany(tempCompanyIntegration."Company Name", jsonBody, requestMethodPOST, tempCompanyIntegration.Prefix);
+                    // get body from 1C
+                    jsonBody.WriteTo(Body);
+                    if not ConnectTo1C(entityType, requestMethodPOST, Body, '') then exit(false);
+                    jsonBody.ReadFrom(Body);
+                    // jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
+                    AddIDToIntegrationEntity(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '',
+                                            WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText(),
+                                            tempCompanyIntegration."Company Name", CompanyName);
                 end;
             until tempCompanyIntegration.Next() = 0;
 
@@ -116,30 +116,49 @@ codeunit 50018 "Integration 1C"
         Body.Add('НаименованиеПолное', CompInfo."Full Name");
         Body.Add('Префикс', prefixComp);
         Body.Add('ЮридическоеФизическоеЛицо', lblLegalEntity);
-        Body.Add('КонтактнаяИнформация', GetContactInfoFromCompanyInfo());
+        Body.Add('ИмяКомпанииВС', _CompanyName);
+        Body.Add('КонтактнаяИнформация', GetContactInfoFromCompanyInfo(_CompanyName));
     end;
 
-    local procedure GetContactInfoFromCompanyInfo(): JsonArray
+    local procedure GetContactInfoFromCompanyInfo(_CompanyName: Text[30]): JsonArray
     var
-        myInt: Integer;
+        CompInfo: Record "Company Information";
+        jsonContactInfoLine: JsonObject;
+        jsonContactInfo: JsonArray;
+        lblAddressLegalKey: Label 'ebccdcf9-2cab-11ea-acf7-545049000031';
+        lblAddressKey: Label 'ebccdcf8-2cab-11ea-acf7-545049000031';
     begin
+        if CompanyName <> _CompanyName then
+            CompInfo.ChangeCompany(_CompanyName);
 
+        CompInfo.Get();
+        jsonContactInfoLine.Add('Вид_Key', lblAddressKey);
+        jsonContactInfoLine.Add('НомерТелефона', CompInfo."Phone No.");
+        jsonContactInfoLine.Add('Город', CompInfo.City);
+        jsonContactInfoLine.Add('АдресЭП', CompInfo.Address + CompInfo."Address 2");
+        jsonContactInfo.Add(jsonContactInfoLine);
+
+        exit(jsonContactInfo);
     end;
 
-    local procedure GetCompanyIdFromIntegrEntity(): Text
+    local procedure GetCompanyIdFromIntegrEntity(_CompanyName: Text[30]): Text
     var
         CompanyInfo: Record "Company Information";
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
+        if CompanyName <> _CompanyName then
+            CompanyInfo.ChangeCompany(_CompanyName);
+
         CompanyInfo.Get();
         if CompanyInfo."OKPO Code" = '' then exit('');
-        if IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '') then
-            exit(GuidToClearText(IntegrEntity."Entity Id"));
-
-        GetCompanyIdFrom1C();
+        // if IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '') then
         IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '');
         exit(GuidToClearText(IntegrEntity."Entity Id"));
+
+        // GetCompanyIdFrom1C();
+        // IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '');
+        // exit(GuidToClearText(IntegrEntity."Entity Id"));
     end;
 
     procedure GetCustomerAgreementIdFrom1C(CustomerAgreement: Record "Customer Agreement"; _CompanyName: Text[30]): Boolean
@@ -231,14 +250,16 @@ codeunit 50018 "Integration 1C"
             repeat
                 if Customer."Init 1C" then begin
                     if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(locCustomerAgreement.SystemId), '')
-                                    and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified") then begin
+                                    and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified")
+                                    then begin
                         tempCustomerAgreement := locCustomerAgreement;
                         tempCustomerAgreement."CRM ID" := locCustomerAgreement.SystemId;
                         tempCustomerAgreement.Insert();
                     end;
                 end else begin
                     if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(locCustomerAgreement."CRM ID"), '')
-                                    and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified") then begin
+                                    and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified")
+                                    then begin
                         tempCustomerAgreement := locCustomerAgreement;
                         tempCustomerAgreement.Insert();
                     end;
@@ -302,7 +323,7 @@ codeunit 50018 "Integration 1C"
         if requestMethod = 'PATCH' then
             Body.Add('Owner_Key', GetCustomerIdFromIntegrEntity(CustomerNo, _CompanyName));
         Body.Add('ВалютаВзаиморасчетов_Key', GetCurrencyIdFromIntegrEntity(CustomerAgreement."Currency Code", _CompanyName));
-        Body.Add('Организация_Key', GetCompanyIdFromIntegrEntity());
+        Body.Add('Организация_Key', GetCompanyIdFromIntegrEntity(_CompanyName));
         Body.Add('СхемаНалоговогоУчета_Key', lblSchemaPostingVAT);
         Body.Add('СхемаНалоговогоУчетаПоТаре_Key', lblSchemaPostingVATTara);
         Body.Add('DeletionMark', not CustomerAgreement.Active);
@@ -1754,7 +1775,7 @@ codeunit 50018 "Integration 1C"
         Base64Convert: Codeunit "Base64 Convert";
         ClientId: Label 'Марина Кващук';
         ClientSecret: Label '888';
-        ResourceTest: Label 'http://20.67.250.23/conf/odata/standard.odata';
+        ResourceTest: Label 'http://20.67.250.23/testdb/odata/standard.odata';
         ResourceProd: Label 'http://20.67.250.23/conf/odata/standard.odata';
         HttpClient: HttpClient;
         RequestMessage: HttpRequestMessage;

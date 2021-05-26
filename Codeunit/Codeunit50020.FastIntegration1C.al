@@ -26,6 +26,7 @@ codeunit 50020 "Fast Integration 1C"
     end;
 
     var
+        blankGuid: Guid;
         SRSetup: Record "Sales & Receivables Setup";
         IntegrationLog: Record "Integration Log";
         WebServiceMgt: Codeunit "Web Service Mgt.";
@@ -83,18 +84,18 @@ codeunit 50020 "Fast Integration 1C"
                                                 tempCompanyIntegration."Company Name", CompanyName);
 
                     AddCompanyIntegrationPrefix(tempCompanyIntegration."Company Name", WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Префикс').AsValue().AsText());
-                    // end else begin
-                    //     // create entity in 1C
-                    //     // create json for create company
-                    //     CreateRequestBodyToCompany(tempCompanyIntegration."Company Name", jsonBody, requestMethodPATCH, tempCompanyIntegration.Prefix);
-                    //     // get body from 1C
-                    //     jsonBody.WriteTo(Body);
-                    //     if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
-                    //     jsonBody.ReadFrom(Body);
-                    //     // jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
-                    //     AddIDToIntegrationEntity(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '',
-                    //                             WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText(),
-                    //                             tempCompanyIntegration."Company Name", CompanyName);
+                end else begin
+                    // create entity in 1C
+                    // create json for create company
+                    CreateRequestBodyToCompany(tempCompanyIntegration."Company Name", jsonBody, requestMethodPOST, tempCompanyIntegration.Prefix);
+                    // get body from 1C
+                    jsonBody.WriteTo(Body);
+                    if not ConnectTo1C(entityType, requestMethodPOST, Body, '') then exit(false);
+                    jsonBody.ReadFrom(Body);
+                    // jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
+                    AddIDToIntegrationEntity(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '',
+                                            WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText(),
+                                            tempCompanyIntegration."Company Name", CompanyName);
                 end;
             until tempCompanyIntegration.Next() = 0;
 
@@ -116,30 +117,49 @@ codeunit 50020 "Fast Integration 1C"
         Body.Add('НаименованиеПолное', CompInfo."Full Name");
         Body.Add('Префикс', prefixComp);
         Body.Add('ЮридическоеФизическоеЛицо', lblLegalEntity);
-        Body.Add('КонтактнаяИнформация', GetContactInfoFromCompanyInfo());
+        Body.Add('ИмяКомпанииВС', _CompanyName);
+        Body.Add('КонтактнаяИнформация', GetContactInfoFromCompanyInfo(_CompanyName));
     end;
 
-    local procedure GetContactInfoFromCompanyInfo(): JsonArray
+    local procedure GetContactInfoFromCompanyInfo(_CompanyName: Text[30]): JsonArray
     var
-        myInt: Integer;
+        CompInfo: Record "Company Information";
+        jsonContactInfoLine: JsonObject;
+        jsonContactInfo: JsonArray;
+        lblAddressLegalKey: Label 'ebccdcf9-2cab-11ea-acf7-545049000031';
+        lblAddressKey: Label 'ebccdcf8-2cab-11ea-acf7-545049000031';
     begin
+        if CompanyName <> _CompanyName then
+            CompInfo.ChangeCompany(_CompanyName);
 
+        CompInfo.Get();
+        jsonContactInfoLine.Add('Вид_Key', lblAddressKey);
+        jsonContactInfoLine.Add('НомерТелефона', CompInfo."Phone No.");
+        jsonContactInfoLine.Add('Город', CompInfo.City);
+        jsonContactInfoLine.Add('АдресЭП', CompInfo.Address + CompInfo."Address 2");
+        jsonContactInfo.Add(jsonContactInfoLine);
+
+        exit(jsonContactInfo);
     end;
 
-    local procedure GetCompanyIdFromIntegrEntity(): Text
+    local procedure GetCompanyIdFromIntegrEntity(_CompanyName: Text[30]): Text
     var
         CompanyInfo: Record "Company Information";
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
+        if CompanyName <> _CompanyName then
+            CompanyInfo.ChangeCompany(_CompanyName);
+
         CompanyInfo.Get();
         if CompanyInfo."OKPO Code" = '' then exit('');
-        if IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '') then
-            exit(GuidToClearText(IntegrEntity."Entity Id"));
-
-        GetCompanyIdFrom1C();
+        // if IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '') then
         IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '');
         exit(GuidToClearText(IntegrEntity."Entity Id"));
+
+        // GetCompanyIdFrom1C();
+        // IntegrEntity.Get(lblSystemCode, Database::"Company Information", CompanyInfo."OKPO Code", '');
+        // exit(GuidToClearText(IntegrEntity."Entity Id"));
     end;
 
     procedure GetCustomerAgreementIdFrom1C(CustomerAgreement: Record "Customer Agreement"; _CompanyName: Text[30]): Boolean
@@ -231,14 +251,16 @@ codeunit 50020 "Fast Integration 1C"
             repeat
                 if Customer."Init 1C" then begin
                     if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(locCustomerAgreement.SystemId), '')
-                                    and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified") then begin
+                                    and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified")
+                                    then begin
                         tempCustomerAgreement := locCustomerAgreement;
                         tempCustomerAgreement."CRM ID" := locCustomerAgreement.SystemId;
                         tempCustomerAgreement.Insert();
                     end;
                 end else begin
                     if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(locCustomerAgreement."CRM ID"), '')
-                                    and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified") then begin
+                                    and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified")
+                                    then begin
                         tempCustomerAgreement := locCustomerAgreement;
                         tempCustomerAgreement.Insert();
                     end;
@@ -302,7 +324,7 @@ codeunit 50020 "Fast Integration 1C"
         if requestMethod = 'PATCH' then
             Body.Add('Owner_Key', GetCustomerIdFromIntegrEntity(CustomerNo, _CompanyName));
         Body.Add('ВалютаВзаиморасчетов_Key', GetCurrencyIdFromIntegrEntity(CustomerAgreement."Currency Code", _CompanyName));
-        Body.Add('Организация_Key', GetCompanyIdFromIntegrEntity());
+        Body.Add('Организация_Key', GetCompanyIdFromIntegrEntity(_CompanyName));
         Body.Add('СхемаНалоговогоУчета_Key', lblSchemaPostingVAT);
         Body.Add('СхемаНалоговогоУчетаПоТаре_Key', lblSchemaPostingVATTara);
         Body.Add('DeletionMark', not CustomerAgreement.Active);
@@ -1754,7 +1776,7 @@ codeunit 50020 "Fast Integration 1C"
         Base64Convert: Codeunit "Base64 Convert";
         ClientId: Label 'Марина Кващук';
         ClientSecret: Label '888';
-        ResourceTest: Label 'http://20.67.250.23/conf/odata/standard.odata';
+        ResourceTest: Label 'http://20.67.250.23/testdb/odata/standard.odata';
         ResourceProd: Label 'http://20.67.250.23/conf/odata/standard.odata';
         HttpClient: HttpClient;
         RequestMessage: HttpRequestMessage;
@@ -1891,11 +1913,15 @@ codeunit 50020 "Fast Integration 1C"
 
         if ItemCompanyFrom() then begin
             CopyCompany();
+            CopyUoM();
             CopyItems();
-            CopyVendor();
+            CopyCurrency();
             CopyBankDirectory(CompanyName);
+            CopyVendor();
+            CopyVendorBankAccount(CompanyName);
             CopyCustomer(CompanyName);
             CopyCustomerAgreement(CompanyName);
+            CopyCustomerBankAccount(CompanyName);
         end;
 
         CompanyIntegration.SetCurrentKey("Copy Items To");
@@ -1906,5 +1932,222 @@ codeunit 50020 "Fast Integration 1C"
                 CopyCustomer(CompanyIntegration."Company Name");
                 CopyCustomerAgreement(CompanyIntegration."Company Name");
             until CompanyIntegration.Next() = 0;
+    end;
+
+    local procedure CopyCompany()
+    var
+        CompanyIntegration: Record "Company Integration";
+    begin
+        if CompanyIntegration.FindSet(true) then
+            repeat
+                if CompanyIntegration."Copy Items To" or CompanyIntegration."Copy Items From" then begin
+                    AddEntityTo1CEntities(CompanyIntegration."Company Name", Database::"Company Information", CompanyIntegration."Company Name", '');
+                end;
+            until CompanyIntegration.Next() = 0;
+    end;
+
+    [EventSubscriber(ObjectType::Table, 79, 'OnAfterInsertEvent', '', false, false)]
+    local procedure CompInfoOnAfterInsertEvent(var Rec: Record "Company Information")
+    var
+        CompanyIntegration: Record "Company Integration";
+    begin
+        if not Rec.IsTemporary then begin
+            CompanyIntegration.SetCurrentKey("Company Name");
+            CompanyIntegration.SetRange("Company Name", CompanyName);
+            if CompanyIntegration.FindFirst()
+                and (CompanyIntegration."Copy Items To" or CompanyIntegration."Copy Items From") then
+                AddEntityTo1CEntities(CompanyName, Database::"Company Information", CompanyIntegration."Company Name", '');
+        end;
+    end;
+
+    [EventSubscriber(ObjectType::Table, 79, 'OnAfterModifyEvent', '', false, false)]
+    local procedure CompInfoOnAfterModifyEvent(var Rec: Record "Company Information")
+    var
+        CompanyIntegration: Record "Company Integration";
+    begin
+        if not Rec.IsTemporary then begin
+            CompanyIntegration.SetCurrentKey("Company Name");
+            CompanyIntegration.SetRange("Company Name", CompanyName);
+            if CompanyIntegration.FindFirst()
+                and (CompanyIntegration."Copy Items To" or CompanyIntegration."Copy Items From") then
+                AddEntityTo1CEntities(CompanyName, Database::"Company Information", CompanyIntegration."Company Name", '');
+        end;
+    end;
+
+    local procedure CopyItems()
+    var
+        Item: Record Item;
+    begin
+        if Item.FindSet(true) then
+            repeat
+                AddEntityTo1CEntities(CompanyName, Database::Item, Item."No.", '');
+            until Item.Next() = 0;
+    end;
+
+    [EventSubscriber(ObjectType::Table, 27, 'OnAfterInsertEvent', '', false, false)]
+    local procedure ItemOnAfterInsertEvent(var Rec: Record Item)
+    begin
+        if not Rec.IsTemporary then
+            AddEntityTo1CEntities(CompanyName, Database::Item, Rec."No.", '');
+    end;
+
+    [EventSubscriber(ObjectType::Table, 27, 'OnAfterModifyEvent', '', false, false)]
+    local procedure ItemOnAfterModifyEvent(var Rec: Record Item)
+    begin
+        if not Rec.IsTemporary then
+            AddEntityTo1CEntities(CompanyName, Database::Item, Rec."No.", '');
+    end;
+
+    local procedure CopyCurrency()
+    var
+        Currency: Record Currency;
+    begin
+        if Currency.FindSet(true) then
+            repeat
+                AddEntityTo1CEntities(CompanyName, Database::Currency, Currency.Code, '');
+            until Currency.Next() = 0;
+    end;
+
+    [EventSubscriber(ObjectType::Table, 4, 'OnAfterInsertEvent', '', false, false)]
+    local procedure CurrencyOnAfterInsertEvent(var Rec: Record Currency)
+    begin
+        if not Rec.IsTemporary then
+            AddEntityTo1CEntities(CompanyName, Database::Currency, Rec.Code, '');
+    end;
+
+    [EventSubscriber(ObjectType::Table, 4, 'OnAfterModifyEvent', '', false, false)]
+    local procedure CurrencyOnAfterModifyEvent(var Rec: Record Currency)
+    begin
+        if not Rec.IsTemporary then
+            AddEntityTo1CEntities(CompanyName, Database::Currency, Rec.Code, '');
+    end;
+
+    local procedure CopyUoM()
+    var
+        UnitOfMeasure: Record "Unit of Measure";
+    begin
+        if UnitOfMeasure.FindSet(true) then
+            repeat
+                AddEntityTo1CEntities(CompanyName, Database::"Unit of Measure", UnitOfMeasure.Code, '');
+            until UnitOfMeasure.Next() = 0;
+    end;
+
+    [EventSubscriber(ObjectType::Table, 204, 'OnAfterInsertEvent', '', false, false)]
+    local procedure UoMOnAfterInsertEvent(var Rec: Record "Unit of Measure")
+    begin
+        if not Rec.IsTemporary then
+            AddEntityTo1CEntities(CompanyName, Database::"Unit of Measure", Rec.Code, '');
+    end;
+
+    [EventSubscriber(ObjectType::Table, 204, 'OnAfterModifyEvent', '', false, false)]
+    local procedure UoMOnAfterModifyEvent(var Rec: Record "Unit of Measure")
+    begin
+        if not Rec.IsTemporary then
+            AddEntityTo1CEntities(CompanyName, Database::"Unit of Measure", Rec.Code, '');
+    end;
+
+    local procedure CopyVendor()
+    var
+        Vendor: Record Vendor;
+    begin
+        if Vendor.FindSet(true) then
+            repeat
+                AddEntityTo1CEntities(CompanyName, Database::Vendor, Vendor."No.", '');
+            until Vendor.Next() = 0;
+    end;
+
+    [EventSubscriber(ObjectType::Table, 23, 'OnAfterInsertEvent', '', false, false)]
+    local procedure VendorOnAfterInsertEvent(var Rec: Record Vendor)
+    begin
+        if not Rec.IsTemporary then
+            AddEntityTo1CEntities(CompanyName, Database::Vendor, Rec."No.", '');
+    end;
+
+    [EventSubscriber(ObjectType::Table, 23, 'OnAfterModifyEvent', '', false, false)]
+    local procedure VendorOnAfterModifyEvent(var Rec: Record Vendor)
+    begin
+        if not Rec.IsTemporary then
+            AddEntityTo1CEntities(CompanyName, Database::Vendor, Rec."No.", '');
+    end;
+
+    local procedure CopyBankDirectory(_companyName: Text[30])
+    var
+        BankDirectory: Record "Bank Directory";
+    begin
+        if CompanyName <> _companyName then
+            BankDirectory.ChangeCompany(_companyName);
+
+        if BankDirectory.FindSet(true) then
+            repeat
+                AddEntityTo1CEntities(_companyName, Database::"Bank Directory", BankDirectory.BIC, '');
+            until BankDirectory.Next() = 0;
+    end;
+
+    local procedure CopyCustomer(_companyName: Text[30])
+    var
+        Customer: Record Customer;
+    begin
+        if CompanyName <> _companyName then
+            Customer.ChangeCompany(_companyName);
+
+        if Customer.FindSet(true) then
+            repeat
+                if Customer."Init 1C" or (Customer."CRM ID" <> blankGuid) then
+                    AddEntityTo1CEntities(_companyName, Database::Customer, Customer."No.", '');
+            until Customer.Next() = 0;
+    end;
+
+    local procedure CopyCustomerAgreement(_companyName: Text[30])
+    var
+        CustomerAgr: Record "Customer Agreement";
+    begin
+        if CompanyName <> _companyName then
+            CustomerAgr.ChangeCompany(_companyName);
+
+        if CustomerAgr.FindSet(true) then
+            repeat
+                if CustomerAgr."Init 1C" or (CustomerAgr."CRM ID" <> blankGuid) then
+                    AddEntityTo1CEntities(_companyName, Database::"Customer Agreement", CustomerAgr."Customer No.", CustomerAgr."No.");
+            until CustomerAgr.Next() = 0;
+    end;
+
+    local procedure CopyVendorBankAccount(_companyName: Text[30])
+    var
+        VendorBankAccount: Record "Vendor Bank Account";
+    begin
+        if CompanyName <> _companyName then
+            VendorBankAccount.ChangeCompany(_companyName);
+
+        if VendorBankAccount.FindSet(true) then
+            repeat
+                AddEntityTo1CEntities(_companyName, Database::"Vendor Bank Account", VendorBankAccount."Vendor No.", VendorBankAccount.Code);
+            until VendorBankAccount.Next() = 0;
+    end;
+
+    local procedure CopyCustomerBankAccount(_companyName: Text[30])
+    var
+        CustomerBankAccount: Record "Customer Bank Account";
+    begin
+        if CompanyName <> _companyName then
+            CustomerBankAccount.ChangeCompany(_companyName);
+
+        if CustomerBankAccount.FindSet(true) then
+            repeat
+                AddEntityTo1CEntities(_companyName, Database::"Customer Bank Account", CustomerBankAccount."Customer No.", CustomerBankAccount.Code);
+            until CustomerBankAccount.Next() = 0;
+    end;
+
+    local procedure AddEntityTo1CEntities(_companyName: Text[30]; _tableID: Integer; _key1: Code[20]; _key2: Code[20])
+    var
+        Entity1C: Record "Entity To 1C";
+    begin
+        if Entity1C.Get(_companyName, _tableID, _key1, _key2) then exit;
+
+        Entity1C.Init();
+        Entity1C."Company Name" := _companyName;
+        Entity1C."Table ID" := _tableID;
+        Entity1C."Key 1" := _key1;
+        Entity1C."Key 2" := _key2;
+        Entity1C.Insert(true);
     end;
 }

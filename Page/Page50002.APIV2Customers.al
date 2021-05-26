@@ -53,18 +53,18 @@ page 50002 "APIV2 - Customers"
                         RegisterFieldSet(Rec.FIELDNO("Contact Type"));
                     end;
                 }
-                field(address; PostalAddressJSON)
-                {
-                    ApplicationArea = All;
-                    Caption = 'address', Locked = true;
-                    ODataEDMType = 'POSTALADDRESS';
-                    ToolTip = 'Specifies the address for the customer.';
+                // field(address; PostalAddressJSON)
+                // {
+                //     ApplicationArea = All;
+                //     Caption = 'address', Locked = true;
+                //     ODataEDMType = 'POSTALADDRESS';
+                //     ToolTip = 'Specifies the address for the customer.';
 
-                    trigger OnValidate()
-                    begin
-                        PostalAddressSet := TRUE;
-                    end;
-                }
+                //     trigger OnValidate()
+                //     begin
+                //         PostalAddressSet := TRUE;
+                //     end;
+                // }
                 field(phoneNumber; Rec."Phone No.")
                 {
                     ApplicationArea = All;
@@ -311,6 +311,26 @@ page 50002 "APIV2 - Customers"
                         RegisterFieldSet(Rec.FIELDNO("OKPO Code"));
                     end;
                 }
+                field(taxRegistrationNo; Rec."TAX Registration No.")
+                {
+                    ApplicationArea = All;
+                    Caption = 'codeOKPO', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO("TAX Registration No."));
+                    end;
+                }
+                field(certificate; Certificate)
+                {
+                    ApplicationArea = All;
+                    Caption = 'certificate', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO(Certificate));
+                    end;
+                }
                 field(accountIBAN; txtIBAN)
                 {
                     ApplicationArea = All;
@@ -319,6 +339,66 @@ page 50002 "APIV2 - Customers"
                     trigger OnValidate()
                     begin
                         RegisterIBAN();
+                    end;
+                }
+                field(address; Address)
+                {
+                    ApplicationArea = All;
+                    Caption = 'address', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO(Address));
+                    end;
+                }
+                field(address2; "Address 2")
+                {
+                    ApplicationArea = All;
+                    Caption = 'address2', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO("Address 2"));
+                    end;
+                }
+                field(city; City)
+                {
+                    ApplicationArea = All;
+                    Caption = 'city', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO(City));
+                    end;
+                }
+                field(countryRegionCode; "Country/Region Code")
+                {
+                    ApplicationArea = All;
+                    Caption = 'countryRegionCode', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO("Country/Region Code"));
+                    end;
+                }
+                field(county; County)
+                {
+                    ApplicationArea = All;
+                    Caption = 'county', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO(County));
+                    end;
+                }
+                field(postCode; "Post Code")
+                {
+                    ApplicationArea = All;
+                    Caption = 'postCode', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO("Post Code"));
                     end;
                 }
                 // <<
