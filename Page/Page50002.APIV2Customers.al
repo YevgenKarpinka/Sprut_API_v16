@@ -30,7 +30,7 @@ page 50002 "APIV2 - Customers"
                     ApplicationArea = All;
                     Caption = 'number', Locked = true;
                 }
-                field(displayName; Rec.Name)
+                field(displayName; txtDisplayName)
                 {
                     ApplicationArea = All;
                     Caption = 'displayName', Locked = true;
@@ -38,9 +38,24 @@ page 50002 "APIV2 - Customers"
 
                     trigger OnValidate()
                     begin
-                        IF Rec.Name = '' THEN
+                        IF txtDisplayName = '' THEN
                             ERROR(BlankCustomerNameErr);
+
+                        Name := CopyStr(txtDisplayName, 1, MaxStrLen(Name));
+                        "Name 2" := CopyStr(txtDisplayName, MaxStrLen(Name) + 1, MaxStrLen("Name 2"));
+
                         RegisterFieldSet(Rec.FIELDNO(Name));
+                        RegisterFieldSet(Rec.FIELDNO("Name 2"));
+                    end;
+                }
+                field(fullName; "Full Name")
+                {
+                    ApplicationArea = All;
+                    Caption = 'fullName', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(FIELDNO("Full Name"));
                     end;
                 }
                 field(type; Rec."Contact Type")
@@ -53,18 +68,6 @@ page 50002 "APIV2 - Customers"
                         RegisterFieldSet(Rec.FIELDNO("Contact Type"));
                     end;
                 }
-                // field(address; PostalAddressJSON)
-                // {
-                //     ApplicationArea = All;
-                //     Caption = 'address', Locked = true;
-                //     ODataEDMType = 'POSTALADDRESS';
-                //     ToolTip = 'Specifies the address for the customer.';
-
-                //     trigger OnValidate()
-                //     begin
-                //         PostalAddressSet := TRUE;
-                //     end;
-                // }
                 field(phoneNumber; Rec."Phone No.")
                 {
                     ApplicationArea = All;
@@ -138,6 +141,10 @@ page 50002 "APIV2 - Customers"
                     trigger OnValidate()
                     begin
                         RegisterFieldSet(Rec.FIELDNO("TAX Registration No."));
+                        if "TAX Registration No." <> '' then begin
+                            "VAT Registration No." := "TAX Registration No.";
+                            RegisterFieldSet(Rec.FIELDNO("VAT Registration No."));
+                        end;
                     end;
                 }
                 field(currencyId; Rec."Currency Id")
@@ -266,6 +273,7 @@ page 50002 "APIV2 - Customers"
                 }
 
                 // >>
+
                 field(crmID; Rec."CRM ID")
                 {
                     ApplicationArea = All;
@@ -506,6 +514,7 @@ page 50002 "APIV2 - Customers"
         PostalAddressJSON: Text;
         TaxAreaDisplayName: Text;
         txtIBAN: Text;
+        txtDisplayName: Text;
         CurrencyValuesDontMatchErr: Label 'The currency values do not match to a specific Currency.', Locked = true;
         CurrencyIdDoesNotMatchACurrencyErr: Label 'The "currencyId" does not match to a Currency.', Locked = true;
         CurrencyCodeDoesNotMatchACurrencyErr: Label 'The "currencyCode" does not match to a Currency.', Locked = true;
@@ -570,6 +579,7 @@ page 50002 "APIV2 - Customers"
         PostalAddressJSON := GraphMgtCustomer.PostalAddressToJSON(Rec);
         CurrencyCodeTxt := GraphMgtGeneralTools.TranslateNAVCurrencyCodeToCurrencyCode(LCYCurrencyCode, Rec."Currency Code");
         TaxAreaDisplayName := TaxAreaBuffer.GetTaxAreaDisplayName(Rec."Tax Area ID");
+        txtDisplayName := Name + "Name 2";
     end;
 
     local procedure ClearCalculatedFields()
@@ -579,6 +589,7 @@ page 50002 "APIV2 - Customers"
         CLEAR(PostalAddressJSON);
         CLEAR(PostalAddressSet);
         TempFieldSet.DELETEALL();
+        Clear(txtDisplayName);
     end;
 
     local procedure RegisterFieldSet(FieldNo: Integer)

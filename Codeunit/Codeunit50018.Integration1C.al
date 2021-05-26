@@ -509,9 +509,14 @@ codeunit 50018 "Integration 1C"
         Body.Add('Description', Customer.Name);
         Body.Add('НаименованиеПолное', Customer."Full Name");
         Body.Add('ЮридическоеФизическоеЛицо', lblLegalEntity);
-        Body.Add('ИНН', Customer."VAT Registration No.");
+        if Customer."VAT Registration No." = '' then begin
+            if Customer."TAX Registration No." <> '' then
+                Body.Add('ИНН', Customer."TAX Registration No.")
+        end else
+            Body.Add('ИНН', Customer."VAT Registration No.");
         Body.Add('Parent_Key', lblCustomerParentKey);
-        Body.Add('КодПоЕДРПОУ', Customer."OKPO Code");
+        if Customer."OKPO Code" <> '' then
+            Body.Add('КодПоЕДРПОУ', Customer."OKPO Code");
         if Customer."Init 1C" then
             Body.Add('ID_CRM', GuidToClearText(Customer.SystemId))
         else
@@ -557,15 +562,16 @@ codeunit 50018 "Integration 1C"
 
         Cust.Get(CustomerNo);
         LineNo := 0;
-        if Cust."Phone No." <> '' then begin
-            LineNo += 1;
-            jsonContactInfoLine.Add('LineNumber', LineNo);
-            jsonContactInfoLine.Add('Вид_Key', lblbPhoneKey);
-            jsonContactInfoLine.Add('НомерТелефона', Cust."Phone No.");
-            jsonContactInfoLine.Add('Город', Cust.City);
-            jsonContactInfoLine.Add('АдресЭП', Cust.Address + Cust."Address 2");
-            jsonContactInfo.Add(jsonContactInfoLine);
-        end;
+        // if Cust."Phone No." <> '' then begin
+        LineNo += 1;
+        jsonContactInfoLine.Add('LineNumber', LineNo);
+        // jsonContactInfoLine.Add('Вид_Key', lblbPhoneKey);
+        jsonContactInfoLine.Add('Вид_Key', lblAddressLegalKey);
+        jsonContactInfoLine.Add('НомерТелефона', Cust."Phone No.");
+        jsonContactInfoLine.Add('Город', Cust.City);
+        jsonContactInfoLine.Add('АдресЭП', Cust.Address + Cust."Address 2");
+        jsonContactInfo.Add(jsonContactInfoLine);
+        // end;
         ShipToAdress.SetCurrentKey("Customer No.");
         ShipToAdress.SetRange("Customer No.", CustomerNo);
         if ShipToAdress.FindSet(true) then
