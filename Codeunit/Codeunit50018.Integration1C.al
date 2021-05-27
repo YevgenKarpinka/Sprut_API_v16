@@ -456,14 +456,16 @@ codeunit 50018 "Integration 1C"
             repeat
                 if Customer."Init 1C" then begin
                     if IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer.SystemId), '')
-                                    and (IntegrationEntity."Last Modify Date Time" < Customer."Last Modified Date Time") then begin
+                                    and (IntegrationEntity."Last Modify Date Time" < Customer."Last Modified Date Time")
+                                    then begin
                         tempCustomer := Customer;
                         tempCustomer."CRM ID" := Customer.SystemId;
                         tempCustomer.Insert();
                     end;
                 end else begin
                     if IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '')
-                                    and (IntegrationEntity."Last Modify Date Time" < Customer."Last Modified Date Time") then begin
+                                    and (IntegrationEntity."Last Modify Date Time" < Customer."Last Modified Date Time")
+                                    then begin
                         tempCustomer := Customer;
                         tempCustomer.Insert();
                     end;
@@ -506,7 +508,7 @@ codeunit 50018 "Integration 1C"
         Customer.Get(CustomerNo);
         Clear(Body);
         Body.Add('Code', glCompanyPrefix + Customer."No.");
-        Body.Add('Description', Customer.Name);
+        Body.Add('Description', Customer.Name + Customer."Name 2");
         Body.Add('НаименованиеПолное', Customer."Full Name");
         Body.Add('ЮридическоеФизическоеЛицо', lblLegalEntity);
         if Customer."VAT Registration No." = '' then begin
@@ -554,6 +556,8 @@ codeunit 50018 "Integration 1C"
         lblbPhoneKey: Label 'ebccdced-2cab-11ea-acf7-545049000031';
         lblAddressLegalKey: Label 'ebccdcef-2cab-11ea-acf7-545049000031';
         lblAddressKey: Label 'ebccdcf0-2cab-11ea-acf7-545049000031';
+        lblTypePhone: Label 'Телефон';
+        lblTypeAddress: Label 'Адрес';
     begin
         if CompanyName <> _CompanyName then begin
             Cust.ChangeCompany(_CompanyName);
@@ -562,27 +566,41 @@ codeunit 50018 "Integration 1C"
 
         Cust.Get(CustomerNo);
         LineNo := 0;
-        // if Cust."Phone No." <> '' then begin
-        LineNo += 1;
-        jsonContactInfoLine.Add('LineNumber', LineNo);
-        // jsonContactInfoLine.Add('Вид_Key', lblbPhoneKey);
-        jsonContactInfoLine.Add('Вид_Key', lblAddressLegalKey);
-        jsonContactInfoLine.Add('НомерТелефона', Cust."Phone No.");
-        jsonContactInfoLine.Add('Город', Cust.City);
-        jsonContactInfoLine.Add('АдресЭП', Cust.Address + Cust."Address 2");
-        jsonContactInfo.Add(jsonContactInfoLine);
-        // end;
+        if Cust."Phone No." <> '' then begin
+            LineNo += 1;
+            jsonContactInfoLine.Add('LineNumber', LineNo);
+            jsonContactInfoLine.Add('Тип', lblTypePhone);
+            jsonContactInfoLine.Add('Вид_Key', lblbPhoneKey);
+            jsonContactInfoLine.Add('НомерТелефона', Cust."Phone No.");
+            jsonContactInfo.Add(jsonContactInfoLine);
+            Clear(jsonContactInfoLine);
+        end;
+
+        if Cust.Address <> '' then begin
+            LineNo += 1;
+            jsonContactInfoLine.Add('LineNumber', LineNo);
+            jsonContactInfoLine.Add('Тип', lblTypeAddress);
+            jsonContactInfoLine.Add('Вид_Key', lblAddressLegalKey);
+            jsonContactInfoLine.Add('Город', Cust.City);
+            jsonContactInfoLine.Add('АдресЭП', Cust.Address + Cust."Address 2");
+            jsonContactInfo.Add(jsonContactInfoLine);
+            Clear(jsonContactInfoLine);
+        end;
+
         ShipToAdress.SetCurrentKey("Customer No.");
         ShipToAdress.SetRange("Customer No.", CustomerNo);
         if ShipToAdress.FindSet(true) then
             repeat
-                Clear(jsonContactInfoLine);
                 LineNo += 1;
                 jsonContactInfoLine.Add('LineNumber', LineNo);
+                jsonContactInfoLine.Add('Тип', lblTypeAddress);
                 jsonContactInfoLine.Add('Вид_Key', lblAddressKey);
-                jsonContactInfoLine.Add('НомерТелефона', ShipToAdress."Phone No.");
-                jsonContactInfoLine.Add('Город', ShipToAdress.City);
-                jsonContactInfoLine.Add('АдресЭП', ShipToAdress.Address + ShipToAdress."Address 2");
+                if Cust."Phone No." <> '' then
+                    jsonContactInfoLine.Add('НомерТелефона', ShipToAdress."Phone No.");
+                if Cust.City <> '' then
+                    jsonContactInfoLine.Add('Город', ShipToAdress.City);
+                if Cust.Address <> '' then
+                    jsonContactInfoLine.Add('АдресЭП', ShipToAdress.Address + ShipToAdress."Address 2");
                 jsonContactInfo.Add(jsonContactInfoLine);
             until ShipToAdress.Next() = 0;
         exit(jsonContactInfo);
@@ -699,7 +717,8 @@ codeunit 50018 "Integration 1C"
         if Vendor.FindSet(true) then
             repeat
                 if IntegrationEntity.Get(lblSystemCode, Database::Vendor, Vendor."No.", '')
-                and (IntegrationEntity."Last Modify Date Time" < Vendor."Last Modified Date Time") then begin
+                and (IntegrationEntity."Last Modify Date Time" < Vendor."Last Modified Date Time")
+                then begin
                     tempVendor := Vendor;
                     tempVendor.Insert();
                 end;
@@ -763,18 +782,32 @@ codeunit 50018 "Integration 1C"
         lblbPhoneKey: Label 'ebccdced-2cab-11ea-acf7-545049000031';
         lblAddressLegalKey: Label 'ebccdcef-2cab-11ea-acf7-545049000031';
         lblAddressKey: Label 'ebccdcf0-2cab-11ea-acf7-545049000031';
+        lblTypePhone: Label 'Телефон';
+        lblTypeAddress: Label 'Адрес';
     begin
         Vend.Get(VendorNo);
         LineNo := 0;
         if Vend."Phone No." <> '' then begin
             LineNo += 1;
             jsonContactInfoLine.Add('LineNumber', LineNo);
+            jsonContactInfoLine.Add('Тип', lblTypePhone);
             jsonContactInfoLine.Add('Вид_Key', lblbPhoneKey);
             jsonContactInfoLine.Add('НомерТелефона', Vend."Phone No.");
+            jsonContactInfo.Add(jsonContactInfoLine);
+            Clear(jsonContactInfoLine);
+        end;
+
+        if Vend.Address <> '' then begin
+            LineNo += 1;
+            jsonContactInfoLine.Add('LineNumber', LineNo);
+            jsonContactInfoLine.Add('Тип', lblTypeAddress);
+            jsonContactInfoLine.Add('Вид_Key', lblAddressLegalKey);
             jsonContactInfoLine.Add('Город', Vend.City);
             jsonContactInfoLine.Add('АдресЭП', Vend.Address + Vend."Address 2");
             jsonContactInfo.Add(jsonContactInfoLine);
+            Clear(jsonContactInfoLine);
         end;
+
         OrderAdress.SetCurrentKey("Vendor No.");
         OrderAdress.SetRange("Vendor No.", VendorNo);
         if OrderAdress.FindSet(true) then
@@ -782,10 +815,14 @@ codeunit 50018 "Integration 1C"
                 Clear(jsonContactInfoLine);
                 LineNo += 1;
                 jsonContactInfoLine.Add('LineNumber', LineNo);
+                jsonContactInfoLine.Add('Тип', lblTypeAddress);
                 jsonContactInfoLine.Add('Вид_Key', lblAddressKey);
-                jsonContactInfoLine.Add('НомерТелефона', OrderAdress."Phone No.");
-                jsonContactInfoLine.Add('Город', OrderAdress.City);
-                jsonContactInfoLine.Add('АдресЭП', OrderAdress.Address + OrderAdress."Address 2");
+                if Vend."Phone No." <> '' then
+                    jsonContactInfoLine.Add('НомерТелефона', OrderAdress."Phone No.");
+                if Vend.City <> '' then
+                    jsonContactInfoLine.Add('Город', OrderAdress.City);
+                if Vend.Address <> '' then
+                    jsonContactInfoLine.Add('АдресЭП', OrderAdress.Address + OrderAdress."Address 2");
                 jsonContactInfo.Add(jsonContactInfoLine);
             until OrderAdress.Next() = 0;
         exit(jsonContactInfo);
@@ -803,8 +840,7 @@ codeunit 50018 "Integration 1C"
         IntegrEntity: Record "Integration Entity";
         lblSystemCode: Label '1C';
     begin
-        // if not VendBankAcc.Get(VendNo, VendorDefaultBankCode) then exit('');
-        VendBankAcc.Get(VendNo, VendorDefaultBankCode);
+        if not VendBankAcc.Get(VendNo, VendorDefaultBankCode) then exit('');
 
         if IntegrEntity.Get(lblSystemCode, Database::"Vendor Bank Account", VendBankAcc.IBAN, '') then
             exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
@@ -1395,6 +1431,7 @@ codeunit 50018 "Integration 1C"
         IntegrationEntity: Record "Integration Entity";
     begin
         IntegrationEntity.Get(SystemCode, tableID, Code1, Code2);
+        // IntegrationEntity."Last Modify Date Time" := CurrentDateTime;
         IntegrationEntity.Modify(true);
         Commit();
     end;
