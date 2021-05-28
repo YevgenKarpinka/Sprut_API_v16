@@ -20,6 +20,18 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
                     ApplicationArea = All;
 
                 }
+                field("Error Job Queue Entries"; CaptionMgt.ErrorJobQueueEntries())
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Error Job Queue Entries',
+                                RUS = 'Ошибки в операциях очереди работ';
+                }
+                // field("Modify Order Entries"; CaptionMgt.ErrorModifyOrderEntries())
+                // {
+                //     ApplicationArea = All;
+                //     CaptionML = ENU = 'Error Modify Order Entries',
+                //                 RUS = 'Ошибки в операциях изменения заказа';
+                // }
             }
         }
     }
@@ -30,5 +42,5 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
     }
 
     var
-        myInt: Integer;
+        CaptionMgt: Codeunit "Caption Mgt.";
 }

@@ -108,7 +108,7 @@ table 50003 "Task Payment Send"
                 ClearLastError();
             end;
         }
-        field(17; "Error Text"; Text[250])
+        field(17; "Error Text"; Text[2048])
         {
             DataClassification = CustomerContent;
         }

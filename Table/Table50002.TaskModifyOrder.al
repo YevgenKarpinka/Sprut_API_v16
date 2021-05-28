@@ -37,7 +37,7 @@ table 50002 "Task Modify Order"
         {
             DataClassification = CustomerContent;
         }
-        field(9; "Error Text"; Text[250])
+        field(9; "Error Text"; Text[2048])
         {
             DataClassification = CustomerContent;
         }

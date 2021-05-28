@@ -20,4 +20,5 @@ tableextension 50019 "Activities Cue Ext." extends "Activities Cue"
             CalcFormula = Count(Customer where("Deduplicate Id" = filter(<> '00000000-0000-0000-0000-000000000000'), Balance = filter(> 0)));
         }
     }
+
 }

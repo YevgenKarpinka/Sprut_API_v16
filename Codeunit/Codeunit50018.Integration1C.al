@@ -507,7 +507,8 @@ codeunit 50018 "Integration 1C"
 
         Customer.Get(CustomerNo);
         Clear(Body);
-        Body.Add('Code', glCompanyPrefix + Customer."No.");
+        if (requestMethod <> requestMethodPATCH) then
+            Body.Add('Code', glCompanyPrefix + Customer."No.");
         Body.Add('Description', Customer.Name + Customer."Name 2");
         Body.Add('НаименованиеПолное', Customer."Full Name");
         Body.Add('ЮридическоеФизическоеЛицо', lblLegalEntity);
@@ -554,8 +555,8 @@ codeunit 50018 "Integration 1C"
         jsonContactInfoLine: JsonObject;
         jsonContactInfo: JsonArray;
         lblbPhoneKey: Label 'ebccdced-2cab-11ea-acf7-545049000031';
-        lblAddressLegalKey: Label 'ebccdcef-2cab-11ea-acf7-545049000031';
-        lblAddressKey: Label 'ebccdcf0-2cab-11ea-acf7-545049000031';
+        lblAddressLegalKey: Label 'ebccdcf0-2cab-11ea-acf7-545049000031';
+        lblAddressKey: Label 'ebccdcef-2cab-11ea-acf7-545049000031';
         lblTypePhone: Label 'Телефон';
         lblTypeAddress: Label 'Адрес';
     begin
@@ -571,6 +572,7 @@ codeunit 50018 "Integration 1C"
             jsonContactInfoLine.Add('LineNumber', LineNo);
             jsonContactInfoLine.Add('Тип', lblTypePhone);
             jsonContactInfoLine.Add('Вид_Key', lblbPhoneKey);
+            jsonContactInfoLine.Add('Представление', Cust."Phone No.");
             jsonContactInfoLine.Add('НомерТелефона', Cust."Phone No.");
             jsonContactInfo.Add(jsonContactInfoLine);
             Clear(jsonContactInfoLine);
@@ -582,6 +584,7 @@ codeunit 50018 "Integration 1C"
             jsonContactInfoLine.Add('Тип', lblTypeAddress);
             jsonContactInfoLine.Add('Вид_Key', lblAddressLegalKey);
             jsonContactInfoLine.Add('Город', Cust.City);
+            jsonContactInfoLine.Add('Представление', Cust.Address + Cust."Address 2");
             jsonContactInfoLine.Add('АдресЭП', Cust.Address + Cust."Address 2");
             jsonContactInfo.Add(jsonContactInfoLine);
             Clear(jsonContactInfoLine);
@@ -589,20 +592,23 @@ codeunit 50018 "Integration 1C"
 
         ShipToAdress.SetCurrentKey("Customer No.");
         ShipToAdress.SetRange("Customer No.", CustomerNo);
-        if ShipToAdress.FindSet(true) then
-            repeat
-                LineNo += 1;
-                jsonContactInfoLine.Add('LineNumber', LineNo);
-                jsonContactInfoLine.Add('Тип', lblTypeAddress);
-                jsonContactInfoLine.Add('Вид_Key', lblAddressKey);
-                if Cust."Phone No." <> '' then
-                    jsonContactInfoLine.Add('НомерТелефона', ShipToAdress."Phone No.");
-                if Cust.City <> '' then
-                    jsonContactInfoLine.Add('Город', ShipToAdress.City);
-                if Cust.Address <> '' then
-                    jsonContactInfoLine.Add('АдресЭП', ShipToAdress.Address + ShipToAdress."Address 2");
-                jsonContactInfo.Add(jsonContactInfoLine);
-            until ShipToAdress.Next() = 0;
+        if ShipToAdress.FindSet(true) then begin
+            // repeat
+            LineNo += 1;
+            jsonContactInfoLine.Add('LineNumber', LineNo);
+            jsonContactInfoLine.Add('Тип', lblTypeAddress);
+            jsonContactInfoLine.Add('Вид_Key', lblAddressKey);
+            if Cust."Phone No." <> '' then
+                jsonContactInfoLine.Add('НомерТелефона', ShipToAdress."Phone No.");
+            if Cust.City <> '' then
+                jsonContactInfoLine.Add('Город', ShipToAdress.City);
+            if Cust.Address <> '' then begin
+                jsonContactInfoLine.Add('Представление', Cust.Address + Cust."Address 2");
+                jsonContactInfoLine.Add('АдресЭП', ShipToAdress.Address + ShipToAdress."Address 2");
+            end;
+            jsonContactInfo.Add(jsonContactInfoLine);
+            // until ShipToAdress.Next() = 0;
+        end;
         exit(jsonContactInfo);
     end;
 
@@ -752,14 +758,14 @@ codeunit 50018 "Integration 1C"
     begin
         Vendor.Get(VendorNo);
         Clear(Body);
-        Body.Add('Code', Vendor."No.");
+        if (requestMethod <> requestMethodPATCH) then
+            Body.Add('Code', Vendor."No.");
         Body.Add('Description', Vendor.Name);
         Body.Add('НаименованиеПолное', Vendor."Full Name");
         Body.Add('ЮридическоеФизическоеЛицо', lblLegalEntity);
         Body.Add('ИНН', Vendor."VAT Registration No.");
         Body.Add('Parent_Key', lblVendorParentKey);
         Body.Add('КодПоЕДРПОУ', Vendor."OKPO Code");
-        // Body.Add('ID_CRM', GuidToClearText(Vendor.SystemId));
 
         if (requestMethod = requestMethodPATCH) then begin
             mainBankAccId := GetVendorBankAccountIDFromIntegrEntity(Vendor."No.", Vendor."Default Bank Code");
@@ -780,8 +786,8 @@ codeunit 50018 "Integration 1C"
         jsonContactInfoLine: JsonObject;
         jsonContactInfo: JsonArray;
         lblbPhoneKey: Label 'ebccdced-2cab-11ea-acf7-545049000031';
-        lblAddressLegalKey: Label 'ebccdcef-2cab-11ea-acf7-545049000031';
-        lblAddressKey: Label 'ebccdcf0-2cab-11ea-acf7-545049000031';
+        lblAddressLegalKey: Label 'ebccdcf0-2cab-11ea-acf7-545049000031';
+        lblAddressKey: Label 'ebccdcef-2cab-11ea-acf7-545049000031';
         lblTypePhone: Label 'Телефон';
         lblTypeAddress: Label 'Адрес';
     begin
@@ -793,6 +799,7 @@ codeunit 50018 "Integration 1C"
             jsonContactInfoLine.Add('Тип', lblTypePhone);
             jsonContactInfoLine.Add('Вид_Key', lblbPhoneKey);
             jsonContactInfoLine.Add('НомерТелефона', Vend."Phone No.");
+            jsonContactInfoLine.Add('Представление', Vend."Phone No.");
             jsonContactInfo.Add(jsonContactInfoLine);
             Clear(jsonContactInfoLine);
         end;
@@ -803,6 +810,7 @@ codeunit 50018 "Integration 1C"
             jsonContactInfoLine.Add('Тип', lblTypeAddress);
             jsonContactInfoLine.Add('Вид_Key', lblAddressLegalKey);
             jsonContactInfoLine.Add('Город', Vend.City);
+            jsonContactInfoLine.Add('Представление', Vend.Address + Vend."Address 2");
             jsonContactInfoLine.Add('АдресЭП', Vend.Address + Vend."Address 2");
             jsonContactInfo.Add(jsonContactInfoLine);
             Clear(jsonContactInfoLine);
@@ -810,21 +818,24 @@ codeunit 50018 "Integration 1C"
 
         OrderAdress.SetCurrentKey("Vendor No.");
         OrderAdress.SetRange("Vendor No.", VendorNo);
-        if OrderAdress.FindSet(true) then
-            repeat
-                Clear(jsonContactInfoLine);
-                LineNo += 1;
-                jsonContactInfoLine.Add('LineNumber', LineNo);
-                jsonContactInfoLine.Add('Тип', lblTypeAddress);
-                jsonContactInfoLine.Add('Вид_Key', lblAddressKey);
-                if Vend."Phone No." <> '' then
-                    jsonContactInfoLine.Add('НомерТелефона', OrderAdress."Phone No.");
-                if Vend.City <> '' then
-                    jsonContactInfoLine.Add('Город', OrderAdress.City);
-                if Vend.Address <> '' then
-                    jsonContactInfoLine.Add('АдресЭП', OrderAdress.Address + OrderAdress."Address 2");
-                jsonContactInfo.Add(jsonContactInfoLine);
-            until OrderAdress.Next() = 0;
+        if OrderAdress.FindSet() then begin
+            // repeat
+            Clear(jsonContactInfoLine);
+            LineNo += 1;
+            jsonContactInfoLine.Add('LineNumber', LineNo);
+            jsonContactInfoLine.Add('Тип', lblTypeAddress);
+            jsonContactInfoLine.Add('Вид_Key', lblAddressKey);
+            if Vend."Phone No." <> '' then
+                jsonContactInfoLine.Add('НомерТелефона', OrderAdress."Phone No.");
+            if Vend.City <> '' then
+                jsonContactInfoLine.Add('Город', OrderAdress.City);
+            if Vend.Address <> '' then begin
+                jsonContactInfoLine.Add('Представление', Vend.Address + Vend."Address 2");
+                jsonContactInfoLine.Add('АдресЭП', OrderAdress.Address + OrderAdress."Address 2");
+            end;
+            jsonContactInfo.Add(jsonContactInfoLine);
+        end;
+        // until OrderAdress.Next() = 0;
         exit(jsonContactInfo);
     end;
 
