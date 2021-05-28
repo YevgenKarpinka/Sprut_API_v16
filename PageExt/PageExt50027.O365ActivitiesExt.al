@@ -20,18 +20,16 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
                     ApplicationArea = All;
 
                 }
-                field("Error Job Queue Entries"; CaptionMgt.ErrorJobQueueEntries())
+                field("Error Job Queue Entries"; "Error Job Queue Entries")
                 {
                     ApplicationArea = All;
-                    CaptionML = ENU = 'Error Job Queue Entries',
-                                RUS = 'Ошибки в операциях очереди работ';
+
                 }
-                // field("Modify Order Entries"; CaptionMgt.ErrorModifyOrderEntries())
-                // {
-                //     ApplicationArea = All;
-                //     CaptionML = ENU = 'Error Modify Order Entries',
-                //                 RUS = 'Ошибки в операциях изменения заказа';
-                // }
+                field("Modify Order Entries"; "Modify Order Entries")
+                {
+                    ApplicationArea = All;
+
+                }
             }
         }
     }
@@ -39,8 +37,42 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
     actions
     {
         // Add changes to page actions here
+        addafter(RefreshData)
+        {
+            action(newSetUpCues)
+            {
+                ApplicationArea = Basic, Suite;
+                Caption = 'Set Up Cues';
+                Image = Setup;
+                ToolTip = 'Set up the cues (status tiles) related to the role.';
+                Visible = EnableTools;
+
+                trigger OnAction()
+                var
+                    CueRecordRef: RecordRef;
+                    CuesAndKpis: Codeunit "Cues And KPIs";
+                begin
+                    Commit();
+                    CueRecordRef.GetTable(Rec);
+                    CuesAndKpis.OpenCustomizePageForCurrentUser(CueRecordRef.Number);
+                end;
+            }
+        }
     }
+
+    trigger OnOpenPage()
+    begin
+        EnableTools := UserId = UpperCase('yekar');
+    end;
+
+    trigger OnAfterGetRecord()
+    begin
+        CaptionMgt.ErrorJobQueueEntries();
+        CaptionMgt.ErrorModifyOrderEntries();
+
+    end;
 
     var
         CaptionMgt: Codeunit "Caption Mgt.";
+        EnableTools: Boolean;
 }

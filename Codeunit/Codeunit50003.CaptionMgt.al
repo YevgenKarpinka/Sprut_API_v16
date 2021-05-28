@@ -31,6 +31,8 @@ codeunit 50003 "Caption Mgt."
         TotalCountErrors: Integer;
     begin
         Clear(TotalCountErrors);
+        ClearActivityEntries(Database::"Job Queue Entry");
+
         if CompIntegr.FindSet() then
             repeat
                 if CompIntegr."Copy Items From" or CompIntegr."Copy Items To" then begin
@@ -38,14 +40,13 @@ codeunit 50003 "Caption Mgt."
                         JobQueueEntry.ChangeCompany(CompIntegr."Company Name");
                     JobQueueEntry.SetCurrentKey(Status);
                     JobQueueEntry.SetRange(Status, JobQueueEntry.Status::Error);
-                    TotalCountErrors += JobQueueEntry.Count;
-
-                    ClearActivityEntries(Database::"Job Queue Entry");
+                    // TotalCountErrors += JobQueueEntry.Count;
 
                     if JobQueueEntry.FindSet() then
                         repeat
-                            UpdateActivityEntries(CompIntegr."Company Name", Database::"Task Modify Order",
-                                JobQueueEntry.ID, JobQueueEntry.Description, GetLastErrorTextFromJobQueueEntry(CompIntegr."Company Name", JobQueueEntry.ID));
+                            UpdateActivityEntries(CompIntegr."Company Name", Database::"Job Queue Entry",
+                                Guid2Text(JobQueueEntry.ID), JobQueueEntry.Description, GetLastErrorTextFromJobQueueEntry(CompIntegr."Company Name", JobQueueEntry.ID),
+                                JobQueueEntry."Earliest Start Date/Time");
                         until JobQueueEntry.Next() = 0;
                 end;
             until CompIntegr.Next() = 0;
@@ -56,6 +57,7 @@ codeunit 50003 "Caption Mgt."
     var
         JobQueueLogEntry: Record "Job Queue Log Entry";
     begin
+        // exit('');
         if CompanyName <> _CompanyName then
             JobQueueLogEntry.ChangeCompany(_CompanyName);
 
@@ -75,6 +77,8 @@ codeunit 50003 "Caption Mgt."
         TotalCountErrors: Integer;
     begin
         Clear(TotalCountErrors);
+        ClearActivityEntries(Database::"Task Modify Order");
+
         if CompIntegr.FindSet() then
             repeat
                 if CompIntegr."Copy Items From" or CompIntegr."Copy Items To" then begin
@@ -82,14 +86,12 @@ codeunit 50003 "Caption Mgt."
                         TaskModifyOrder.ChangeCompany(CompIntegr."Company Name");
                     TaskModifyOrder.SetCurrentKey("Work Status");
                     TaskModifyOrder.SetRange("Work Status", TaskModifyOrder."Work Status"::Error);
-                    TotalCountErrors += TaskModifyOrder.Count;
-
-                    ClearActivityEntries(Database::"Task Modify Order");
+                    // TotalCountErrors += TaskModifyOrder.Count;
 
                     if TaskModifyOrder.FindSet() then
                         repeat
                             UpdateActivityEntries(CompIntegr."Company Name", Database::"Task Modify Order",
-                                TaskModifyOrder."Order No.", '', TaskModifyOrder."Error Text");
+                                TaskModifyOrder."Order No.", '', TaskModifyOrder."Error Text", TaskModifyOrder."Modify Date Time");
                         until TaskModifyOrder.Next() = 0;
                 end;
             until CompIntegr.Next() = 0;
@@ -105,8 +107,8 @@ codeunit 50003 "Caption Mgt."
         ActivityEntries.DeleteAll();
     end;
 
-    local procedure UpdateActivityEntries(_CompanyName: Text[30]; _TableID: Integer; _No: Code[20];
-                                            _Description: Text[250]; _ErrorText: Text[2048])
+    local procedure UpdateActivityEntries(_CompanyName: Text[30]; _TableID: Integer; _No: Text[50];
+                                            _Description: Text[250]; _ErrorText: Text[2048]; _LastDateTimeModify: DateTime)
     var
         ActivityEntries: Record "Activity Entries";
     begin
@@ -118,6 +120,12 @@ codeunit 50003 "Caption Mgt."
         ActivityEntries."No." := _No;
         ActivityEntries.Description := _Description;
         ActivityEntries."Error Text" := _ErrorText;
+        ActivityEntries."Last Modify Date Time" := _LastDateTimeModify;
         ActivityEntries.Insert();
+    end;
+
+    procedure Guid2Text(_Guid: Text): Text
+    begin
+        exit(LowerCase(DelChr(_Guid, '<>', '{}')));
     end;
 }

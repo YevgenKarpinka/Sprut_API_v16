@@ -44,6 +44,12 @@ table 50010 "Activity Entries"
             CaptionML = ENU = 'Error Text',
                         RUS = 'Текст ошибки';
         }
+        field(7; "Last Modify Date Time"; DateTime)
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Last Modify Date Time',
+                        RUS = 'Дата и время последней модификации';
+        }
 
     }
 

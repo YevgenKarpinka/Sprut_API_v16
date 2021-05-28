@@ -19,6 +19,22 @@ tableextension 50019 "Activities Cue Ext." extends "Activities Cue"
             FieldClass = FlowField;
             CalcFormula = Count(Customer where("Deduplicate Id" = filter(<> '00000000-0000-0000-0000-000000000000'), Balance = filter(> 0)));
         }
+        field(50002; "Error Job Queue Entries"; Integer)
+        {
+            // DataClassification = CustomerContent;
+            CaptionML = ENU = 'Error Job Queue Entries',
+                        RUS = 'Ошибки в операциях очереди работ';
+            FieldClass = FlowField;
+            CalcFormula = Count("Activity Entries" where("Table ID" = filter(472)));
+        }
+        field(50003; "Modify Order Entries"; Integer)
+        {
+            // DataClassification = CustomerContent;
+            CaptionML = ENU = 'Error Modify Order Entries',
+                        RUS = 'Ошибки в операциях изменения заказа';
+            FieldClass = FlowField;
+            CalcFormula = Count("Activity Entries" where("Table ID" = filter(50002)));
+        }
     }
 
 }

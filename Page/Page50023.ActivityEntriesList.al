@@ -40,6 +40,11 @@ page 50023 "Activity Entries List"
                     ApplicationArea = All;
 
                 }
+                field("Last Modify Date Time"; "Last Modify Date Time")
+                {
+                    ApplicationArea = All;
+
+                }
                 field("Object Name"; "Object Name")
                 {
                     ApplicationArea = All;
