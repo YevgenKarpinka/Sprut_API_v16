@@ -149,10 +149,10 @@ codeunit 50008 "Copy Items to All Companies"
             repeat
                 ItemTo.ChangeCompany(CompIntegrTo."Company Name");
                 ItemUoMTo.ChangeCompany(CompIntegrTo."Company Name");
+                UoMTo.ChangeCompany(CompIntegrTo."Company Name");
                 ConfProgressBar.Init(0, 0, StrSubstNo(txtCopyItemToCompany,
                                                             CompanyName,
                                                             CompIntegrTo."Company Name"));
-
 
                 if ItemToCopy.FindSet() then
                     repeat
@@ -160,7 +160,6 @@ codeunit 50008 "Copy Items to All Companies"
                         ConfProgressBar.Update(StrSubstNo(txtProcessHeader, ItemFrom."No."));
                         ItemTo.SetRange("No.", ItemFrom."No.");
                         // copy UoM before Items
-                        UoMTo.ChangeCompany(CompIntegrTo."Company Name");
                         if UoMFrom.FindSet() then
                             repeat
                                 if not UoMTo.Get(UoMFrom.Code)

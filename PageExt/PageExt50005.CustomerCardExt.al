@@ -9,7 +9,7 @@ pageextension 50005 "Customer Card Ext" extends "Customer Card"
                 ApplicationArea = All;
                 ToolTipML = ENU = 'Specifies transfer to 1C of the customer.',
                             RUS = 'Указывает передавать ли клиента в 1С.';
-                Editable = AllowGreyAgreement;
+                // Editable = AllowGreyAgreement;
             }
         }
         // Add changes to page layout here

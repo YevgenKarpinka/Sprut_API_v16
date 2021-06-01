@@ -57,7 +57,7 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
     begin
         CustomerAgr.SetCurrentKey("CRM ID");
         CustomerAgr.SetRange("CRM ID", "CRM ID");
-        if not IsNullGuid("CRM ID") and not CustomerAgr.IsEmpty then
+        if IsNullGuid("CRM ID") or not CustomerAgr.IsEmpty then
             Error(errCustomerAgreementWithCRMIDAlreadyExist, "CRM ID");
 
         UpdateCreateDateTime();

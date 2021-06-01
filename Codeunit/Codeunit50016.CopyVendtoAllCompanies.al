@@ -32,26 +32,32 @@ codeunit 50016 "Copy Vend. to All Companies"
     local procedure CopyVendFromMainCompany()
     var
         CompIntegrTo: Record "Company Integration";
+        ItemToCopy: Record "Entity To Copy";
         VendorFrom: Record Vendor;
         VendorTo: Record Vendor;
         VendorBankAccountFrom: Record "Vendor Bank Account";
         VendorBankAccountTo: Record "Vendor Bank Account";
     begin
+        ItemToCopy.SetRange(Type, ItemToCopy.Type::Vendor);
+        if ItemToCopy.IsEmpty then exit;
+
         CompIntegrTo.SetCurrentKey("Copy Items To");
         CompIntegrTo.SetRange("Copy Items To", true);
         if CompIntegrTo.IsEmpty then exit;
 
-        // VendorFrom.LockTable();
-        // VendorBankAccountFrom.LockTable();
-        if VendorFrom.FindSet(false, false) then
+        if CompIntegrTo.FindSet(false, false) then
             repeat
-                if CompIntegrTo.FindSet(false, false) then
+                VendorTo.ChangeCompany(CompIntegrTo."Company Name");
+                VendorBankAccountTo.ChangeCompany(CompIntegrTo."Company Name");
+                ConfProgressBar.Init(0, 0, StrSubstNo(txtCopyItemToCompany,
+                                                            CompanyName,
+                                                            CompIntegrTo."Company Name"));
+                if ItemToCopy.FindSet() then
                     repeat
-                        VendorTo.ChangeCompany(CompIntegrTo."Company Name");
-                        VendorBankAccountTo.ChangeCompany(CompIntegrTo."Company Name");
-                        // VendorTo.SetRange("No.", VendorFrom."No.");
+                        VendorFrom.Get(ItemToCopy."No.");
+                        ConfProgressBar.Update(StrSubstNo(txtProcessHeader, VendorFrom."No."));
                         if not VendorTo.Get(VendorFrom."No.") then begin
-                            // VendorTo.Init();
+                            VendorTo.Init();
                             VendorTo.TransferFields(VendorFrom);
                             VendorTo.Insert();
                             // to do copy vendor bank account
@@ -83,11 +89,16 @@ codeunit 50016 "Copy Vend. to All Companies"
                                 end;
                             end;
                         end;
-                        Commit();
-                    until CompIntegrTo.Next() = 0;
-            until VendorFrom.Next() = 0;
+                    until ItemToCopy.Next() = 0;
+                Commit();
+            until CompIntegrTo.Next() = 0;
     end;
 
     var
         CompIntegrFrom: Record "Company Integration";
+        ConfProgressBar: Codeunit "Config Progress Bar";
+        txtCopyItemToCompany: TextConst ENU = 'From Company %1 To Company %2',
+                                        RUS = 'С Организации %1 в Организацию %2';
+        txtProcessHeader: TextConst ENU = 'Copy Vendor %1',
+                                    RUS = 'Копирование поставщика %1';
 }
