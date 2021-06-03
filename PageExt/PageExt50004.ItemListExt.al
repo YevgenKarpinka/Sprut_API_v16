@@ -64,10 +64,11 @@ pageextension 50004 "Item List Ext." extends "Item List"
 
                     trigger OnAction()
                     var
-                        CopyItems: Codeunit "Copy Items to All Companies";
+                        // CopyItems: Codeunit "Copy Items to All Companies";
                         msgOk: Label 'Товары скопированы во все компании';
                     begin
-                        CopyItems.Run();
+                        // CopyItems.Run();
+                        Codeunit.Run(Codeunit::"Copy Items to All Companies");
                         Message(msgOk);
                     end;
                 }
@@ -409,7 +410,7 @@ pageextension 50004 "Item List Ext." extends "Item List"
 
     trigger OnOpenPage()
     begin
-        CRMEnable := UserId = 'EKAR';
+        CRMEnable := UserId = 'YEKAR';
     end;
 
     var

@@ -22,12 +22,20 @@ table 50008 "Entity To Copy"
             var
                 Item: Record Item;
                 Vendor: Record Vendor;
+                Customer: Record Customer;
             begin
                 case Type of
                     Type::Item:
                         begin
                             if Item.Get("No.") then
                                 Description := Item.Description
+                            else
+                                Description := '';
+                        end;
+                    Type::Customer:
+                        begin
+                            if Customer.Get("No.") then
+                                Description := Customer.Name
                             else
                                 Description := '';
                         end;
@@ -67,6 +75,11 @@ enum 50006 EntityType
     {
         CaptionML = ENU = 'Item',
                     RUS = 'Товар';
+    }
+    value(1; Customer)
+    {
+        CaptionML = ENU = 'Customer',
+                    RUS = 'Клиент';
     }
     value(2; Vendor)
     {

@@ -7,7 +7,6 @@ codeunit 50015 "Copy Whses. to All Companies"
 
         // Copy Item From Main Company
         CopyWhseFromMainCompany();
-
     end;
 
     local procedure CheckMainCompany(): Boolean
@@ -31,24 +30,23 @@ codeunit 50015 "Copy Whses. to All Companies"
         CompIntegrTo.SetRange("Copy Items To", true);
         if CompIntegrTo.IsEmpty then exit;
 
-        // LocationFrom.LockTable();
-        if CompIntegrTo.FindSet(false, false) then
+        if CompIntegrTo.FindSet() then
             repeat
                 LocationTo.ChangeCompany(CompIntegrTo."Company Name");
                 InvPostSetupTo.ChangeCompany(CompIntegrTo."Company Name");
-                // if InvPostSetupTo.get() then
-                //     InvPostSetupTo.Delete();
-                if LocationFrom.FindSet(false, false) then
+                ConfProgressBar.Init(0, 0, StrSubstNo(txtCopyItemToCompany,
+                                                            CompanyName,
+                                                            CompIntegrTo."Company Name"));
+                if LocationFrom.FindSet() then
                     repeat
-                        LocationTo.SetRange(Code, LocationFrom.Code);
-                        if not LocationTo.FindFirst() then begin
+                        ConfProgressBar.Update(StrSubstNo(txtProcessHeader, LocationFrom.Code));
+                        if not LocationTo.Get(LocationFrom.Code) then begin
                             LocationTo.Init();
                             LocationTo.TransferFields(LocationFrom);
                             LocationTo.Insert();
                         end else begin
                             if (LocationFrom."Last Modified Date Time" <> LocationTo."Last Modified Date Time") then begin
-
-                                LocationTo.TransferFields(LocationFrom);
+                                LocationTo.TransferFields(LocationFrom, false);
                                 LocationTo.Modify();
                             end;
                         end;
@@ -61,12 +59,17 @@ codeunit 50015 "Copy Whses. to All Companies"
                                 if InvPostSetupTo.Insert() then;
                             until InvPostSetupFrom.Next() = 0;
 
-                        Commit();
-
                     until LocationFrom.Next() = 0;
+                Commit();
             until CompIntegrTo.Next() = 0;
+        ConfProgressBar.Close();
     end;
 
     var
         CompIntegrFrom: Record "Company Integration";
+        ConfProgressBar: Codeunit "Config Progress Bar";
+        txtCopyItemToCompany: TextConst ENU = 'From Company %1 To Company %2',
+                                        RUS = 'С Организации %1 в Организацию %2';
+        txtProcessHeader: TextConst ENU = 'Copy Location %1',
+                                    RUS = 'Копирование склада %1';
 }

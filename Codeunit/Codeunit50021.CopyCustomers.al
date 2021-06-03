@@ -1,45 +1,15 @@
-codeunit 50008 "Copy Items to All Companies"
+codeunit 50021 "Copy Customers"
 {
     trigger OnRun()
     begin
         // check main company
         if CheckMainCompany() then exit;
 
-        // sentToCRM := false;
-        // if GuiAllowed then begin
-        //     if Confirm(qstSendItemsToCRM, false) then begin
-        //         // Send Items to CRM
-        //         SendItemToCRM();
-        //         sentToCRM := true;
-        //     end;
-        // end else
-        //     SendItemToCRM();
-
         // Copy Item From Main Company
-        CopyItemFromMainCompany();
+        CopyCustomerFromMainCompany();
 
         // Delete Copied Items
         DeleteItemsAfterCopy();
-    end;
-
-    [EventSubscriber(ObjectType::Table, 18, 'OnAfterInsertEvent', '', false, false)]
-    local procedure OnAfterInsertEventCustomer(var Rec: Record Customer)
-    begin
-        // check main company
-        if CheckMainCompany() then exit;
-        if Rec.IsTemporary then exit;
-        if CheckCustomerFieldsFilled(Rec) then
-            AddEntityToCopy(entityType::Customer, Rec."No.");
-    end;
-
-    [EventSubscriber(ObjectType::Table, 18, 'OnAfterModifyEvent', '', false, false)]
-    local procedure OnAfterModifyEventCustomer(var Rec: Record Customer)
-    begin
-        // check main company
-        if CheckMainCompany() then exit;
-        if Rec.IsTemporary then exit;
-        if CheckCustomerFieldsFilled(Rec) then
-            AddEntityToCopy(entityType::Customer, Rec."No.");
     end;
 
     [EventSubscriber(ObjectType::Table, 23, 'OnAfterInsertEvent', '', false, false)]
@@ -67,25 +37,9 @@ codeunit 50008 "Copy Items to All Companies"
         if Rec."No." = '' then exit(false);
         if Rec.Name = '' then exit(false);
         if Rec."OKPO Code" = '' then exit(false);
-        // if Rec."Prices Including VAT" then exit(false);
+        if Rec."Prices Including VAT" = false then exit(false);
         if Rec."Gen. Bus. Posting Group" = '' then exit(false);
         if Rec."Vendor Posting Group" = '' then exit(false);
-        if Rec."VAT Bus. Posting Group" = '' then exit(false);
-        if Rec."Currency Code" = '' then exit(false);
-
-        exit(true);
-    end;
-
-    local procedure CheckCustomerFieldsFilled(Rec: Record Customer): Boolean
-    begin
-        if not IsNullGuid(Rec."CRM ID") then exit(false);
-
-        if Rec."No." = '' then exit(false);
-        if Rec.Name = '' then exit(false);
-        if Rec."OKPO Code" = '' then exit(false);
-        if not Rec."Prices Including VAT" then exit(false);
-        if Rec."Gen. Bus. Posting Group" = '' then exit(false);
-        if Rec."Customer Posting Group" = '' then exit(false);
         if Rec."VAT Bus. Posting Group" = '' then exit(false);
         if Rec."Currency Code" = '' then exit(false);
 
@@ -161,20 +115,18 @@ codeunit 50008 "Copy Items to All Companies"
         exit(CompIntegrFrom.IsEmpty);
     end;
 
-    local procedure CopyItemFromMainCompany()
+    local procedure CopyCustomerFromMainCompany()
     var
         CompIntegrTo: Record "Company Integration";
         ItemToCopy: Record "Entity To Copy";
-        ItemFrom: Record Item;
-        ItemTo: Record Item;
-        ItemUoMFrom: Record "Item Unit of Measure";
-        ItemUoMTo: Record "Item Unit of Measure";
-        UoMFrom: Record "Unit of Measure";
-        UoMTo: Record "Unit of Measure";
+        CustomerFrom: Record Customer;
+        CustomerTo: Record Customer;
+        CustomerBankAccountFrom: Record "Customer Bank Account";
+        CustomerBankAccountTo: Record "Customer Bank Account";
         DaleteAllFlag: Boolean;
         blankGuid: Guid;
     begin
-        ItemToCopy.SetRange(Type, ItemToCopy.Type::Item);
+        ItemToCopy.SetRange(Type, ItemToCopy.Type::Customer);
         if ItemToCopy.IsEmpty then exit;
 
         CompIntegrTo.SetCurrentKey("Copy Items To");
@@ -183,46 +135,35 @@ codeunit 50008 "Copy Items to All Companies"
 
         if CompIntegrTo.FindSet() then
             repeat
-                ItemTo.ChangeCompany(CompIntegrTo."Company Name");
-                ItemUoMTo.ChangeCompany(CompIntegrTo."Company Name");
-                UoMTo.ChangeCompany(CompIntegrTo."Company Name");
+                CustomerTo.ChangeCompany(CompIntegrTo."Company Name");
+                CustomerBankAccountTo.ChangeCompany(CompIntegrTo."Company Name");
                 ConfProgressBar.Init(0, 0, StrSubstNo(txtCopyItemToCompany,
                                                             CompanyName,
                                                             CompIntegrTo."Company Name"));
 
                 if ItemToCopy.FindSet() then
                     repeat
-                        ItemFrom.Get(ItemToCopy."No.");
-                        ConfProgressBar.Update(StrSubstNo(txtProcessHeader, ItemFrom."No."));
-                        // copy UoM before Items
-                        if UoMFrom.FindSet() then
-                            repeat
-                                if not UoMTo.Get(UoMFrom.Code)
-                                or (UoMTo."Last Modified Date Time" < UoMFrom."Last Modified Date Time") then begin
-                                    UoMTo := UoMFrom;
-                                    if not UoMTo.Insert() then UoMTo.Modify();
-                                end;
-                            until UoMFrom.Next() = 0;
+                        CustomerFrom.Get(ItemToCopy."No.");
+                        ConfProgressBar.Update(StrSubstNo(txtProcessHeader, CustomerFrom."No."));
 
-                        if ItemTo.Get(ItemFrom."No.") then begin
-                            ItemTo.TransferFields(ItemFrom, false);
-                            ItemTo.Modify();
+                        CustomerTo.SetCurrentKey(SystemId);
+                        CustomerTo.SetRange(SystemId, CustomerFrom.SystemId);
+                        if CustomerTo.FindFirst() then begin
+                            CustomerTo.TransferFields(CustomerFrom);
+                            CustomerTo.Modify();
                         end else begin
-                            ItemTo.Init();
-                            ItemTo := ItemFrom;
-                            ItemTo.Insert();
+                            CustomerTo.Init();
+                            CustomerTo := CustomerFrom;
+                            CustomerTo."No." := '';
+                            CustomerTo.Insert();
                         end;
 
-                        if (ItemFrom."Sales Unit of Measure" <> '')
-                        and not ItemUoMTo.Get(ItemFrom."No.", ItemFrom."Sales Unit of Measure") then begin
-
-                            ItemUoMFrom.SetRange("Item No.", ItemFrom."No.");
-                            if ItemUoMFrom.FindSet() then
-                                repeat
-                                    ItemUoMTo := ItemUoMFrom;
-                                    if ItemUoMTo.Insert() then ItemUoMTo.Modify();
-                                until ItemUoMFrom.Next() = 0;
-                        end;
+                        CustomerBankAccountFrom.SetRange("Customer No.", CustomerFrom."No.");
+                        if CustomerBankAccountFrom.FindSet(false, false) then
+                            repeat
+                                CustomerBankAccountTo := CustomerBankAccountFrom;
+                                if CustomerBankAccountTo.Insert() then CustomerBankAccountTo.Modify();
+                            until CustomerBankAccountFrom.Next() = 0;
 
                     until ItemToCopy.Next() = 0;
                 Commit();
@@ -235,7 +176,7 @@ codeunit 50008 "Copy Items to All Companies"
     var
         ItemToCopy: Record "Entity To Copy";
     begin
-        ItemToCopy.SetRange(Type, ItemToCopy.Type::Item);
+        ItemToCopy.SetRange(Type, ItemToCopy.Type::Customer);
         if ItemToCopy.IsEmpty then exit;
         ItemToCopy.DeleteAll();
     end;
@@ -320,8 +261,8 @@ codeunit 50008 "Copy Items to All Companies"
         WebServiceMgt: Codeunit "Web Service Mgt.";
         txtCopyItemToCompany: TextConst ENU = 'From Company %1 To Company %2',
                                         RUS = 'С Организации %1 в Организацию %2';
-        txtProcessHeader: TextConst ENU = 'Copy Item %1',
-                                    RUS = 'Копирование товара %1';
+        txtProcessHeader: TextConst ENU = 'Copy CustomerTo %1',
+                                    RUS = 'Копирование клиента %1';
         blankGuid: Guid;
         entityType: Enum EntityType;
         Base64Convert: Codeunit "Base64 Convert";

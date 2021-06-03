@@ -56,39 +56,24 @@ codeunit 50016 "Copy Vend. to All Companies"
                     repeat
                         VendorFrom.Get(ItemToCopy."No.");
                         ConfProgressBar.Update(StrSubstNo(txtProcessHeader, VendorFrom."No."));
-                        if not VendorTo.Get(VendorFrom."No.") then begin
-                            VendorTo.Init();
-                            VendorTo.TransferFields(VendorFrom);
-                            VendorTo.Insert();
-                            // to do copy vendor bank account
-                            if VendorFrom."Default Bank Code" <> '' then begin
-                                VendorBankAccountFrom.SetRange("Vendor No.", VendorFrom."No.");
-                                if VendorBankAccountFrom.FindSet(false, false) then
-                                    repeat
-                                        VendorBankAccountTo.TransferFields(VendorBankAccountFrom);
-                                        VendorBankAccountTo.Insert();
-                                    until VendorBankAccountFrom.Next() = 0;
-                            end;
+
+                        if VendorTo.Get(VendorFrom."No.") then begin
+                            VendorTo.TransferFields(VendorFrom, false);
+                            VendorTo.Modify();
                         end else begin
-                            if (VendorFrom."Last Modified Date Time" <> VendorTo."Last Modified Date Time") then begin
-                                VendorTo.TransferFields(VendorFrom, false);
-                                VendorTo.Modify();
-                                // to do copy vendor bank account
-                                if VendorFrom."Default Bank Code" <> '' then begin
-                                    VendorBankAccountFrom.SetRange("Vendor No.", VendorFrom."No.");
-                                    if VendorBankAccountFrom.FindSet(false, false) then
-                                        repeat
-                                            if not VendorBankAccountTo.Get(VendorBankAccountFrom."Vendor No.", VendorBankAccountFrom.Code) then begin
-                                                VendorBankAccountTo.TransferFields(VendorBankAccountFrom);
-                                                VendorBankAccountTo.Insert();
-                                            end else begin
-                                                VendorBankAccountTo.TransferFields(VendorBankAccountFrom, false);
-                                                VendorBankAccountTo.Modify();
-                                            end;
-                                        until VendorBankAccountFrom.Next() = 0;
-                                end;
-                            end;
+                            VendorTo.Init();
+                            VendorTo := VendorFrom;
+                            VendorTo.Insert();
                         end;
+
+                        // to do copy vendor bank account
+                        VendorBankAccountFrom.SetRange("Vendor No.", VendorFrom."No.");
+                        if VendorBankAccountFrom.FindSet(false, false) then
+                            repeat
+                                VendorBankAccountTo := VendorBankAccountFrom;
+                                if VendorBankAccountTo.Insert() then VendorBankAccountTo.Modify();
+                            until VendorBankAccountFrom.Next() = 0;
+
                     until ItemToCopy.Next() = 0;
                 Commit();
             until CompIntegrTo.Next() = 0;
