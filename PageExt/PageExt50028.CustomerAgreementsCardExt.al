@@ -10,7 +10,7 @@ pageextension 50028 "Customer Agreements Card Ext" extends "Customer Agreement C
                 ApplicationArea = All;
                 ToolTipML = ENU = 'Specifies transfer to 1C of the customer agreement.',
                             RUS = 'Указывает передавать ли договор клиента в 1С.';
-                Editable = AllowGreyAgreement;
+                // Editable = AllowGreyAgreement;
 
             }
             field(Status; Status)

@@ -125,7 +125,7 @@ codeunit 50001 "Prepayment Management"
     procedure InsertSalesLineFromCRM(SalesOrderNo: Code[20]; responseText: Text)
     var
         ItemNo: Code[20];
-        Description: Text[100];
+        Description: Text[350];
         Qty: Decimal;
         UnitPrice: Decimal;
         LineAmount: Decimal;
@@ -220,7 +220,7 @@ codeunit 50001 "Prepayment Management"
         exit(10000);
     end;
 
-    procedure InsertNewSalesLine(SalesOrderNo: Code[20]; ItemNo: Code[20]; Descr: Text[100]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal; crmLineID: Guid)
+    procedure InsertNewSalesLine(SalesOrderNo: Code[20]; ItemNo: Code[20]; Descr: Text[350]; Qty: Decimal; UnitPrice: Decimal; LineAmount: Decimal; crmLineID: Guid)
     var
         SalesHeader: Record "Sales Header";
         SalesLine: Record "Sales Line";
@@ -243,7 +243,9 @@ codeunit 50001 "Prepayment Management"
 
         SalesLine.Type := SalesLine.Type::Item;
         SalesLine.Validate("No.", ItemNo);
-        SalesLine.Validate(Description, Descr);
+        if Descr <> '' then
+            // SalesLine.Validate(Description, Descr);
+            SalesLine.Validate("Description Extended", Descr);
         SalesLine.Validate(Quantity, Qty);
         SalesLine.Validate("Unit Price", UnitPrice);
         SalesLine.Validate("Line Amount", LineAmount);

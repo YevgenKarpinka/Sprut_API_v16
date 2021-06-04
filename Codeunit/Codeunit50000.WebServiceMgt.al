@@ -314,8 +314,9 @@ codeunit 50000 "Web Service Mgt."
         if PrepaymentInvoicesChangesNeed(SalesOrderNo, InvoicesResponseText) then
             exit(true);
 
-        // update sales line
-        // to do
+        // check prepayment invoices for add need
+        // if PrepaymentInvoicesAddedNeed(SalesOrderNo, InvoicesResponseText) then
+        //     exit(true);
 
         exit(false);
     end;
@@ -386,7 +387,7 @@ codeunit 50000 "Web Service Mgt."
         countSL: Integer;
         modifiedSL: Boolean;
         statusSH: Enum "Sales Document Status";
-        Description: Text[100];
+        Description: Text[350];
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
 
@@ -407,7 +408,7 @@ codeunit 50000 "Web Service Mgt."
                 ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
 
                 Description := GetJSToken(LineToken.AsObject(), 'description').AsValue().AsText();
-                if Description = '' then Error(errDescriptionCannotBeEmpty);
+                // if Description = '' then Error(errDescriptionCannotBeEmpty);
 
                 Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
                 UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
@@ -416,7 +417,8 @@ codeunit 50000 "Web Service Mgt."
 
                 if SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then begin
                     if SalesLine."No." <> ItemNo then exit(true);
-                    if SalesLine.Description <> Description then exit(true);
+                    // if (Description <> '') and (SalesLine.Description <> Description) then exit(true);
+                    if (Description <> '') and (SalesLine."Description Extended" <> Description) then exit(true);
                     if SalesLine.Quantity > Qty then exit(true);
                     if SalesLine."Unit Price" > UnitPrice then exit(true);
                     // if SalesLine."Line Amount" > SpecLineAmount then exit(true);
@@ -463,8 +465,11 @@ codeunit 50000 "Web Service Mgt."
             if SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then begin
 
                 modifiedSL := false;
-                if SalesLine.Description <> Description then begin
-                    SalesLine.Validate(Description, Description);
+                if (Description <> '')
+                // and (SalesLine.Description <> Description) then begin
+                and (SalesLine."Description Extended" <> Description) then begin
+                    // SalesLine.Validate(Description, Description);
+                    SalesLine.Validate("Description Extended", Description);
                     modifiedSL := true;
                 end;
                 if SalesLine.Quantity <> Qty then begin
@@ -514,7 +519,7 @@ codeunit 50000 "Web Service Mgt."
         LineToken: JsonToken;
         LocationCode: Code[20];
         Location: Record Location;
-        Description: Text[100];
+        Description: Text[350];
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
         LocationCode := GetSpecificationLocationCode(ResponceToken);
@@ -538,7 +543,7 @@ codeunit 50000 "Web Service Mgt."
             ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
 
             Description := GetJSToken(LineToken.AsObject(), 'description').AsValue().AsText();
-            if Description = '' then Error(errDescriptionCannotBeEmpty);
+            // if Description = '' then Error(errDescriptionCannotBeEmpty);
 
             Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
             UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
@@ -546,7 +551,8 @@ codeunit 50000 "Web Service Mgt."
 
             if not SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then exit(true);
             if SalesLine."No." <> ItemNo then exit(true);
-            if SalesLine.Description <> Description then exit(true);
+            // if (Description <> '') and (SalesLine.Description <> Description) then exit(true);
+            if (Description <> '') and (SalesLine."Description Extended" <> Description) then exit(true);
             if SalesLine.Quantity <> Qty then exit(true);
             if SalesLine."Unit Price" <> UnitPrice then exit(true);
             if SalesLine."Line Amount" <> SpecLineAmount then exit(true);
@@ -602,12 +608,12 @@ codeunit 50000 "Web Service Mgt."
                     SalesInvHeader.CalcFields("Amount Including VAT");
                     bcPrepmInvAmount += SalesInvHeader."Amount Including VAT";
                 until SalesInvHeader.Next() = 0;
-                if PrepmInvAmount <> bcPrepmInvAmount then
-                    exit(true);
             end;
-
-            if PrepmInvAmount < bcPrepmInvAmount then
+            if PrepmInvAmount <> bcPrepmInvAmount then
                 exit(true);
+
+            // if PrepmInvAmount < bcPrepmInvAmount then
+            //     exit(true);
         end;
 
         // if crm invoice will be delete

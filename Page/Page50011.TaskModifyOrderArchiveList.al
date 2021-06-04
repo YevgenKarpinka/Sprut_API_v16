@@ -5,7 +5,7 @@ page 50011 "Task Modify Order Archive List"
     UsageCategory = Administration;
     SourceTable = "Task Modify Order";
     Editable = false;
-    SourceTableView = order(descending) where(Status = const(Done));
+    // SourceTableView = order(descending) where(Status = const(Done));
     CaptionML = ENU = 'Task Modify Order Archive List',
                 RUS = 'Архив списка задач модификации заказа';
 

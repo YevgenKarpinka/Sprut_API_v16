@@ -262,17 +262,17 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
-                    if fastIntegration1C.Run() then
-                        Message('Ok!')
-                    else
-                        Message(GetLastErrorText());
+                    // if fastIntegration1C.Run() then
+                    //     Message('Ok!')
+                    // else
+                    //     Message(GetLastErrorText());
                 end;
             }
         }
     }
 
     var
-        fastIntegration1C: Codeunit "Fast Integration 1C";
+        // fastIntegration1C: Codeunit "Fast Integration 1C";
         WebServiceMgt: Codeunit "Web Service Mgt.";
         Integration1C: Codeunit "Integration 1C";
         TokenTypeAccessToken: Label 'Token Type: %1\\AccessToken:\\%2';

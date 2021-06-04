@@ -62,7 +62,8 @@ tableextension 50009 "Sales Line Ext" extends "Sales Line"
 
             trigger OnValidate()
             begin
-                Description := CopyStr("Description Extended", 1, MaxStrLen(Description));
+                if "Description Extended" <> '' then
+                    Description := CopyStr("Description Extended", 1, MaxStrLen(Description));
             end;
         }
     }

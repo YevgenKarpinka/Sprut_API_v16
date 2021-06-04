@@ -28,7 +28,6 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
                 field("Modify Order Entries"; "Modify Order Entries")
                 {
                     ApplicationArea = All;
-
                 }
             }
         }
@@ -62,17 +61,19 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
 
     trigger OnOpenPage()
     begin
-        EnableTools := UserId = UpperCase('yekar');
+        if UserSetup.Get(UserId) then
+            EnableTools := UserSetup."Admin. Holding";
     end;
 
     trigger OnAfterGetRecord()
     begin
+        if not EnableTools then exit;
         CaptionMgt.ErrorJobQueueEntries();
         CaptionMgt.ErrorModifyOrderEntries();
-
     end;
 
     var
+        UserSetup: Record "User Setup";
         CaptionMgt: Codeunit "Caption Mgt.";
         EnableTools: Boolean;
 }

@@ -14,28 +14,35 @@ tableextension 50020 "Sales Invoice Line Ext" extends "Sales Invoice Line"
             DataClassification = SystemMetadata;
             CaptionML = ENU = 'Create Date Time',
                         RUS = 'Дата и время создания';
-            Editable = false;
+            // Editable = false;
         }
         field(50004; "Create User ID"; Code[50])
         {
             DataClassification = SystemMetadata;
             CaptionML = ENU = 'Create Date Time',
                         RUS = 'Дата и время создания';
-            Editable = false;
+            // Editable = false;
         }
         field(50005; "Last Modified Date Time"; DateTime)
         {
             DataClassification = SystemMetadata;
             CaptionML = ENU = 'Last Modified Date Time',
                         RUS = 'Дата и время последнего изменения';
-            Editable = false;
+            // Editable = false;
         }
         field(50006; "Modify User ID"; Code[50])
         {
             DataClassification = SystemMetadata;
             CaptionML = ENU = 'Create Date Time',
                         RUS = 'Дата и время создания';
-            Editable = false;
+            // Editable = false;
+        }
+        field(50007; "Description Extended"; Text[350])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Description Extended',
+                        RUS = 'Описание расширенное';
+            // Editable = false;
         }
     }
 }

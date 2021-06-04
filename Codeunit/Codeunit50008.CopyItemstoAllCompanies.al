@@ -5,15 +5,15 @@ codeunit 50008 "Copy Items to All Companies"
         // check main company
         if CheckMainCompany() then exit;
 
-        // sentToCRM := false;
-        // if GuiAllowed then begin
-        //     if Confirm(qstSendItemsToCRM, false) then begin
-        //         // Send Items to CRM
-        //         SendItemToCRM();
-        //         sentToCRM := true;
-        //     end;
-        // end else
-        //     SendItemToCRM();
+        sentToCRM := false;
+        if GuiAllowed then begin
+            if Confirm(qstSendItemsToCRM, false) then begin
+                // Send Items to CRM
+                SendItemToCRM();
+                sentToCRM := true;
+            end;
+        end else
+            SendItemToCRM();
 
         // Copy Item From Main Company
         CopyItemFromMainCompany();

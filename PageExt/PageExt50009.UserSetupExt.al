@@ -5,6 +5,12 @@ pageextension 50009 "User Setup Ext" extends "User Setup"
         // Add changes to page layout here
         addafter("User ID")
         {
+            field("Admin. Holding"; "Admin. Holding")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies Admin. Holding roles',
+                            RUS = 'Указывает на административную роль.';
+            }
             field("Send Email UnApply Doc."; "Send Email UnApply Doc.")
             {
                 ApplicationArea = All;

@@ -31,6 +31,7 @@ codeunit 50020 "Fast Integration 1C"
         IntegrationLog: Record "Integration Log";
         WebServiceMgt: Codeunit "Web Service Mgt.";
         glCustAgreement: Record "Customer Agreement";
+        glCompIntegrFrom: Record "Company Integration";
         glCompanyPrefix: Code[10];
 
     procedure GetCompanyIdFrom1C(): Boolean
@@ -2149,5 +2150,208 @@ codeunit 50020 "Fast Integration 1C"
         Entity1C."Key 1" := _key1;
         Entity1C."Key 2" := _key2;
         Entity1C.Insert(true);
+    end;
+
+    [EventSubscriber(ObjectType::Table, 79, 'OnAfterInsertEvent', '', false, false)]
+    local procedure OnAfterInsertEventCompInfo(var Rec: Record "Company Information")
+    begin
+        if Rec.IsTemporary then exit;
+        if CheckCompInfoFieldsFilled(Rec) then
+            AddEntityTo1CEntities(CompanyName, Database::"Company Information", CompanyName, '');
+    end;
+
+    [EventSubscriber(ObjectType::Table, 79, 'OnAfterModifyEvent', '', false, false)]
+    local procedure OnAfterModifyEventCompInfo(var Rec: Record "Company Information")
+    begin
+        if Rec.IsTemporary then exit;
+        if CheckCompInfoFieldsFilled(Rec) then
+            AddEntityTo1CEntities(CompanyName, Database::"Company Information", CompanyName, '');
+    end;
+
+    local procedure CheckCompInfoFieldsFilled(Rec: Record "Company Information"): Boolean
+    begin
+        if not CompanyIntegrationExist() then exit(false);
+
+        if (Rec.Name = '')
+        or (Rec."Full Name" = '') then
+            exit(false);
+
+        exit(true);
+    end;
+
+    [EventSubscriber(ObjectType::Table, 50005, 'OnAfterInsertEvent', '', false, false)]
+    local procedure OnAfterInsertEventCompIntegr(var Rec: Record "Company Integration")
+    begin
+        if Rec.IsTemporary then exit;
+        if CheckCompIntegrFieldsFilled(Rec) then
+            AddEntityTo1CEntities(CompanyName, Database::"Company Integration", CompanyName, '');
+    end;
+
+    [EventSubscriber(ObjectType::Table, 50005, 'OnAfterModifyEvent', '', false, false)]
+    local procedure OnAfterModifyEventCompIntegr(var Rec: Record "Company Integration")
+    begin
+        if Rec.IsTemporary then exit;
+        if CheckCompIntegrFieldsFilled(Rec) then
+            AddEntityTo1CEntities(CompanyName, Database::"Company Integration", CompanyName, '');
+    end;
+
+    local procedure CheckCompIntegrFieldsFilled(Rec: Record "Company Integration"): Boolean
+    begin
+        if not CompanyIntegrationExist() then exit(false);
+
+        exit(true);
+    end;
+
+    [EventSubscriber(ObjectType::Table, 18, 'OnAfterInsertEvent', '', false, false)]
+    local procedure OnAfterInsertEventCustomer(var Rec: Record Customer)
+    begin
+        // check main company
+        // if CheckMainCompany() then exit;
+        if Rec.IsTemporary then exit;
+        if CheckCustomerFieldsFilled(Rec) then
+            AddEntityTo1CEntities(CompanyName, Database::Customer, Rec."No.", '');
+    end;
+
+    [EventSubscriber(ObjectType::Table, 18, 'OnAfterModifyEvent', '', false, false)]
+    local procedure OnAfterModifyEventCustomer(var Rec: Record Customer)
+    begin
+        // check main company
+        // if CheckMainCompany() then exit;
+        if Rec.IsTemporary then exit;
+        if CheckCustomerFieldsFilled(Rec) then
+            AddEntityTo1CEntities(CompanyName, Database::Customer, Rec."No.", '');
+    end;
+
+    local procedure CheckCustomerFieldsFilled(Rec: Record Customer): Boolean
+    begin
+        if not IsNullGuid(Rec."CRM ID")
+        and not Rec."Init 1C" then
+            exit(false);
+
+        if (Rec."No." = '')
+        or (Rec.Name = '')
+        or (Rec."OKPO Code" = '')
+        or not Rec."Prices Including VAT"
+        or (Rec."Gen. Bus. Posting Group" = '')
+        or (Rec."Customer Posting Group" = '')
+        or (Rec."VAT Bus. Posting Group" = '')
+        or (Rec."Currency Code" = '') then
+            exit(false);
+
+        exit(true);
+    end;
+
+    [EventSubscriber(ObjectType::Table, 23, 'OnAfterInsertEvent', '', false, false)]
+    local procedure OnAfterInsertEventVendor(var Rec: Record Vendor)
+    begin
+        // check main company
+        if CheckMainCompany() then exit;
+        if Rec.IsTemporary then exit;
+        if CheckVendorFieldsFilled(Rec) then
+            AddEntityTo1CEntities(CompanyName, Database::Vendor, Rec."No.", '');
+    end;
+
+    [EventSubscriber(ObjectType::Table, 23, 'OnAfterModifyEvent', '', false, false)]
+    local procedure OnAfterModifyEventVendor(var Rec: Record Vendor)
+    begin
+        // check main company
+        if CheckMainCompany() then exit;
+        if Rec.IsTemporary then exit;
+        if CheckVendorFieldsFilled(Rec) then
+            AddEntityTo1CEntities(CompanyName, Database::Vendor, Rec."No.", '');
+    end;
+
+    local procedure CheckVendorFieldsFilled(Rec: Record Vendor): Boolean
+    begin
+        if (Rec."No." = '')
+        or (Rec.Name = '')
+        or (Rec."OKPO Code" = '')
+        or (Rec."Gen. Bus. Posting Group" = '')
+        or (Rec."Vendor Posting Group" = '')
+        or (Rec."VAT Bus. Posting Group" = '')
+        or (Rec."Currency Code" = '') then
+            exit(false);
+
+        exit(true);
+    end;
+
+    [EventSubscriber(ObjectType::Table, 27, 'OnAfterInsertEvent', '', false, false)]
+    local procedure OnAfterInsertEventItem(var Rec: Record Item)
+    begin
+        // check main company
+        if CheckMainCompany() then exit;
+        if Rec.IsTemporary then exit;
+        if CheckItemFieldsFilled(Rec) then
+            AddEntityToCopy(entityType::Item, Rec."No.");
+    end;
+
+    [EventSubscriber(ObjectType::Table, 27, 'OnAfterModifyEvent', '', false, false)]
+    local procedure OnAfterModifyEventItem(var Rec: Record Item)
+    begin
+        // check main company
+        if CheckMainCompany() then exit;
+        if Rec.IsTemporary then exit;
+        if CheckItemFieldsFilled(Rec) then
+            AddEntityToCopy(entityType::Item, Rec."No.");
+    end;
+
+    procedure CheckItemFieldsFilled(Rec: Record Item): Boolean
+    begin
+        if (Rec."No." = '')
+        or (Rec.Description = '')
+        or (Rec."Base Unit of Measure" = '')
+        or IsNullGuid(Rec."CRM Item Id")
+        or (Rec.IsInventoriableType() and (Rec."Inventory Posting Group" = ''))
+        or (Rec."VAT Prod. Posting Group" = '')
+        or (Rec."Gen. Prod. Posting Group" = '')
+        or (Rec."Sales Unit of Measure" = '')
+        or (Rec."Purch. Unit of Measure" = '') then
+            exit(false);
+
+        exit(true);
+    end;
+
+    local procedure AddEntityToCopy(Type: Enum EntityType; EntityNo: Code[20])
+    var
+        ItemToCopy: Record "Entity To Copy";
+    begin
+        if ItemToCopy.Get(Type, EntityNo) then exit;
+        ItemToCopy.Init();
+        ItemToCopy.Type := Type;
+        ItemToCopy.Validate("No.", EntityNo);
+        ItemToCopy.Insert();
+    end;
+
+    procedure GetErrorFillingItem(Rec: Record Item)
+    begin
+        Rec.TestField("No.");
+        Rec.TestField(Description);
+        Rec.TestField("Base Unit of Measure");
+        if Rec.IsInventoriableType() then
+            Rec.TestField("Inventory Posting Group");
+        Rec.TestField("VAT Prod. Posting Group");
+        Rec.TestField("Gen. Prod. Posting Group");
+        Rec.TestField("Sales Unit of Measure");
+        Rec.TestField("Purch. Unit of Measure");
+    end;
+
+    local procedure CheckMainCompany(): Boolean
+    begin
+        glCompIntegrFrom.Reset();
+        glCompIntegrFrom.SetCurrentKey("Company Name", "Copy Items From");
+        glCompIntegrFrom.SetRange("Company Name", CompanyName);
+        glCompIntegrFrom.SetRange("Copy Items From", true);
+        exit(glCompIntegrFrom.IsEmpty);
+    end;
+
+    local procedure CompanyIntegrationExist(): Boolean
+    begin
+        glCompIntegrFrom.Reset();
+        glCompIntegrFrom.SetCurrentKey("Company Name");
+        glCompIntegrFrom.SetRange("Company Name", CompanyName);
+        if glCompIntegrFrom.FindFirst() then
+            exit(glCompIntegrFrom."Copy Items To" or glCompIntegrFrom."Copy Items From");
+
+        exit(false);
     end;
 }
