@@ -51,8 +51,7 @@ table 50002 "Task Modify Order"
             begin
                 if xRec."Attempts Send" >= "Attempts Send" then exit;
 
-                "Error Text" := CopyStr(GetLastErrorText, 1, MaxStrLen("Error Text"));
-                ClearLastError();
+                "Error Text" := CopyStr(GetLastErrorText(), 1, MaxStrLen("Error Text"));
             end;
         }
         field(11; "CRM Specification"; Blob)

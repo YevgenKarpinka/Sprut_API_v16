@@ -52,6 +52,7 @@ codeunit 50000 "Web Service Mgt."
         GetBodyFromSalesOrderNo(SalesOrderNo, Body);
         if GetEntity(entityType, requestMethod, Body) then
             exit(true);
+        exit(false);
     end;
 
     procedure GetInvoicesFromCRM(SalesOrderNo: Code[20]; entityType: Text; requestMethod: Code[20]; var Body: Text): Boolean
@@ -59,6 +60,7 @@ codeunit 50000 "Web Service Mgt."
         GetBodyFromSalesOrderNo(SalesOrderNo, Body);
         if GetEntity(entityType, requestMethod, Body) then
             exit(true);
+        exit(false);
     end;
 
     local procedure GetBodyFromSalesOrderNo(SalesOrderNo: Code[20]; var Body: Text)
@@ -83,9 +85,9 @@ codeunit 50000 "Web Service Mgt."
         SetBodyFromPostedInvoices(SalesOrderNo, Body);
         if StrLen(Body) = 0 then exit(false);
 
-        if not GetEntity(entityType, requestMethod, Body) then
-            exit(false);
-        exit(true);
+        if GetEntity(entityType, requestMethod, Body) then
+            exit(true);
+        exit(false);
     end;
 
     local procedure SetBodyFromSalesOrderNo(SalesOrderNo: Code[20]; var Body: Text)
@@ -179,7 +181,8 @@ codeunit 50000 "Web Service Mgt."
         if ResponseMessage.IsSuccessStatusCode then
             exit(ResponseMessage.IsSuccessStatusCode);
 
-        Error(Body);
+        // Error(Body);
+        exit(false);
     end;
 
     local procedure GetSpecificationAmount(ResponceToken: Text): Decimal
@@ -343,7 +346,7 @@ codeunit 50000 "Web Service Mgt."
         InvoicesResponseText := ModificationOrder.GetInvoicesFromTask(SalesOrderNo);
 
         // check prepayment invoices for change need
-        if PrepaymentInvoicesChangesNeed(SalesOrderNo, InvoicesResponseText) then
+        if PrepaymentInvoicesFullChangesNeed(SalesOrderNo, InvoicesResponseText) then
             exit(true);
 
         exit(false);
@@ -584,6 +587,47 @@ codeunit 50000 "Web Service Mgt."
         exit(false);
     end;
 
+    local procedure PrepaymentInvoicesFullChangesNeed(SalesOrderNo: Code[20]; ResponceTokenLines: Text): Boolean
+    var
+        SalesInvHeader: Record "Sales Invoice Header";
+        invoiceID: Text[50];
+        PrepmInvAmount: Decimal;
+        bcPrepmInvAmount: Decimal;
+        jsonPrepmInv: JsonArray;
+        PrepmInvToken: JsonToken;
+        CountInvoiceCRM: Integer;
+        CountSalesInv: Integer;
+    begin
+        SalesInvHeader.SetCurrentKey("CRM Invoice No.");
+        jsonPrepmInv.ReadFrom(ResponceTokenLines);
+        foreach PrepmInvToken in jsonPrepmInv do begin
+            invoiceID := GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
+            PrepmInvAmount := Round(GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
+
+            SalesInvHeader.SetRange("CRM Invoice No.", invoiceID);
+            bcPrepmInvAmount := 0;
+            if SalesInvHeader.FindSet(false, false) then begin
+                repeat
+                    SalesInvHeader.CalcFields("Amount Including VAT");
+                    bcPrepmInvAmount += SalesInvHeader."Amount Including VAT";
+                until SalesInvHeader.Next() = 0;
+            end;
+            if PrepmInvAmount < bcPrepmInvAmount then
+                exit(true);
+        end;
+
+        // if crm invoice will be delete
+        SalesInvHeader.Reset();
+        SalesInvHeader.SetCurrentKey("Prepayment Order No.", "CRM Invoice No.");
+        SalesInvHeader.SetRange("Prepayment Order No.", SalesOrderNo);
+        SalesInvHeader.SetFilter("CRM Invoice No.", '<>%1', '');
+        CountSalesInv := SalesInvHeader.Count;
+        CountInvoiceCRM := jsonPrepmInv.Count;
+        if CountInvoiceCRM < CountSalesInv then exit(true);
+
+        exit(false);
+    end;
+
     local procedure PrepaymentInvoicesChangesNeed(SalesOrderNo: Code[20]; ResponceTokenLines: Text): Boolean
     var
         SalesInvHeader: Record "Sales Invoice Header";
@@ -612,8 +656,6 @@ codeunit 50000 "Web Service Mgt."
             if PrepmInvAmount <> bcPrepmInvAmount then
                 exit(true);
 
-            // if PrepmInvAmount < bcPrepmInvAmount then
-            //     exit(true);
         end;
 
         // if crm invoice will be delete
@@ -623,7 +665,7 @@ codeunit 50000 "Web Service Mgt."
         SalesInvHeader.SetFilter("CRM Invoice No.", '<>%1', '');
         CountSalesInv := SalesInvHeader.Count;
         CountInvoiceCRM := jsonPrepmInv.Count;
-        if CountInvoiceCRM < CountSalesInv then exit(true);
+        if CountInvoiceCRM <> CountSalesInv then exit(true);
 
         exit(false);
     end;

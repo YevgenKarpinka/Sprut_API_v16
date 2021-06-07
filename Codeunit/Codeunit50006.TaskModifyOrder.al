@@ -164,6 +164,7 @@ codeunit 50006 "Task Modify Order"
     local procedure IncTaskModifyOrderAttempt()
     begin
         recTaskModifyOrder.Validate("Attempts Send", recTaskModifyOrder."Attempts Send" + 1);
+        recTaskModifyOrder."Error Text" := GetLastErrorText();
         recTaskModifyOrder.Modify(true);
         Commit();
     end;
