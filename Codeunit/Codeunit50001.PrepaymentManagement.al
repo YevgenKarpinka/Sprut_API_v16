@@ -42,10 +42,17 @@ codeunit 50001 "Prepayment Management"
     procedure OnDeleteSalesOrderLine(SalesOrderNo: Code[20])
     var
         SalesLine: Record "Sales Line";
+        SalesHeader: Record "Sales Header";
     begin
         SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
         SalesLine.SetRange("Document No.", SalesOrderNo);
         SalesLine.DeleteAll(true);
+
+        if SalesHeader.Get(SalesHeader."Document Type"::Order, SalesOrderNo) then begin
+            SalesHeader."Prepayment %" := 0;
+            SalesHeader.Modify();
+        end;
+
     end;
 
     local procedure OpenSalesOrder(var SalesHeader: Record "Sales Header"; SalesOrderNo: Code[20])

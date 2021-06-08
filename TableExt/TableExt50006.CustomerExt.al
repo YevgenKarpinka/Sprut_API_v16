@@ -83,10 +83,12 @@ tableextension 50006 "Customer Ext" extends Customer
     var
         Customer: Record Customer;
     begin
-        Customer.SetCurrentKey("CRM ID");
-        Customer.SetRange("CRM ID", "CRM ID");
-        if not IsNullGuid("CRM ID") and not Customer.IsEmpty then
-            Error(errCustomerWithCRMIDAlreadyExist, "No.", "CRM ID");
+        if CheckModifyAllowed() then begin
+            Customer.SetCurrentKey("CRM ID");
+            Customer.SetRange("CRM ID", "CRM ID");
+            if not IsNullGuid("CRM ID") and not Customer.IsEmpty then
+                Error(errCustomerWithCRMIDAlreadyExist, "No.", "CRM ID");
+        end;
     end;
 
     trigger OnInsert()
@@ -104,18 +106,6 @@ tableextension 50006 "Customer Ext" extends Customer
         UpdateLastModifyDateTime();
     end;
 
-    local procedure UpdateCreateDateTime()
-    begin
-        "Create Date Time" := CurrentDateTime;
-        "Create User ID" := UserId;
-    end;
-
-    local procedure UpdateLastModifyDateTime()
-    begin
-        "Last Modified Date Time" := CurrentDateTime;
-        "Modify User ID" := UserId;
-    end;
-
     var
         errCustomerUsedInUnPostedSalesDocuments: TextConst ENU = 'Customer Used In UnPosted Sales Documents',
                                                             RUS = 'Клиент используется в неучтенных документах продажи';
@@ -129,6 +119,18 @@ tableextension 50006 "Customer Ext" extends Customer
 
         errCustomerWithCRMIDAlreadyExist: TextConst ENU = 'Customer %1 with CRM_ID %2 already exist!',
                                                     RUS = 'Клиент %1 с CRM ID %2 уже существует!';
+
+    local procedure UpdateCreateDateTime()
+    begin
+        "Create Date Time" := CurrentDateTime;
+        "Create User ID" := UserId;
+    end;
+
+    local procedure UpdateLastModifyDateTime()
+    begin
+        "Last Modified Date Time" := CurrentDateTime;
+        "Modify User ID" := UserId;
+    end;
 
     local procedure CheckAgreementEntries()
     var
@@ -146,5 +148,17 @@ tableextension 50006 "Customer Ext" extends Customer
         if not CustLE.IsEmpty then
             // Error(errAgreementUsedInPostedSalesDocuments);
             Message(msgCustomerUsedInPostedSalesDocuments);
+    end;
+
+    procedure CheckModifyAllowed(): Boolean
+    var
+        CompIntegr: Record "Company Integration";
+    begin
+        CompIntegr.SetCurrentKey("Company Name");
+        CompIntegr.SetRange("Company Name", CompanyName);
+        if CompIntegr.FindFirst()
+        and CompIntegr."Copy Items To" then
+            exit(true);
+        exit(false);
     end;
 }

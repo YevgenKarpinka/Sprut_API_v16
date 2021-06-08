@@ -19,9 +19,9 @@ codeunit 50003 "Caption Mgt."
     begin
         CompIntegr.SetCurrentKey("Company Name", "Copy Items To");
         CompIntegr.SetRange("Company Name", CompanyName);
-        CompIntegr.FindFirst();
-        CompIntegr.TestField("Copy Items To", false);
-        CompIntegr.TestField("Copy Items From", true);
+        if CompIntegr.FindFirst()
+            and CompIntegr."Copy Items To" then
+            CompIntegr.TestField("Copy Items To", false);
     end;
 
     procedure ErrorJobQueueEntries(): Integer

@@ -50,9 +50,9 @@ tableextension 50004 "Item Ext" extends Item
 
         CompIntegr.SetCurrentKey("Company Name", "Copy Items To");
         CompIntegr.SetRange("Company Name", CompanyName);
-        CompIntegr.FindFirst();
-        CompIntegr.TestField("Copy Items To", false);
-        CompIntegr.TestField("Copy Items From", true);
+        if CompIntegr.FindFirst()
+            and CompIntegr."Copy Items To" then
+            CompIntegr.TestField("Copy Items To", false);
     end;
 
     local procedure CheckDeleteItemAllowed()

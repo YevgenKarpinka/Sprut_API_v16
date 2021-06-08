@@ -98,7 +98,7 @@ codeunit 50000 "Web Service Mgt."
     begin
         locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
         locSalesLine.SetRange("Document No.", SalesOrderNo);
-        if locSalesLine.FindSet(false, false) then begin
+        if locSalesLine.FindSet() then begin
             repeat
                 Clear(JSObjectLine);
                 JSObjectLine.Add('Line_No', Format(locSalesLine."Line No."));
@@ -122,7 +122,7 @@ codeunit 50000 "Web Service Mgt."
         locSalesInvHeader.SetCurrentKey("Prepayment Order No.");
         locSalesInvHeader.SetRange("Prepayment Order No.", SalesOrderNo);
         locSalesInvHeader.SetFilter("CRM Invoice No.", '<>%1', '');
-        if locSalesInvHeader.FindSet(false, false) then begin
+        if locSalesInvHeader.FindSet() then begin
             repeat
                 Clear(JSObjectLine);
                 JSObjectLine.Add('number', locSalesInvHeader."No.");
@@ -399,7 +399,7 @@ codeunit 50000 "Web Service Mgt."
 
         SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
         SalesLine.SetRange("Document No.", SalesOrderNo);
-        if SalesLine.FindSet(false, false) then
+        if SalesLine.FindSet() then
             repeat
                 SalesLine.Mark(true);
             until SalesLine.Next() = 0;
@@ -443,7 +443,7 @@ codeunit 50000 "Web Service Mgt."
         end;
 
         SalesLine.MarkedOnly(true);
-        if SalesLine.FindSet(false, false) then
+        if SalesLine.FindSet() then
             repeat
                 if SalesLine."Prepmt. Amt. Inv." <> 0 then exit(true);
             until SalesLine.Next() = 0;
@@ -597,33 +597,50 @@ codeunit 50000 "Web Service Mgt."
         PrepmInvToken: JsonToken;
         CountInvoiceCRM: Integer;
         CountSalesInv: Integer;
+        TotalPrepmInvAmount: Decimal;
+        bcTotalPrepmInvAmount: Decimal;
+        CRMInvActive: Boolean;
     begin
         SalesInvHeader.SetCurrentKey("CRM Invoice No.");
         jsonPrepmInv.ReadFrom(ResponceTokenLines);
         foreach PrepmInvToken in jsonPrepmInv do begin
             invoiceID := GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
             PrepmInvAmount := Round(GetJSToken(PrepmInvToken.AsObject(), 'totalamount').AsValue().AsDecimal(), 0.01);
+            bcPrepmInvAmount := 0;
 
             SalesInvHeader.SetRange("CRM Invoice No.", invoiceID);
-            bcPrepmInvAmount := 0;
-            if SalesInvHeader.FindSet(false, false) then begin
+            if SalesInvHeader.FindSet() then begin
                 repeat
                     SalesInvHeader.CalcFields("Amount Including VAT");
                     bcPrepmInvAmount += SalesInvHeader."Amount Including VAT";
                 until SalesInvHeader.Next() = 0;
+                // if PrepmInvAmount <> bcPrepmInvAmount then exit(true);
             end;
-            if PrepmInvAmount < bcPrepmInvAmount then
-                exit(true);
+
+            TotalPrepmInvAmount += PrepmInvAmount;
+            bcTotalPrepmInvAmount += bcPrepmInvAmount;
         end;
+
+        if TotalPrepmInvAmount < bcTotalPrepmInvAmount then exit(true);
 
         // if crm invoice will be delete
         SalesInvHeader.Reset();
         SalesInvHeader.SetCurrentKey("Prepayment Order No.", "CRM Invoice No.");
         SalesInvHeader.SetRange("Prepayment Order No.", SalesOrderNo);
         SalesInvHeader.SetFilter("CRM Invoice No.", '<>%1', '');
-        CountSalesInv := SalesInvHeader.Count;
-        CountInvoiceCRM := jsonPrepmInv.Count;
-        if CountInvoiceCRM < CountSalesInv then exit(true);
+        if SalesInvHeader.FindSet() then
+            repeat
+                CRMInvActive := false;
+                foreach PrepmInvToken in jsonPrepmInv do begin
+                    invoiceID := GetJSToken(PrepmInvToken.AsObject(), 'invoice_id').AsValue().AsText();
+                    if invoiceID = SalesInvHeader."CRM Invoice No." then CRMInvActive := true;
+                end;
+                if not CRMInvActive then exit(true);
+            until SalesInvHeader.Next() = 0;
+
+        // CountSalesInv := SalesInvHeader.Count;
+        // CountInvoiceCRM := jsonPrepmInv.Count;
+        // if CountInvoiceCRM < CountSalesInv then exit(true);
 
         exit(false);
     end;
@@ -647,7 +664,7 @@ codeunit 50000 "Web Service Mgt."
 
             SalesInvHeader.SetRange("CRM Invoice No.", invoiceID);
             bcPrepmInvAmount := 0;
-            if SalesInvHeader.FindSet(false, false) then begin
+            if SalesInvHeader.FindSet() then begin
                 repeat
                     SalesInvHeader.CalcFields("Amount Including VAT");
                     bcPrepmInvAmount += SalesInvHeader."Amount Including VAT";
@@ -991,7 +1008,7 @@ codeunit 50000 "Web Service Mgt."
         SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
         SalesLine.SetRange("Document No.", SalesHeader."No.");
         SalesLine.SetFilter("Location Code", '<>%1', Location.Code);
-        if SalesLine.FindSet(false, false) then
+        if SalesLine.FindSet() then
             repeat
                 if Item.Get(SalesLine."No.")
                 and Item.IsInventoriableType() then begin
