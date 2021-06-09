@@ -17,12 +17,12 @@ tableextension 50009 "Sales Line Ext" extends "Sales Line"
                 locSL.SetCurrentKey("CRM ID");
                 locSL.SetRange("CRM ID", "CRM ID");
                 if not locSL.IsEmpty then
-                    Error(errCRMIdForSalesLineAlreadyExist, "CRM ID");
+                    Error(errCRMIdInSalesLineAlreadyExist, "CRM ID");
 
                 locSIL.SetCurrentKey("CRM ID");
                 locSIL.SetRange("CRM ID", "CRM ID");
                 if not locSIL.IsEmpty then
-                    Error(errCRMIdForSalesLineAlreadyExist, "CRM ID");
+                    Error(errCRMIdInPostedSalesLineAlreadyExist, "CRM ID");
             end;
         }
         field(50003; "Create Date Time"; DateTime)
@@ -97,5 +97,6 @@ tableextension 50009 "Sales Line Ext" extends "Sales Line"
     end;
 
     var
-        errCRMIdForSalesLineAlreadyExist: Label 'CRM ID %1 for sales line already exist';
+        errCRMIdInSalesLineAlreadyExist: Label 'CRM ID %1 in sales line already exist';
+        errCRMIdInPostedSalesLineAlreadyExist: Label 'CRM ID %1 in posted sales line already exist';
 }
