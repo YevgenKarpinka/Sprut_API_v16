@@ -17,6 +17,21 @@ pageextension 50013 "Customer List Ext." extends "Customer List"
     actions
     {
         // Add changes to page actions here
+        addafter("Sales Journal")
+        {
+            action(CloneCustomers)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Clone Customers',
+                                RUS = 'Клонировать клиентов';
+                Image = ApplyEntries;
+
+                trigger OnAction()
+                begin
+                    Codeunit.Run(Codeunit::"Copy Customers");
+                end;
+            }
+        }
     }
 
 }

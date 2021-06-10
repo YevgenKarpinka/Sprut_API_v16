@@ -69,14 +69,11 @@ codeunit 50003 "Caption Mgt."
         exit('');
     end;
 
-    procedure ErrorModifyOrderEntries(): Integer
+    procedure ErrorModifyOrderEntries()
     var
         CompIntegr: Record "Company Integration";
         TaskModifyOrder: Record "Task Modify Order";
-
-        TotalCountErrors: Integer;
     begin
-        Clear(TotalCountErrors);
         ClearActivityEntries(Database::"Task Modify Order");
 
         if CompIntegr.FindSet() then
@@ -86,7 +83,6 @@ codeunit 50003 "Caption Mgt."
                         TaskModifyOrder.ChangeCompany(CompIntegr."Company Name");
                     TaskModifyOrder.SetCurrentKey("Work Status");
                     TaskModifyOrder.SetRange("Work Status", TaskModifyOrder."Work Status"::Error);
-                    // TotalCountErrors += TaskModifyOrder.Count;
 
                     if TaskModifyOrder.FindSet() then
                         repeat
@@ -95,7 +91,6 @@ codeunit 50003 "Caption Mgt."
                         until TaskModifyOrder.Next() = 0;
                 end;
             until CompIntegr.Next() = 0;
-        exit(TotalCountErrors);
     end;
 
     local procedure ClearActivityEntries(TableID: Integer)

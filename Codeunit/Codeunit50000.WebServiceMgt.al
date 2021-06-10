@@ -83,7 +83,7 @@ codeunit 50000 "Web Service Mgt."
 
         SetBodyFromSalesOrderNo(SalesOrderNo, Body);
         SetBodyFromPostedInvoices(SalesOrderNo, Body);
-        if StrLen(Body) = 0 then exit(false);
+        if StrLen(Body) = 0 then exit(true);
 
         if GetEntity(entityType, requestMethod, Body) then
             exit(true);
@@ -111,6 +111,7 @@ codeunit 50000 "Web Service Mgt."
             JSObjectLine.Add('Lines', JSObjectBody);
             JSObjectLine.WriteTo(Body);
         end;
+
     end;
 
     local procedure SetBodyFromPostedInvoices(SalesOrderNo: Code[20]; var Body: Text)
@@ -853,7 +854,8 @@ codeunit 50000 "Web Service Mgt."
             JSObjectLine.Add('quantitydecimal', quantityDecimal);
             JSObjectLine.Add('tct_bc_product_number', locItems."No.");
             JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
-            JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
+            // JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
+            JSObjectLine.Add('statuscode ', GetStateCode(locItems."No."));
         end;
         exit(JSObjectLine);
     end;
@@ -876,7 +878,8 @@ codeunit 50000 "Web Service Mgt."
             JSObjectLine.Add('quantitydecimal', quantityDecimal);
             JSObjectLine.Add('tct_bc_product_number', locItems."No.");
             JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
-            JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
+            // JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
+            JSObjectLine.Add('statuscode', GetStateCode(locItems."No."));
         end;
         exit(JSObjectLine);
     end;
@@ -987,8 +990,8 @@ codeunit 50000 "Web Service Mgt."
     begin
         Item.Get(ItemNo);
         if Item.Blocked or Item."Sales Blocked" then
-            exit(1);
-        exit(0);
+            exit(2);
+        exit(1);
     end;
 
     procedure ChangeSalesOrderLocationCode(var SalesHeader: Record "Sales Header"; LocationCode: Code[20])

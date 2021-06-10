@@ -13,6 +13,7 @@ codeunit 50018 "Integration 1C"
             GetBankDirectoryIdFrom1C(CompanyName);
             GetCustomerIdFrom1C(CompanyName);
             GetCustomerAgreementIdFrom1C(glCustAgreement, CompanyName);
+            GetVendorAgreementIdFrom1C(glVendAgreement, CompanyName);
         end;
 
         CompanyIntegration.SetCurrentKey("Copy Items To");
@@ -22,6 +23,7 @@ codeunit 50018 "Integration 1C"
                 GetBankDirectoryIdFrom1C(CompanyIntegration."Company Name");
                 GetCustomerIdFrom1C(CompanyIntegration."Company Name");
                 GetCustomerAgreementIdFrom1C(glCustAgreement, CompanyIntegration."Company Name");
+                GetVendorAgreementIdFrom1C(glVendAgreement, CompanyIntegration."Company Name");
             until CompanyIntegration.Next() = 0;
     end;
 
@@ -30,6 +32,7 @@ codeunit 50018 "Integration 1C"
         IntegrationLog: Record "Integration Log";
         WebServiceMgt: Codeunit "Web Service Mgt.";
         glCustAgreement: Record "Customer Agreement";
+        glVendAgreement: Record "Vendor Agreement";
         glCompanyPrefix: Code[10];
 
     procedure GetCompanyIdFrom1C(): Boolean
@@ -1956,5 +1959,162 @@ codeunit 50018 "Integration 1C"
             SRSetup.Init();
             SRSetup.Insert();
         end;
+    end;
+
+    procedure GetVendorAgreementIdFrom1C(VendorAgreement: Record "Vendor Agreement"; _CompanyName: Text[30]): Boolean
+    var
+        entityType: Label 'Catalog_ДоговорыКонтрагентов';
+        entityTypePATCH: Label 'Catalog_ДоговорыКонтрагентов(%1)';
+        entityTypePATCHValue: Text;
+        requestMethodGET: Label 'GET';
+        requestMethodPOST: Label 'POST';
+        requestMethodPATCH: Label 'PATCH';
+        Body: Text;
+        filterValue: Text;
+        lblfilter: Label '&$filter=%1 eq ''%2''';
+        lblSystemCode: Label '1C';
+        tempVendorAgreement: Record "Vendor Agreement" temporary;
+        Vendor: Record Vendor;
+        IntegrationEntity: Record "Integration Entity";
+        ResponceTokenLine: Text;
+        jsonLines: JsonArray;
+        jsonBody: JsonObject;
+        LineToken: JsonToken;
+        codeISO: Code[10];
+        blankGuid: Guid;
+        locVendorAgreement: Record "Vendor Agreement";
+    begin
+        if CompanyName <> _CompanyName then begin
+            locVendorAgreement.ChangeCompany(_CompanyName);
+            locVendorAgreement.SetFilter("Vendor No.", VendorAgreement.GetFilter("Vendor No."));
+            Vendor.ChangeCompany(_CompanyName);
+        end;
+        tempVendorAgreement.DeleteAll();
+
+        // create Currency list for getting id from 1C
+        if locVendorAgreement.FindSet(true) then
+            repeat
+                if IntegrationEntity.Get(lblSystemCode, Database::"Vendor Agreement", GuidToClearText(locVendorAgreement.SystemId), '') then begin
+                    tempVendorAgreement := locVendorAgreement;
+                    tempVendorAgreement.Insert();
+                end;
+            until locVendorAgreement.Next() = 0;
+
+        // link between 1C and BC
+        // create entity in 1C or get it
+        if tempVendorAgreement.FindSet(true) then
+            repeat
+                filterValue := StrSubstNo(lblfilter, 'CRM_ID', GuidToClearText(tempVendorAgreement.SystemId));
+                if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
+                jsonBody.ReadFrom(Body);
+                jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();
+                if jsonLines.Count <> 0 then begin
+                    foreach LineToken in jsonLines do
+                        AddIDToIntegrationEntity(lblSystemCode, Database::"Vendor Agreement", GuidToClearText(tempVendorAgreement.SystemId),
+                                                    '',
+                                                    WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText(),
+                                                    tempVendorAgreement."No.", _CompanyName);
+                end else begin
+                    // create request body
+                    CreateRequestBodyToVendorAgreement(tempVendorAgreement."Vendor No.", tempVendorAgreement."No.", jsonBody, requestMethodPATCH, _CompanyName);
+                    // get body from 1C
+                    jsonBody.WriteTo(Body);
+                    if not ConnectTo1C(entityType, requestMethodPOST, Body, '') then exit(false);
+                    jsonBody.ReadFrom(Body);
+                    AddIDToIntegrationEntity(lblSystemCode, Database::"Vendor Agreement", GuidToClearText(tempVendorAgreement.SystemId),
+                                                '',
+                                                WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText(),
+                                                tempVendorAgreement."No.", _CompanyName);
+                end;
+            // Commit();
+            until tempVendorAgreement.Next() = 0;
+
+        // update entity in 1C
+        // create list for updating in 1C
+        tempVendorAgreement.DeleteAll();
+        if locVendorAgreement.FindSet(true) then
+            repeat
+                if IntegrationEntity.Get(lblSystemCode, Database::"Vendor Agreement", GuidToClearText(locVendorAgreement.SystemId), '')
+                                and (IntegrationEntity."Last Modify Date Time" < locVendorAgreement."Last DateTime Modified")
+                                then begin
+                    tempVendorAgreement := locVendorAgreement;
+                    tempVendorAgreement.Insert();
+                end;
+
+            until locVendorAgreement.Next() = 0;
+
+        if tempVendorAgreement.FindSet(true) then
+            repeat
+                // create request body
+                CreateRequestBodyToVendorAgreement(tempVendorAgreement."Vendor No.", tempVendorAgreement."No.", jsonBody, requestMethodPATCH, _CompanyName);
+                entityTypePATCHValue := StrSubstNo(entityTypePATCH, GetVendorAgreementIdFromIntegrEntity(tempVendorAgreement.SystemId, _CompanyName));
+                // patch entity in 1C
+                jsonBody.WriteTo(Body);
+                if not ConnectTo1C(entityTypePATCHValue, requestMethodPATCH, Body, '') then
+                    exit(false);
+                UpdateDateTimeIntegrationEntity(lblSystemCode, Database::"Vendor Agreement", GuidToClearText(tempVendorAgreement.SystemId), '');
+            // Commit();
+            until tempVendorAgreement.Next() = 0;
+
+        exit(true);
+    end;
+
+    local procedure GetVendorAgreementIdFromIntegrEntity(VendorAgreementID: Guid; _CompanyName: Text[30]): Text[50]
+    var
+        IntegrEntity: Record "Integration Entity";
+        lblSystemCode: Label '1C';
+        BlankGuid: Guid;
+        Code2: Text[40];
+    begin
+        IntegrEntity.Get(lblSystemCode, Database::"Vendor Agreement", GuidToClearText(VendorAgreementID), '');
+        exit(GuidToClearText(IntegrEntity."Entity Id"));
+    end;
+
+    local procedure CreateRequestBodyToVendorAgreement(VendorNo: Code[20]; AgreementNo: Code[20]; var Body: JsonObject;
+                                                        requestMethod: Text[10]; _CompanyName: Text[30])
+    var
+        VendorAgreement: Record "Vendor Agreement";
+        lblPaymentView: Label 'ПоДоговоруВЦелом';
+        lblPaymentViewVAT: Label 'ПоДоговоруВЦелом';
+        lblAgreementView: Label 'СПоставщиком';
+        lblSchemaPostingVAT: Label 'fee33cc5-2cab-11ea-acf7-545049000031';
+        lblSchemaPostingVATTara: Label 'fee33cc5-2cab-11ea-acf7-545049000031';
+    begin
+        if CompanyName <> _CompanyName then
+            VendorAgreement.ChangeCompany(_CompanyName);
+
+        VendorAgreement.Get(VendorNo, AgreementNo);
+        Clear(Body);
+        Body.Add('Номер', VendorAgreement."External Agreement No.");
+        Body.Add('Description', VendorAgreement."No.");
+        Body.Add('Дата', VendorAgreement."Starting Date");
+        Body.Add('СрокДействия', VendorAgreement."Expire Date");
+        Body.Add('ВедениеВзаиморасчетов', lblPaymentView);
+        Body.Add('ВедениеВзаиморасчетовНУ', lblPaymentViewVAT);
+        Body.Add('ВидДоговора', lblAgreementView);
+        if requestMethod = 'PATCH' then
+            Body.Add('Owner_Key', GetVendorIdFromIntegrEntity(VendorNo, _CompanyName));
+        Body.Add('ВалютаВзаиморасчетов_Key', GetCurrencyIdFromIntegrEntity(VendorAgreement."Currency Code", _CompanyName));
+        Body.Add('Организация_Key', GetCompanyIdFromIntegrEntity(_CompanyName));
+        Body.Add('СхемаНалоговогоУчета_Key', lblSchemaPostingVAT);
+        Body.Add('СхемаНалоговогоУчетаПоТаре_Key', lblSchemaPostingVATTara);
+        Body.Add('DeletionMark', not VendorAgreement.Active);
+        // Body.Add('НаименованиеДляПечати', CustomerAgreement."External Agreement No.");
+        Body.Add('CRM_ID', GuidToClearText(VendorAgreement.SystemId))
+
+    end;
+
+    local procedure GetVendorIdFromIntegrEntity(VendorNo: Code[20]; _CompanyName: Text[30]): Text
+    var
+        IntegrEntity: Record "Integration Entity";
+        Vendor: Record Vendor;
+        lblSystemCode: Label '1C';
+    begin
+        if CompanyName <> _CompanyName then
+            Vendor.ChangeCompany(_CompanyName);
+
+        Vendor.Get(VendorNo);
+        IntegrEntity.Get(lblSystemCode, Database::Vendor, GuidToClearText(Vendor.SystemId), '');
+        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 }

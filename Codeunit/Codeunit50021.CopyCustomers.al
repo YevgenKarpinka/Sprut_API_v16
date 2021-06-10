@@ -119,6 +119,7 @@ codeunit 50021 "Copy Customers"
     var
         CompIntegrTo: Record "Company Integration";
         ItemToCopy: Record "Entity To Copy";
+        tempItemToCopy: Record "Entity To Copy" temporary;
         CustomerFrom: Record Customer;
         CustomerTo: Record Customer;
         CustomerBankAccountFrom: Record "Customer Bank Account";
@@ -128,6 +129,12 @@ codeunit 50021 "Copy Customers"
     begin
         ItemToCopy.SetRange(Type, ItemToCopy.Type::Customer);
         if ItemToCopy.IsEmpty then exit;
+        ItemToCopy.FindSet();
+        repeat
+            tempItemToCopy := ItemToCopy;
+            tempItemToCopy.Insert();
+        until ItemToCopy.Next() = 0;
+
 
         CompIntegrTo.SetCurrentKey("Copy Items To");
         CompIntegrTo.SetRange("Copy Items To", true);
@@ -141,21 +148,27 @@ codeunit 50021 "Copy Customers"
                                                             CompanyName,
                                                             CompIntegrTo."Company Name"));
 
-                if ItemToCopy.FindSet() then
+                if tempItemToCopy.FindSet() then
                     repeat
-                        CustomerFrom.Get(ItemToCopy."No.");
+                        CustomerFrom.Get(tempItemToCopy."No.");
                         ConfProgressBar.Update(StrSubstNo(txtProcessHeader, CustomerFrom."No."));
 
-                        CustomerTo.SetCurrentKey(SystemId);
-                        CustomerTo.SetRange(SystemId, CustomerFrom.SystemId);
+                        // CustomerTo.SetCurrentKey(SystemId);
+                        // CustomerTo.SetRange(SystemId, CustomerFrom.SystemId);
+                        CustomerTo.SetCurrentKey(Name);
+                        CustomerTo.SetRange(Name, CustomerFrom.Name);
                         if CustomerTo.FindFirst() then begin
-                            CustomerTo.TransferFields(CustomerFrom);
+                            CustomerTo.TransferFields(CustomerFrom, false);
+                            CustomerTo.SystemId := CustomerFrom.SystemId;
+                            CustomerTo.Id := CustomerFrom.Id;
                             CustomerTo.Modify();
                         end else begin
                             CustomerTo.Init();
                             CustomerTo := CustomerFrom;
-                            CustomerTo."No." := '';
-                            CustomerTo.Insert();
+                            CustomerTo.SystemId := CustomerFrom.SystemId;
+                            // CustomerTo.Id := CustomerFrom.Id;
+                            CustomerTo."No." := GetNextCustomerNoByCompany(CompIntegrTo."Company Name");
+                            CustomerTo.Insert(true);
                         end;
 
                         CustomerBankAccountFrom.SetRange("Customer No.", CustomerFrom."No.");
@@ -165,11 +178,47 @@ codeunit 50021 "Copy Customers"
                                 if CustomerBankAccountTo.Insert() then CustomerBankAccountTo.Modify();
                             until CustomerBankAccountFrom.Next() = 0;
 
-                    until ItemToCopy.Next() = 0;
+                    until tempItemToCopy.Next() = 0;
                 Commit();
             until CompIntegrTo.Next() = 0;
 
         ConfProgressBar.Close();
+    end;
+
+    local procedure GetNextCustomerNoByCompany(_companyName: Text[30]): Code[20]
+    var
+        SalesSetup: Record "Sales & Receivables Setup";
+        NoSeries: Record "No. Series";
+        NoSeriesLine: Record "No. Series Line";
+        NoSeriesMgt: Codeunit NoSeriesManagement;
+    begin
+        if CompanyName <> _companyName then begin
+            SalesSetup.ChangeCompany(_companyName);
+            NoSeries.ChangeCompany(_companyName);
+            NoSeriesLine.ChangeCompany(_companyName);
+        end;
+
+        SalesSetup.Get();
+        SalesSetup.TestField("Customer Nos.");
+        NoSeries.Get(SalesSetup."Customer Nos.");
+
+        NoSeriesLine.SetCurrentKey("Series Code", "Starting Date");
+        NoSeriesLine.SetRange("Series Code", NoSeries.Code);
+        NoSeriesLine.SetRange("Starting Date", 0D, WorkDate);
+        if NoSeriesLine.FindLast() then begin
+            NoSeriesLine.SetRange("Starting Date", NoSeriesLine."Starting Date");
+            NoSeriesLine.SetRange(Open, true);
+        end;
+
+        NoSeriesLine."Last No. Used" := IncStr(NoSeriesLine."Last No. Used");
+
+        if (NoSeriesLine."Ending No." <> '') and
+           (NoSeriesLine."Last No. Used" > NoSeriesLine."Ending No.") then
+            Error(Text007, NoSeriesLine."Ending No.", NoSeries.Code);
+
+        NoSeriesLine.Modify;
+
+        exit(NoSeriesLine."Last No. Used");
     end;
 
     local procedure DeleteItemsAfterCopy()
@@ -274,4 +323,5 @@ codeunit 50021 "Copy Customers"
                                 RUS = 'Запись: %1 из %2';
         sentToCRM: Boolean;
         ConfigProgressBarRecord: Codeunit "Config Progress Bar";
+        Text007: Label 'You cannot assign numbers greater than %1 from the number series %2.';
 }

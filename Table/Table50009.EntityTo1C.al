@@ -38,6 +38,14 @@ table 50009 "Entity To 1C"
             FieldClass = FlowField;
             CalcFormula = Lookup(AllObjWithCaption."Object Name" where("Object Type" = const(Table), "Object ID" = field("Table ID")));
         }
+        field(6; "Create Date Time"; DateTime)
+        {
+            CaptionML = ENU = 'Create Date Time',
+                        RUS = 'Дата и время создания';
+            Editable = false;
+            // FieldClass = FlowField;
+            // CalcFormula = Lookup(AllObjWithCaption."Object Name" where("Object Type" = const(Table), "Object ID" = field("Table ID")));
+        }
 
     }
 
@@ -48,5 +56,10 @@ table 50009 "Entity To 1C"
             Clustered = true;
         }
     }
+
+    trigger OnInsert()
+    begin
+        "Create Date Time" := CurrentDateTime;
+    end;
 
 }
