@@ -11,6 +11,13 @@ pageextension 50005 "Customer Card Ext" extends "Customer Card"
                             RUS = 'Указывает передавать ли клиента в 1С.';
                 // Editable = AllowGreyAgreement;
             }
+            field("BC Id"; "BC Id")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies BC Id of the customer.',
+                            RUS = 'Указывает БЦ идентификатор клиента.';
+                // Editable = AllowGreyAgreement;
+            }
         }
         // Add changes to page layout here
         addafter("VAT Registration No.")

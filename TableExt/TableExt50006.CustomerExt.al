@@ -76,6 +76,13 @@ tableextension 50006 "Customer Ext" extends Customer
                         RUS = 'Дата и время создания';
             Editable = false;
         }
+        field(50010; "BC Id"; Guid)
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'BC Id',
+                        RUS = 'Идентификатор БЦ';
+            // Editable = false;
+        }
 
     }
 
@@ -89,11 +96,10 @@ tableextension 50006 "Customer Ext" extends Customer
             if not IsNullGuid("CRM ID") and not Customer.IsEmpty then
                 Error(errCustomerWithCRMIDAlreadyExist, "No.", "CRM ID");
         end;
-    end;
 
-    trigger OnInsert()
-    begin
-        UpdateCreateDateTime();
+        if IsNullGuid("BC Id") and IsNullGuid("CRM ID") then begin
+            "BC Id" := SystemId;
+        end;
     end;
 
     trigger OnModify()
@@ -156,9 +162,9 @@ tableextension 50006 "Customer Ext" extends Customer
     begin
         CompIntegr.SetCurrentKey("Company Name");
         CompIntegr.SetRange("Company Name", CompanyName);
-        if CompIntegr.FindFirst()
-        and CompIntegr."Copy Items To" then
-            exit(true);
-        exit(false);
+        if CompIntegr.FindFirst() then
+            CompIntegr.TestField("Copy Items To", false);
+
+        exit(true);
     end;
 }

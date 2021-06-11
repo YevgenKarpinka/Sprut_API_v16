@@ -153,20 +153,17 @@ codeunit 50021 "Copy Customers"
                         CustomerFrom.Get(tempItemToCopy."No.");
                         ConfProgressBar.Update(StrSubstNo(txtProcessHeader, CustomerFrom."No."));
 
-                        // CustomerTo.SetCurrentKey(SystemId);
-                        // CustomerTo.SetRange(SystemId, CustomerFrom.SystemId);
-                        CustomerTo.SetCurrentKey(Name);
-                        CustomerTo.SetRange(Name, CustomerFrom.Name);
+                        CustomerTo.SetCurrentKey("BC Id");
+                        CustomerTo.SetRange("BC Id", CustomerFrom."BC Id");
+                        // CustomerTo.SetCurrentKey(Name);
+                        // CustomerTo.SetRange(Name, CustomerFrom.Name);
                         if CustomerTo.FindFirst() then begin
                             CustomerTo.TransferFields(CustomerFrom, false);
-                            CustomerTo.SystemId := CustomerFrom.SystemId;
-                            CustomerTo.Id := CustomerFrom.Id;
+                            CustomerTo."BC Id" := CustomerFrom.SystemId;
                             CustomerTo.Modify();
                         end else begin
                             CustomerTo.Init();
                             CustomerTo := CustomerFrom;
-                            CustomerTo.SystemId := CustomerFrom.SystemId;
-                            // CustomerTo.Id := CustomerFrom.Id;
                             CustomerTo."No." := GetNextCustomerNoByCompany(CompIntegrTo."Company Name");
                             CustomerTo.Insert(true);
                         end;
@@ -304,7 +301,24 @@ codeunit 50021 "Copy Customers"
         sentToCRM := newSentToCRM;
     end;
 
+    procedure FillBCIDAllCustomers()
     var
+        locCustomer: Record Customer;
+    begin
+        CaptionMgt.CheckModifyAllowed();
+
+        locCustomer.SetCurrentKey("CRM ID");
+        locCustomer.SetRange("CRM ID", blankGuid);
+        if locCustomer.FindSet() then
+            repeat
+                locCustomer."BC Id" := locCustomer.SystemId;
+                locCustomer.Modify();
+            until locCustomer.Next() = 0;
+
+    end;
+
+    var
+        CaptionMgt: Codeunit "Caption Mgt.";
         CompIntegrFrom: Record "Company Integration";
         ConfProgressBar: Codeunit "Config Progress Bar";
         WebServiceMgt: Codeunit "Web Service Mgt.";

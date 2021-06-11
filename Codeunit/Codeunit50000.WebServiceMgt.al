@@ -854,8 +854,8 @@ codeunit 50000 "Web Service Mgt."
             JSObjectLine.Add('quantitydecimal', quantityDecimal);
             JSObjectLine.Add('tct_bc_product_number', locItems."No.");
             JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
-            // JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
-            JSObjectLine.Add('statuscode ', GetStateCode(locItems."No."));
+            JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
+            JSObjectLine.Add('statuscode ', GetStatusCode(locItems."No."));
         end;
         exit(JSObjectLine);
     end;
@@ -878,8 +878,8 @@ codeunit 50000 "Web Service Mgt."
             JSObjectLine.Add('quantitydecimal', quantityDecimal);
             JSObjectLine.Add('tct_bc_product_number', locItems."No.");
             JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
-            // JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
-            JSObjectLine.Add('statuscode', GetStateCode(locItems."No."));
+            JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
+            JSObjectLine.Add('statuscode', GetStatusCode(locItems."No."));
         end;
         exit(JSObjectLine);
     end;
@@ -985,6 +985,16 @@ codeunit 50000 "Web Service Mgt."
     end;
 
     local procedure GetStateCode(ItemNo: Code[20]): Integer
+    var
+        Item: Record Item;
+    begin
+        Item.Get(ItemNo);
+        if Item.Blocked or Item."Sales Blocked" then
+            exit(1);
+        exit(0);
+    end;
+
+    local procedure GetStatusCode(ItemNo: Code[20]): Integer
     var
         Item: Record Item;
     begin

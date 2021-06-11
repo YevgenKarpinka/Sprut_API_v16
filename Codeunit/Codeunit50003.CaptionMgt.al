@@ -13,15 +13,16 @@ codeunit 50003 "Caption Mgt."
         DownloadFromStream(_inStream, 'Export', '', 'All Files (*.*)|*.*', ToFileName);
     end;
 
-    procedure CheckModifyAllowed();
+    procedure CheckModifyAllowed(): Boolean
     var
         CompIntegr: Record "Company Integration";
     begin
-        CompIntegr.SetCurrentKey("Company Name", "Copy Items To");
+        CompIntegr.SetCurrentKey("Company Name");
         CompIntegr.SetRange("Company Name", CompanyName);
-        if CompIntegr.FindFirst()
-            and CompIntegr."Copy Items To" then
+        if CompIntegr.FindFirst() then
             CompIntegr.TestField("Copy Items To", false);
+
+        exit(true);
     end;
 
     procedure ErrorJobQueueEntries(): Integer

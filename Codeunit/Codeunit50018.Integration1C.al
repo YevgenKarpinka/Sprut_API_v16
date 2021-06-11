@@ -382,9 +382,10 @@ codeunit 50018 "Integration 1C"
         if Customer.FindSet(true) then
             repeat
                 if Customer."Init 1C" then begin
-                    if not IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer.SystemId), '') then begin
+                    if not IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."BC Id"), '')
+                    and not IsNullGuid(Customer."BC Id") then begin
                         tempCustomer := Customer;
-                        tempCustomer."CRM ID" := Customer.SystemId;
+                        tempCustomer."CRM ID" := Customer."BC Id";
                         tempCustomer.Insert();
                     end;
                 end else begin

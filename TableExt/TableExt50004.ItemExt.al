@@ -34,25 +34,25 @@ tableextension 50004 "Item Ext" extends Item
     trigger OnDelete()
     begin
         // check Delete item allowed
-        CheckModifyItemAllowed();
+        // CheckModifyItemAllowed();
         CheckDeleteItemAllowed();
     end;
 
     var
+        CompIntegr: Record "Company Integration";
         CopyItemFromMainCompany: Boolean;
         blankGuid: Guid;
 
-    local procedure CheckModifyItemAllowed();
-    var
-        CompIntegr: Record "Company Integration";
+    local procedure CheckModifyItemAllowed(): Boolean
     begin
         if CopyItemFromMainCompany then exit;
 
-        CompIntegr.SetCurrentKey("Company Name", "Copy Items To");
+        CompIntegr.SetCurrentKey("Company Name");
         CompIntegr.SetRange("Company Name", CompanyName);
-        if CompIntegr.FindFirst()
-            and CompIntegr."Copy Items To" then
+        if CompIntegr.FindFirst() then
             CompIntegr.TestField("Copy Items To", false);
+
+        exit(true);
     end;
 
     local procedure CheckDeleteItemAllowed()

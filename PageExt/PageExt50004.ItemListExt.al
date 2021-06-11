@@ -52,8 +52,8 @@ pageextension 50004 "Item List Ext." extends "Item List"
                         msgOk: Label 'Все товары скопированы во все компании';
                     begin
                         CopyItems.CopyAllItemsToClone();
-                        CopyItems.Run();
-                        Message(msgOk);
+                        // CopyItems.Run();
+                        // Message(msgOk);
                     end;
                 }
                 action(OnCopyItems)
@@ -410,10 +410,12 @@ pageextension 50004 "Item List Ext." extends "Item List"
 
     trigger OnOpenPage()
     begin
-        CRMEnable := UserId = 'YEKAR';
+        if UserSetup.Get(UserId) then
+            CRMEnable := UserSetup."Admin. Holding";
     end;
 
     var
+        UserSetup: Record "User Setup";
         WebServiceMgt: Codeunit "Web Service Mgt.";
         RecordsXofYMsg: TextConst ENU = 'Records: %1 of %2',
                                 RUS = 'Запись: %1 из %2';
