@@ -120,6 +120,7 @@ codeunit 50018 "Integration 1C"
         Body.Add('Префикс', prefixComp);
         Body.Add('ЮридическоеФизическоеЛицо', lblLegalEntity);
         Body.Add('ИмяКомпанииВС', _CompanyName);
+        // comment for test
         Body.Add('КонтактнаяИнформация', GetContactInfoFromCompanyInfo(_CompanyName));
     end;
 
@@ -128,18 +129,40 @@ codeunit 50018 "Integration 1C"
         CompInfo: Record "Company Information";
         jsonContactInfoLine: JsonObject;
         jsonContactInfo: JsonArray;
-        lblAddressLegalKey: Label 'ebccdcf9-2cab-11ea-acf7-545049000031';
-        lblAddressKey: Label 'ebccdcf8-2cab-11ea-acf7-545049000031';
+        LineNo: Integer;
+        lblbPhoneKey: Label 'ebccdced-2cab-11ea-acf7-545049000031';
+        lblAddressLegalKey: Label 'ebccdcf0-2cab-11ea-acf7-545049000031';
+        lblAddressKey: Label 'ebccdcef-2cab-11ea-acf7-545049000031';
+        lblTypePhone: Label 'Телефон';
+        lblTypeAddress: Label 'Адрес';
     begin
         if CompanyName <> _CompanyName then
             CompInfo.ChangeCompany(_CompanyName);
 
         CompInfo.Get();
-        jsonContactInfoLine.Add('Вид_Key', lblAddressKey);
-        jsonContactInfoLine.Add('НомерТелефона', CompInfo."Phone No.");
-        jsonContactInfoLine.Add('Город', CompInfo.City);
-        jsonContactInfoLine.Add('АдресЭП', CompInfo.Address + CompInfo."Address 2");
-        jsonContactInfo.Add(jsonContactInfoLine);
+
+        LineNo := 0;
+        if CompInfo."Phone No." <> '' then begin
+            LineNo += 1;
+            jsonContactInfoLine.Add('LineNumber', LineNo);
+            jsonContactInfoLine.Add('Тип', lblTypePhone);
+            jsonContactInfoLine.Add('Вид_Key', lblbPhoneKey);
+            jsonContactInfoLine.Add('НомерТелефона', CompInfo."Phone No.");
+            jsonContactInfoLine.Add('Представление', CompInfo."Phone No.");
+            jsonContactInfo.Add(jsonContactInfoLine);
+            Clear(jsonContactInfoLine);
+        end;
+
+        if CompInfo.Address <> '' then begin
+            LineNo += 1;
+            jsonContactInfoLine.Add('LineNumber', LineNo);
+            jsonContactInfoLine.Add('Тип', lblTypeAddress);
+            jsonContactInfoLine.Add('Вид_Key', lblAddressLegalKey);
+            jsonContactInfoLine.Add('Город', CompInfo.City);
+            jsonContactInfoLine.Add('Представление', CompInfo.Address + CompInfo."Address 2");
+            jsonContactInfoLine.Add('АдресЭП', CompInfo.Address + CompInfo."Address 2");
+            jsonContactInfo.Add(jsonContactInfoLine);
+        end;
 
         exit(jsonContactInfo);
     end;
@@ -199,7 +222,7 @@ codeunit 50018 "Integration 1C"
             repeat
                 if Customer.Get(locCustomerAgreement."Customer No.")
                 and (IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '')
-                    or (IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer.SystemId), ''))) then begin
+                    or (IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."BC Id"), ''))) then begin
 
                     if locCustomerAgreement."Init 1C" then begin
                         if not IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(locCustomerAgreement.SystemId), '') then begin
@@ -459,11 +482,11 @@ codeunit 50018 "Integration 1C"
         if Customer.FindSet(true) then
             repeat
                 if Customer."Init 1C" then begin
-                    if IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer.SystemId), '')
+                    if IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."BC Id"), '')
                                     and (IntegrationEntity."Last Modify Date Time" < Customer."Last Modified Date Time")
                                     then begin
                         tempCustomer := Customer;
-                        tempCustomer."CRM ID" := Customer.SystemId;
+                        tempCustomer."CRM ID" := Customer."BC Id";
                         tempCustomer.Insert();
                     end;
                 end else begin
@@ -525,7 +548,7 @@ codeunit 50018 "Integration 1C"
         if Customer."OKPO Code" <> '' then
             Body.Add('КодПоЕДРПОУ', Customer."OKPO Code");
         if Customer."Init 1C" then
-            Body.Add('ID_CRM', GuidToClearText(Customer.SystemId))
+            Body.Add('ID_CRM', GuidToClearText(Customer."BC Id"))
         else
             Body.Add('ID_CRM', GuidToClearText(Customer."CRM ID"));
 
@@ -687,7 +710,7 @@ codeunit 50018 "Integration 1C"
                     foreach LineToken in jsonLines do
                         AddIDToIntegrationEntity(lblSystemCode, Database::Vendor, tempVendor."No.", '',
                                                     WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText(),
-                                                    tempVendor."No.", CompanyName);
+                                                    '', CompanyName);
                 end else begin
                     // create request body
                     CreateRequestBodyToVendor(tempVendor."No.", jsonBody, requestMethodPOST);
@@ -697,7 +720,7 @@ codeunit 50018 "Integration 1C"
                     jsonBody.ReadFrom(Body);
                     AddIDToIntegrationEntity(lblSystemCode, Database::Vendor, tempVendor."No.", '',
                                                 WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText(),
-                                                tempVendor."No.", CompanyName);
+                                                '', CompanyName);
                 end;
 
                 // patch when bank account exist
@@ -711,6 +734,7 @@ codeunit 50018 "Integration 1C"
                         exit(false);
                 end else begin
 
+                    // comment for test
                     if VendorBankAccountExist(tempVendor."No.") then begin
                         VendBankAcc.SetRange("Vendor No.", tempVendor."No.");
                         GetVendorBankAccountIdFrom1C(VendBankAcc);
@@ -1672,18 +1696,6 @@ codeunit 50018 "Integration 1C"
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 
-    local procedure GetVendorIdFromIntegrEntity(VendorNo: Code[20]): Text
-    var
-        IntegrEntity: Record "Integration Entity";
-        lblSystemCode: Label '1C';
-        Vend: Record Vendor;
-    begin
-        Vend.Get(VendorNo);
-        IntegrEntity.Get(lblSystemCode, Database::Vendor, Vend."No.", '');
-        exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
-    end;
-
-
     local procedure GetCustomerIdFromIntegrEntity(CustomerNo: Code[20]; _CompanyName: Text[30]): Text
     var
         IntegrEntity: Record "Integration Entity";
@@ -1695,7 +1707,7 @@ codeunit 50018 "Integration 1C"
 
         Customer.Get(CustomerNo);
         if Customer."Init 1C" then
-            IntegrEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer.SystemId), '')
+            IntegrEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."BC Id"), '')
         else
             IntegrEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
@@ -1995,7 +2007,7 @@ codeunit 50018 "Integration 1C"
         // create Currency list for getting id from 1C
         if locVendorAgreement.FindSet(true) then
             repeat
-                if IntegrationEntity.Get(lblSystemCode, Database::"Vendor Agreement", GuidToClearText(locVendorAgreement.SystemId), '') then begin
+                if not IntegrationEntity.Get(lblSystemCode, Database::"Vendor Agreement", GuidToClearText(locVendorAgreement.SystemId), '') then begin
                     tempVendorAgreement := locVendorAgreement;
                     tempVendorAgreement.Insert();
                 end;
@@ -2094,7 +2106,7 @@ codeunit 50018 "Integration 1C"
         Body.Add('ВедениеВзаиморасчетовНУ', lblPaymentViewVAT);
         Body.Add('ВидДоговора', lblAgreementView);
         if requestMethod = 'PATCH' then
-            Body.Add('Owner_Key', GetVendorIdFromIntegrEntity(VendorNo, _CompanyName));
+            Body.Add('Owner_Key', GetVendorIdFromIntegrEntity(VendorNo));
         Body.Add('ВалютаВзаиморасчетов_Key', GetCurrencyIdFromIntegrEntity(VendorAgreement."Currency Code", _CompanyName));
         Body.Add('Организация_Key', GetCompanyIdFromIntegrEntity(_CompanyName));
         Body.Add('СхемаНалоговогоУчета_Key', lblSchemaPostingVAT);
@@ -2105,17 +2117,12 @@ codeunit 50018 "Integration 1C"
 
     end;
 
-    local procedure GetVendorIdFromIntegrEntity(VendorNo: Code[20]; _CompanyName: Text[30]): Text
+    local procedure GetVendorIdFromIntegrEntity(VendorNo: Code[20]): Text
     var
         IntegrEntity: Record "Integration Entity";
-        Vendor: Record Vendor;
         lblSystemCode: Label '1C';
     begin
-        if CompanyName <> _CompanyName then
-            Vendor.ChangeCompany(_CompanyName);
-
-        Vendor.Get(VendorNo);
-        IntegrEntity.Get(lblSystemCode, Database::Vendor, GuidToClearText(Vendor.SystemId), '');
+        IntegrEntity.Get(lblSystemCode, Database::Vendor, VendorNo, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
     end;
 }

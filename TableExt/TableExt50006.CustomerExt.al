@@ -90,12 +90,13 @@ tableextension 50006 "Customer Ext" extends Customer
     var
         Customer: Record Customer;
     begin
-        if CheckModifyAllowed() then begin
-            Customer.SetCurrentKey("CRM ID");
-            Customer.SetRange("CRM ID", "CRM ID");
-            if not IsNullGuid("CRM ID") and not Customer.IsEmpty then
-                Error(errCustomerWithCRMIDAlreadyExist, "No.", "CRM ID");
-        end;
+        if IsNullGuid("CRM ID") then
+            if CheckModifyAllowed() then begin
+                Customer.SetCurrentKey("CRM ID");
+                Customer.SetRange("CRM ID", "CRM ID");
+                if not IsNullGuid("CRM ID") and not Customer.IsEmpty then
+                    Error(errCustomerWithCRMIDAlreadyExist, "No.", "CRM ID");
+            end;
 
         if IsNullGuid("BC Id") and IsNullGuid("CRM ID") then begin
             "BC Id" := SystemId;

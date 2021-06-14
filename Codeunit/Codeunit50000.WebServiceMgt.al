@@ -855,7 +855,7 @@ codeunit 50000 "Web Service Mgt."
             JSObjectLine.Add('tct_bc_product_number', locItems."No.");
             JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
             JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
-            JSObjectLine.Add('statuscode ', GetStatusCode(locItems."No."));
+            JSObjectLine.Add('statuscode', GetStatusCode(locItems."No."));
         end;
         exit(JSObjectLine);
     end;

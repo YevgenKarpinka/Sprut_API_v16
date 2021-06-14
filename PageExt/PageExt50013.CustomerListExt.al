@@ -5,6 +5,12 @@ pageextension 50013 "Customer List Ext." extends "Customer List"
         // Add changes to page layout here
         addafter(Name)
         {
+            field("Agreements List"; CopyCust.GetAgreements("No."))
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies agreeemnes of the customer.',
+                            RUS = 'Указывает договора клиента.';
+            }
             field("Init 1C"; "Init 1C")
             {
                 ApplicationArea = All;
@@ -50,10 +56,13 @@ pageextension 50013 "Customer List Ext." extends "Customer List"
 
                 trigger OnAction()
                 begin
-                    Codeunit.Run(Codeunit::"Copy Customers");
+                    CopyCust.FillBCIDAllCustomers();
+                    Message('BC Id filled!');
                 end;
             }
         }
     }
 
+    var
+        CopyCust: Codeunit "Copy Customers";
 }

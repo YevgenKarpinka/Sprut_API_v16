@@ -62,6 +62,19 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                     Integration1C.Get1CRoot();
                 end;
             }
+            action(Get1CCompanies)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get 1CCompanies', RUS = 'Get 1CCompanies';
+                ToolTipML = ENU = 'Get 1CCompanies.',
+                            RUS = 'Get 1CCompanies.';
+                Image = GetBinContent;
+
+                trigger OnAction()
+                begin
+                    Integration1C.GetCompanyIdFrom1C();
+                end;
+            }
             action(Get1CItems)
             {
                 ApplicationArea = All;
@@ -188,6 +201,22 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
                         Message('Error!');
                 end;
             }
+            action(GetVendorAgreementIdFrom1C)
+            {
+                ApplicationArea = All;
+                CaptionML = ENU = 'Get VendorAgreement Id From 1C', RUS = 'Get VendorAgreement Id From 1C';
+                ToolTipML = ENU = 'Get VendorAgreement Id From 1C',
+                            RUS = 'Get VendorAgreement Id From 1C';
+                Image = TeamSales;
+
+                trigger OnAction()
+                begin
+                    if Integration1C.GetVendorAgreementIdFrom1C(VendAgreement, CompanyName) then
+                        Message('Ok!')
+                    else
+                        Message('Error!');
+                end;
+            }
             action(GetCustomerBankAccIdFrom1C)
             {
                 ApplicationArea = All;
@@ -279,4 +308,5 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
         CustBankAcc: Record "Customer Bank Account";
         VendBankAcc: Record "Vendor Bank Account";
         CustAgreement: Record "Customer Agreement";
+        VendAgreement: Record "Vendor Agreement";
 }

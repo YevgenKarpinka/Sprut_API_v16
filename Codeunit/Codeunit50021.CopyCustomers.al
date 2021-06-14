@@ -165,7 +165,7 @@ codeunit 50021 "Copy Customers"
                             CustomerTo.Init();
                             CustomerTo := CustomerFrom;
                             CustomerTo."No." := GetNextCustomerNoByCompany(CompIntegrTo."Company Name");
-                            CustomerTo.Insert(true);
+                            CustomerTo.Insert();
                         end;
 
                         CustomerBankAccountFrom.SetRange("Customer No.", CustomerFrom."No.");
@@ -309,6 +309,7 @@ codeunit 50021 "Copy Customers"
 
         locCustomer.SetCurrentKey("CRM ID");
         locCustomer.SetRange("CRM ID", blankGuid);
+        locCustomer.SetRange("BC Id", blankGuid);
         if locCustomer.FindSet() then
             repeat
                 locCustomer."BC Id" := locCustomer.SystemId;
@@ -317,7 +318,22 @@ codeunit 50021 "Copy Customers"
 
     end;
 
+    procedure GetAgreements(CustNo: Code[20]): Text
     var
+        txtCustAgr: Text;
+    begin
+        glCustomerAgr.Reset();
+        glCustomerAgr.SetRange("Customer No.", CustNo);
+        if glCustomerAgr.FindSet() then
+            repeat
+                txtCustAgr += glCustomerAgr."External Agreement No." + '; ';
+            until glCustomerAgr.Next() = 0;
+
+        exit(txtCustAgr);
+    end;
+
+    var
+        glCustomerAgr: Record "Customer Agreement";
         CaptionMgt: Codeunit "Caption Mgt.";
         CompIntegrFrom: Record "Company Integration";
         ConfProgressBar: Codeunit "Config Progress Bar";
