@@ -9,6 +9,13 @@ tableextension 50021 "Vendor Ext" extends Vendor
             CaptionML = ENU = 'Certificate',
                         RUS = 'Свидетельство';
         }
+        field(50001; "Deduplicate No."; Code[20])
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'Deduplicate No.',
+                        RUS = 'Дедубликат номер';
+            // Editable = false;
+        }
 
     }
 

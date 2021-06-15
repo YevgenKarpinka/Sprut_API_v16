@@ -3,6 +3,15 @@ pageextension 50012 "Vendor List Ext." extends "Vendor List"
     layout
     {
         // Add changes to page layout here
+        addafter("Payments (LCY)")
+        {
+            field("Deduplicate No."; "Deduplicate No.")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies the Deduplicate No.',
+                            RUS = 'Указывает на номер дедубликации.';
+            }
+        }
     }
 
     actions

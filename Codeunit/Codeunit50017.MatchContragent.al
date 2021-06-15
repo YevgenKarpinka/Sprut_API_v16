@@ -88,4 +88,12 @@ codeunit 50017 "Match Contragent"
             exit(LowerCase(DelChr(CustAgreement."CRM ID", '<>', '{}')));
         exit('');
     end;
+
+    procedure GetBCIdFromCustomer(CustNo: Code[20]): Guid
+    var
+        Customer: Record Customer;
+    begin
+        if Customer.Get(CustNo) then;
+        exit(Customer."BC Id");
+    end;
 }

@@ -26,6 +26,10 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                 ApplicationArea = All;
                 Visible = false;
             }
+            field("Customer BC Id"; MatchContragent.GetBCIdFromCustomer("Sell-to Customer No."))
+            {
+                Visible = false;
+            }
             field("Customer CRM ID"; MatchContragent.GetCustomerCRMID("Sell-to Customer No."))
             {
                 Visible = false;

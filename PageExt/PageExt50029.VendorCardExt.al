@@ -12,6 +12,15 @@ pageextension 50029 "Vendor Card Ext." extends "Vendor Card"
                             RUS = 'Указывает на номер Свидетельства.';
             }
         }
+        addafter(Blocked)
+        {
+            field("Deduplicate No."; "Deduplicate No.")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies the Deduplicate No.',
+                            RUS = 'Указывает на номер дедубликации.';
+            }
+        }
     }
 
 }

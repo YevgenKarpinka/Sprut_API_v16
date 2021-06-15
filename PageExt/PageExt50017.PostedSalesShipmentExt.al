@@ -9,6 +9,10 @@ pageextension 50017 "Posted Sales Shipment Ext" extends "Posted Sales Shipment"
             {
                 Visible = false;
             }
+            field("Customer BC Id"; MatchContragent.GetBCIdFromCustomer("Sell-to Customer No."))
+            {
+                Visible = false;
+            }
             field("Customer CRM ID"; MatchContragent.GetCustomerCRMID("Sell-to Customer No."))
             {
                 Visible = false;

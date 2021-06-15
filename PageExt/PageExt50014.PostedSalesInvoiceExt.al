@@ -9,6 +9,10 @@ pageextension 50014 "Posted Sales Invoice Ext" extends "Posted Sales Invoice"
             {
                 Visible = false;
             }
+            field("Customer BC Id"; MatchContragent.GetBCIdFromCustomer("Sell-to Customer No."))
+            {
+                Visible = false;
+            }
             field("Customer CRM ID"; MatchContragent.GetCustomerCRMID("Sell-to Customer No."))
             {
                 Visible = false;
