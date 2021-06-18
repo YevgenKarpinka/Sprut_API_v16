@@ -92,9 +92,11 @@ codeunit 50000 "Web Service Mgt."
 
     local procedure SetBodyFromSalesOrderNo(SalesOrderNo: Code[20]; var Body: Text)
     var
+        locSalesHeader: Record "Sales Header";
         locSalesLine: Record "Sales Line";
         JSObjectBody: JsonArray;
         JSObjectLine: JsonObject;
+        JSObjectHeader: JsonObject;
     begin
         locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
         locSalesLine.SetRange("Document No.", SalesOrderNo);
@@ -108,9 +110,13 @@ codeunit 50000 "Web Service Mgt."
             until locSalesLine.Next() = 0;
 
             Clear(JSObjectLine);
+            // locSalesHeader.Get(locSalesHeader."Document Type"::Order, SalesOrderNo);
+            // JSObjectLine.Add('Document_No', locSalesHeader."No.");
+            // JSObjectLine.Add('CRM_Id', Guid2Text(locSalesHeader."CRM Header ID"));
             JSObjectLine.Add('Lines', JSObjectBody);
             JSObjectLine.WriteTo(Body);
         end;
+
 
     end;
 
@@ -422,15 +428,16 @@ codeunit 50000 "Web Service Mgt."
                 if SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then begin
                     if SalesLine."No." <> ItemNo then exit(true);
                     // if (Description <> '') and (SalesLine.Description <> Description) then exit(true);
-                    if (Description <> '') and (SalesLine."Description Extended" <> Description) then exit(true);
-                    if SalesLine.Quantity > Qty then exit(true);
-                    if SalesLine."Unit Price" > UnitPrice then exit(true);
+                    // if (Description <> '') and (SalesLine."Description Extended" <> Description) then exit(true);
+                    // if SalesLine.Quantity > Qty then exit(true);
+                    // if SalesLine."Unit Price" > UnitPrice then exit(true);
                     // if SalesLine."Line Amount" > SpecLineAmount then exit(true);
                     if SalesLine."Prepmt. Amt. Inv." > SpecLineAmount then exit(true);
-                    if (LowerCase(DelChr(SalesLine."CRM ID", '<>', '{}')) <> crmLineId) and not IsNullGuid(crmLineId) then begin
-                        SalesLine.Validate("CRM ID", crmLineId);
-                        SalesLine.Modify();
-                    end;
+                    // if (LowerCase(DelChr(SalesLine."CRM ID", '<>', '{}')) <> crmLineId) 
+                    // and not IsNullGuid(crmLineId) then begin
+                    //     SalesLine.Validate("CRM ID", crmLineId);
+                    //     SalesLine.Modify();
+                    // end;
                     SalesLine.Mark(false);
                 end;
             end;
@@ -1002,6 +1009,11 @@ codeunit 50000 "Web Service Mgt."
         if Item.Blocked or Item."Sales Blocked" then
             exit(2);
         exit(1);
+    end;
+
+    local procedure Guid2Text(_Guid: Guid): Text
+    begin
+        exit(LowerCase(DelChr(Format(_Guid), '<>', '{}')));
     end;
 
     procedure ChangeSalesOrderLocationCode(var SalesHeader: Record "Sales Header"; LocationCode: Code[20])

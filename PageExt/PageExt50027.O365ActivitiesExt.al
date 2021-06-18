@@ -18,16 +18,22 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
                 field("Deduplicated Customers"; "Deduplicated Customers")
                 {
                     ApplicationArea = All;
-
+                    Visible = EnableTools;
                 }
                 field("Error Job Queue Entries"; "Error Job Queue Entries")
                 {
                     ApplicationArea = All;
-
+                    Visible = EnableTools;
                 }
                 field("Modify Order Entries"; "Modify Order Entries")
                 {
                     ApplicationArea = All;
+                    Visible = EnableTools;
+                }
+                field("Open Sales Order"; "Open Sales Order")
+                {
+                    ApplicationArea = All;
+                    Visible = EnableTools;
                 }
             }
         }
@@ -70,6 +76,7 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
         if not EnableTools then exit;
         CaptionMgt.ErrorJobQueueEntries();
         CaptionMgt.ErrorModifyOrderEntries();
+        CaptionMgt.OpenSalesOrder();
     end;
 
     var

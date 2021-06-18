@@ -10,6 +10,18 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
         field(50001; "CRM ID"; Guid)
         {
             DataClassification = CustomerContent;
+
+            trigger OnValidate()
+            var
+                CustomerAgr: Record "Customer Agreement";
+            begin
+                if IsNullGuid("CRM ID") then exit;
+
+                CustomerAgr.SetCurrentKey("CRM ID");
+                CustomerAgr.SetRange("CRM ID", "CRM ID");
+                if not CustomerAgr.IsEmpty then
+                    Error(errCustomerAgreementWithCRMIDAlreadyExist, "CRM ID");
+            end;
         }
         field(50002; "Last DateTime Modified"; DateTime)
         {
@@ -52,14 +64,7 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
     }
 
     trigger OnInsert()
-    var
-        CustomerAgr: Record "Customer Agreement";
     begin
-        CustomerAgr.SetCurrentKey("CRM ID");
-        CustomerAgr.SetRange("CRM ID", "CRM ID");
-        if not IsNullGuid("CRM ID") and not CustomerAgr.IsEmpty then
-            Error(errCustomerAgreementWithCRMIDAlreadyExist, "CRM ID");
-
         UpdateCreateDateTime();
     end;
 

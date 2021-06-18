@@ -1,7 +1,22 @@
 codeunit 50003 "Caption Mgt."
 {
 
-    procedure SaveStreamToFile(_streamText: Text; ToFileName: Variant)
+    trigger OnRun()
+    var
+        myInt: Integer;
+    begin
+
+    end;
+
+    var
+        blankGuid: Guid;
+        descriptionSalesHeader: TextConst ENU = '%1, %2',
+                                            RUS = '%1, %2';
+        errorSalesHeader: TextConst ENU = 'Posting Date %1, Due Date %2, Amount Incl. VAT %3, CRM No. %4, CRM ID %5',
+                                            RUS = 'Дата учета %1, Срок выполнения %2, Сумма с НДС %3, Номер CRM %4, CRM ID %5';
+
+    procedure SaveStreamToFile(_streamText: Text;
+        ToFileName: Variant)
     var
         tmpTenantMedia: Record "Tenant Media";
         _inStream: inStream;
@@ -123,5 +138,60 @@ codeunit 50003 "Caption Mgt."
     procedure Guid2Text(_Guid: Text): Text
     begin
         exit(LowerCase(DelChr(_Guid, '<>', '{}')));
+    end;
+
+    procedure OpenSalesOrder()
+    var
+        CompIntegr: Record "Company Integration";
+        SalesHeader: Record "Sales Header";
+    begin
+        ClearActivityEntries(Database::"Sales Header");
+
+        if CompIntegr.FindSet() then
+            repeat
+                if CompIntegr."Copy Items From" or CompIntegr."Copy Items To" then begin
+                    // if CompanyName <> CompIntegr."Company Name" then
+                    SalesHeader.ChangeCompany(CompIntegr."Company Name");
+                    SalesHeader.SetCurrentKey(Status, "CRM Header ID");
+                    SalesHeader.SetRange(Status, SalesHeader.Status::Open);
+                    SalesHeader.SetFilter("CRM Header ID", '<>%1', blankGuid);
+                    if SalesHeader.FindSet() then
+                        repeat
+                            UpdateActivityEntries(CompIntegr."Company Name", Database::"Sales Header",
+                                SalesHeader."No.", GetDescriptionFromSalesHeader(CompIntegr."Company Name", SalesHeader."No."),
+                                GetErrorTextFromSalesHeader(CompIntegr."Company Name", SalesHeader."No."),
+                                SalesHeader."Last Modified Date Time");
+                        until SalesHeader.Next() = 0;
+                end;
+            until CompIntegr.Next() = 0;
+    end;
+
+    local procedure GetDescriptionFromSalesHeader(_CompanyName: Text[30]; SalesHeaderNo: Code[20]): Text[2048]
+    var
+        SalesHeader: Record "Sales Header";
+    begin
+        // if CompanyName <> _CompanyName then
+        SalesHeader.ChangeCompany(_CompanyName);
+
+        if SalesHeader.Get(SalesHeader."Document Type"::Order, SalesHeaderNo) then
+            exit(StrSubstNo(descriptionSalesHeader, SalesHeader."Sell-to Customer No.", SalesHeader."Sell-to Customer Name"));
+
+        exit('');
+    end;
+
+    local procedure GetErrorTextFromSalesHeader(_CompanyName: Text[30]; SalesHeaderNo: Code[20]): Text[2048]
+    var
+        SalesHeader: Record "Sales Header";
+    begin
+        // if CompanyName <> _CompanyName then
+        SalesHeader.ChangeCompany(_CompanyName);
+
+        if SalesHeader.Get(SalesHeader."Document Type"::Order, SalesHeaderNo) then begin
+            SalesHeader.CalcFields("Amount Including VAT");
+            exit(StrSubstNo(errorSalesHeader, SalesHeader."Posting Date", SalesHeader."Due Date",
+                    SalesHeader."Amount Including VAT", SalesHeader."External Document No.", SalesHeader."CRM Header ID"));
+        end;
+
+        exit('');
     end;
 }

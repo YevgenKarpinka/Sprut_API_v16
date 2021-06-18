@@ -35,6 +35,14 @@ page 50012 "Customers Deduplicate List"
         }
     }
 
+    actions
+    {
+        area(Processing)
+        {
+
+        }
+    }
+
     local procedure GetDeduplicatNo(): Code[20]
     var
         Customer: Record Customer;

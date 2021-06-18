@@ -32,8 +32,8 @@ table 50010 "Activity Entries"
         }
         field(5; "Object Name"; Text[30])
         {
-            CaptionML = ENU = 'Description',
-                        RUS = 'Описание';
+            CaptionML = ENU = 'Object Name',
+                        RUS = 'Имя объекта';
             Editable = false;
             FieldClass = FlowField;
             CalcFormula = Lookup(AllObjWithCaption."Object Name" where("Object Type" = const(Table), "Object ID" = field("Table ID")));

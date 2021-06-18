@@ -27,6 +27,22 @@ tableextension 50002 "Sales Header Ext" extends "Sales Header"
             DataClassification = CustomerContent;
             CaptionML = ENU = 'CRM Header ID',
                         RUS = 'CRM Заголовок ID';
+
+            trigger OnValidate()
+            var
+                locSH: Record "Sales Header";
+                locSIH: Record "Sales Invoice Header";
+            begin
+                locSH.SetCurrentKey("CRM Header ID");
+                locSH.SetRange("CRM Header ID", "CRM Header ID");
+                if not locSH.IsEmpty then
+                    Error(errCRMIdInSalesLineAlreadyExist, "CRM Header ID");
+
+                locSIH.SetCurrentKey("CRM Header ID");
+                locSIH.SetRange("CRM Header ID", "CRM Header ID");
+                if not locSIH.IsEmpty then
+                    Error(errCRMIdInPostedSalesLineAlreadyExist, "CRM Header ID");
+            end;
         }
         field(50004; "CRM Source Type"; Text[20])
         {
@@ -78,6 +94,10 @@ tableextension 50002 "Sales Header Ext" extends "Sales Header"
     begin
         UpdateLastModifyDateTime();
     end;
+
+    var
+        errCRMIdInSalesLineAlreadyExist: Label 'CRM ID %1 in sales header already exist';
+        errCRMIdInPostedSalesLineAlreadyExist: Label 'CRM ID %1 in posted sales header already exist';
 
     local procedure UpdateCreateDateTime()
     begin

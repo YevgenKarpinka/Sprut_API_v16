@@ -33,32 +33,52 @@ pageextension 50013 "Customer List Ext." extends "Customer List"
     actions
     {
         // Add changes to page actions here
-        addafter("Sales Journal")
+        addbefore("Request Approval")
         {
-            action(CloneCustomers)
+            group(Sprut)
             {
-                ApplicationArea = All;
-                CaptionML = ENU = 'Clone Customers',
+                CaptionML = ENU = 'Sprut',
+                            RUS = 'Спрут';
+
+                action(CombineCustomers)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'CombineCustomers',
+                                RUS = 'Объединить клиентов';
+                    Image = ApplyEntries;
+
+                    trigger OnAction()
+                    begin
+                        if not Codeunit.Run(Codeunit::"Combine Customer/Vendor") then
+                            Error(GetLastErrorText());
+                        Message('Ok!');
+                    end;
+                }
+                action(CloneCustomers)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Clone Customers',
                                 RUS = 'Клонировать клиентов';
-                Image = ApplyEntries;
+                    Image = ApplyEntries;
 
-                trigger OnAction()
-                begin
-                    Codeunit.Run(Codeunit::"Copy Customers");
-                end;
-            }
-            action(FillBCIDCustomers)
-            {
-                ApplicationArea = All;
-                CaptionML = ENU = 'Fill BC Id Customers',
+                    trigger OnAction()
+                    begin
+                        Codeunit.Run(Codeunit::"Copy Customers");
+                    end;
+                }
+                action(FillBCIDCustomers)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Fill BC Id Customers',
                                 RUS = 'Заполнить ИД клиентов';
-                Image = ApplyEntries;
+                    Image = ApplyEntries;
 
-                trigger OnAction()
-                begin
-                    CopyCust.FillBCIDAllCustomers();
-                    Message('BC Id filled!');
-                end;
+                    trigger OnAction()
+                    begin
+                        CopyCust.FillBCIDAllCustomers();
+                        Message('BC Id filled!');
+                    end;
+                }
             }
         }
     }

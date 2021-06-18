@@ -21,16 +21,13 @@ report 50001 "Combine Customer/Vendor Ext"
                         TmpVendor.Init();
                         TmpVendor.TransferFields(Vend, false);
                         Vend.Delete();
-                        Window.Update(1, Text002);
                         if VendAgrmt.Get(OldVendor, '') then
                             VendAgrmt.Delete();
                         if Rename(NewVendor) then begin
                             TransferFields(TmpVendor, false);
                             Modify;
-                            Window.Update(1, Text003);
                         end else begin
                             TmpVendor.Insert();
-                            Window.Update(1, Text004)
                         end;
                         Sleep(200);
                     end;
@@ -41,9 +38,6 @@ report 50001 "Combine Customer/Vendor Ext"
                 if (OldVendor = '') or (NewVendor = '') then
                     exit
                 else begin
-                    if not Confirm(Text001) then
-                        exit;
-                    Window.Open('#1################################');
                     Vendor.SetRange("No.", OldVendor);
                 end;
             end;
@@ -62,16 +56,13 @@ report 50001 "Combine Customer/Vendor Ext"
                         TmpCustomer.Init();
                         TmpCustomer.TransferFields(Cust, false);
                         Cust.Delete();
-                        Window.Update(1, Text002);
                         if CustAgrmt.Get(OldCustomer, '') then
                             CustAgrmt.Delete();
                         if Rename(NewCustomer) then begin
                             TransferFields(TmpCustomer, false);
                             Modify;
-                            Window.Update(1, Text003);
                         end else begin
                             TmpCustomer.Insert();
-                            Window.Update(1, Text004)
                         end;
                         Sleep(200);
                     end;
@@ -82,9 +73,6 @@ report 50001 "Combine Customer/Vendor Ext"
                 if (OldCustomer = '') or (NewCustomer = '') then
                     exit
                 else begin
-                    if not Confirm(Text001) then
-                        exit;
-                    Window.Open('#1################################');
                     Customer.SetRange("No.", OldCustomer);
                 end
             end;
@@ -212,14 +200,9 @@ report 50001 "Combine Customer/Vendor Ext"
         NewCustomer: Code[20];
         OldName: Text[100];
         NewName: Text[100];
-        Window: Dialog;
         OldVendor: Code[20];
         NewVendor: Code[20];
         Type: Option Vendor,Customer;
-        Text001: Label 'Are you sure?';
-        Text002: Label 'Change links process are going';
-        Text003: Label 'Change links process completed';
-        Text004: Label 'Change links process failed';
         Text005: Label 'Type must not be %1';
 
     procedure ChangeCustomer(var Rec: Record Customer)
