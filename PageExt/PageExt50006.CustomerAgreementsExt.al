@@ -23,6 +23,12 @@ pageextension 50006 "Customer Agreements Ext" extends "Customer Agreements"
                 ToolTipML = ENU = 'Specifies the CRM ID of the customer agreement.',
                             RUS = 'Указывает CRM ID договора клиента.';
             }
+            field(Print; Print)
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies the print of the customer agreement.',
+                            RUS = 'Указывает на печать договора клиента.';
+            }
         }
     }
 }

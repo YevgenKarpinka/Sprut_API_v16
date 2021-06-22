@@ -19,6 +19,12 @@ pageextension 50028 "Customer Agreements Card Ext" extends "Customer Agreement C
                 ToolTipML = ENU = 'Specifies the status of the customer agreement.',
                             RUS = 'Указывает статус договора клиента.';
             }
+            field(Print; Print)
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies the print of the customer agreement.',
+                            RUS = 'Указывает печатать ли договор клиента.';
+            }
             field("CRM ID"; "CRM ID")
             {
                 ApplicationArea = All;

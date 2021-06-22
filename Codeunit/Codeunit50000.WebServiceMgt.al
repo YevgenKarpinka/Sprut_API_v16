@@ -15,6 +15,7 @@ codeunit 50000 "Web Service Mgt."
         ModificationOrder: Codeunit "Modification Order";
         PrepmtMgt: Codeunit "Prepayment Management";
         errDescriptionCannotBeEmpty: Label '''description'' cannot be empty';
+        MatchContragent: Codeunit "Match Contragent";
 
 
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]; var Body: Text): Boolean
@@ -78,9 +79,6 @@ codeunit 50000 "Web Service Mgt."
     var
         JSObjectLine: JsonObject;
     begin
-        // for testing
-        // SalesOrderNo := 'ПРЗК-20-00053';
-
         SetBodyFromSalesOrderNo(SalesOrderNo, Body);
         SetBodyFromPostedInvoices(SalesOrderNo, Body);
         if StrLen(Body) = 0 then exit(true);
@@ -105,6 +103,9 @@ codeunit 50000 "Web Service Mgt."
                 Clear(JSObjectLine);
                 JSObjectLine.Add('Line_No', Format(locSalesLine."Line No."));
                 JSObjectLine.Add('CRM_ID', LowerCase(DelChr(locSalesLine."CRM ID", '<>', '{}')));
+                // JSObjectLine.Add('VAT_Base_Amount', locSalesLine."VAT Base Amount");
+                // JSObjectLine.Add('Amount_Including_VAT', locSalesLine."Amount Including VAT");
+                // JSObjectLine.Add('VATPercent', MatchContragent.GetVATPercent(locSalesLine."VAT Bus. Posting Group", locSalesLine."VAT Prod. Posting Group"));
 
                 JSObjectBody.Add(JSObjectLine);
             until locSalesLine.Next() = 0;
@@ -429,8 +430,8 @@ codeunit 50000 "Web Service Mgt."
                     if SalesLine."No." <> ItemNo then exit(true);
                     // if (Description <> '') and (SalesLine.Description <> Description) then exit(true);
                     // if (Description <> '') and (SalesLine."Description Extended" <> Description) then exit(true);
-                    // if SalesLine.Quantity > Qty then exit(true);
-                    // if SalesLine."Unit Price" > UnitPrice then exit(true);
+                    if SalesLine.Quantity > Qty then exit(true);
+                    if SalesLine."Unit Price" > UnitPrice then exit(true);
                     // if SalesLine."Line Amount" > SpecLineAmount then exit(true);
                     if SalesLine."Prepmt. Amt. Inv." > SpecLineAmount then exit(true);
                     // if (LowerCase(DelChr(SalesLine."CRM ID", '<>', '{}')) <> crmLineId) 

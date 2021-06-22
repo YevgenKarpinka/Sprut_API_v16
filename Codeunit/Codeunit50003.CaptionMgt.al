@@ -52,8 +52,8 @@ codeunit 50003 "Caption Mgt."
         if CompIntegr.FindSet() then
             repeat
                 if CompIntegr."Copy Items From" or CompIntegr."Copy Items To" then begin
-                    if CompanyName <> CompIntegr."Company Name" then
-                        JobQueueEntry.ChangeCompany(CompIntegr."Company Name");
+                    // if CompanyName <> CompIntegr."Company Name" then
+                    JobQueueEntry.ChangeCompany(CompIntegr."Company Name");
                     JobQueueEntry.SetCurrentKey(Status);
                     JobQueueEntry.SetRange(Status, JobQueueEntry.Status::Error);
                     // TotalCountErrors += JobQueueEntry.Count;
@@ -95,8 +95,8 @@ codeunit 50003 "Caption Mgt."
         if CompIntegr.FindSet() then
             repeat
                 if CompIntegr."Copy Items From" or CompIntegr."Copy Items To" then begin
-                    if CompanyName <> CompIntegr."Company Name" then
-                        TaskModifyOrder.ChangeCompany(CompIntegr."Company Name");
+                    // if CompanyName <> CompIntegr."Company Name" then
+                    TaskModifyOrder.ChangeCompany(CompIntegr."Company Name");
                     TaskModifyOrder.SetCurrentKey("Work Status");
                     TaskModifyOrder.SetRange("Work Status", TaskModifyOrder."Work Status"::Error);
 

@@ -61,6 +61,14 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
                     CheckAgreementEntries();
             end;
         }
+        field(50007; Print; Boolean)
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'Print',
+                        RUS = 'Печатать';
+            // Editable = false;
+
+        }
     }
 
     trigger OnInsert()

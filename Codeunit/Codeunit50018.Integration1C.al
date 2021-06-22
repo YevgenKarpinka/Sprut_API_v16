@@ -358,6 +358,7 @@ codeunit 50018 "Integration 1C"
             Body.Add('CRM_ID', GuidToClearText(CustomerAgreement.SystemId))
         else
             Body.Add('CRM_ID', GuidToClearText(CustomerAgreement."CRM ID"));
+        // Body.Add('ХХХХ', CustomerAgreement.Print);
 
     end;
 
