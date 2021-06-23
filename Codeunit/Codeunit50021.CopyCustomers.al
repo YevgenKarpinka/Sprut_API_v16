@@ -318,6 +318,26 @@ codeunit 50021 "Copy Customers"
 
     end;
 
+    procedure FillBCIDAllCustomerAgreements()
+    var
+        locCustomerAgreement: Record "Customer Agreement";
+    begin
+        // CaptionMgt.CheckModifyAllowed();
+
+        locCustomerAgreement.SetCurrentKey("Init 1C", "BC Id");
+        locCustomerAgreement.SetRange("Init 1C", true);
+        locCustomerAgreement.SetRange("BC Id", blankGuid);
+        if locCustomerAgreement.FindSet() then
+            repeat
+                // to do refill crm id in 1C from bc id
+
+                // 
+                locCustomerAgreement."BC Id" := locCustomerAgreement.SystemId;
+                locCustomerAgreement.Modify();
+            until locCustomerAgreement.Next() = 0;
+
+    end;
+
     procedure GetAgreements(CustNo: Code[20]): Text
     var
         txtCustAgr: Text;

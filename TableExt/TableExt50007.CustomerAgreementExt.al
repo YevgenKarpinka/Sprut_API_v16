@@ -57,8 +57,10 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
 
             trigger OnValidate()
             begin
-                if xRec."Init 1C" <> Rec."Init 1C" then
-                    CheckAgreementEntries();
+                // if xRec."Init 1C" = Rec."Init 1C" then exit;
+                CheckAgreementEntries();
+                UpdateIn1CCRMId2BCId();
+                FillBCID();
             end;
         }
         field(50007; Print; Boolean)
@@ -68,6 +70,13 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
                         RUS = 'Печатать';
             // Editable = false;
 
+        }
+        field(50010; "BC Id"; Guid)
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'BC Id',
+                        RUS = 'Идентификатор БЦ';
+            // Editable = false;
         }
     }
 
@@ -99,6 +108,7 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
     end;
 
     var
+        blankGuid: Guid;
         errAgreementUsedInUnPostedSalesDocuments: TextConst ENU = 'Agreement Used In UnPosted Sales Documents',
                                                             RUS = 'Договор используется в неучтенных документах продажи';
 
@@ -128,6 +138,17 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
         if not CustLE.IsEmpty then
             // Error(errAgreementUsedInPostedSalesDocuments);
             Message(msgAgreementUsedInPostedSalesDocuments);
+    end;
+
+    local procedure FillBCID()
+    begin
+        if "Init 1C" and ("BC Id" = blankGuid) then
+            "BC Id" := SystemId;
+    end;
+
+    local procedure UpdateIn1CCRMId2BCId()
+    begin
+        // Error('Procedure UpdateIn1CCRMId2BCId not implemented.');
     end;
 }
 

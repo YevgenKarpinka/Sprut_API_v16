@@ -11,6 +11,12 @@ pageextension 50006 "Customer Agreements Ext" extends "Customer Agreements"
                 ToolTipML = ENU = 'Specifies transfer to 1C of the customer agreement.',
                             RUS = 'Указывает передавать ли договор клиента в 1С.';
             }
+            field("BC Id"; "BC Id")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies the BC ID of the customer agreement.',
+                            RUS = 'Указывает БЦ ID договора клиента.';
+            }
             field(Status; Status)
             {
                 ApplicationArea = All;

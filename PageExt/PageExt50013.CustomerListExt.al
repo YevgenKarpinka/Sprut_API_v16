@@ -79,6 +79,19 @@ pageextension 50013 "Customer List Ext." extends "Customer List"
                         Message('BC Id filled!');
                     end;
                 }
+                action(FillBCIDCustomerAgrs)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'Fill BC Id Customer Agreements',
+                                RUS = 'Заполнить ИД договоров клиентов';
+                    Image = ApplyEntries;
+
+                    trigger OnAction()
+                    begin
+                        CopyCust.FillBCIDAllCustomerAgreements();
+                        Message('BC Id filled!');
+                    end;
+                }
             }
         }
     }
