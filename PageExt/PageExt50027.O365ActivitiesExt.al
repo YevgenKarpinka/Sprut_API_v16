@@ -79,7 +79,7 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
     trigger OnAfterGetRecord()
     begin
         if not EnableTools then exit;
-        CaptionMgt.ErrorJobQueueEntries();
+        CaptionMgt.DelayedJobQueueEntries();
         // CaptionMgt.ErrorModifyOrderEntries();
         CaptionMgt.TasksModifyOrderEntries();
         CaptionMgt.OpenSalesOrder();

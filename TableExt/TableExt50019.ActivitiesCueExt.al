@@ -25,7 +25,7 @@ tableextension 50019 "Activities Cue Ext." extends "Activities Cue"
             CaptionML = ENU = 'Error Job Queue Entries',
                         RUS = 'Ошибки в операциях очереди работ';
             FieldClass = FlowField;
-            CalcFormula = Count("Activity Entries" where("Table ID" = filter(472)));
+            CalcFormula = Count("Activity Entries" where("Table ID" = filter(472), "Error Text" = filter(<> '')));
         }
         field(50003; "Modify Order Entries"; Integer)
         {
@@ -33,7 +33,7 @@ tableextension 50019 "Activities Cue Ext." extends "Activities Cue"
             CaptionML = ENU = 'Error Modify Order Entries',
                         RUS = 'Ошибки в операциях изменения заказа';
             FieldClass = FlowField;
-            CalcFormula = Count("Activity Entries" where("Table ID" = filter(50002)));
+            CalcFormula = Count("Activity Entries" where("Table ID" = filter(50002), "Error Text" = filter(= '')));
         }
         field(50004; "Open Sales Order"; Integer)
         {
@@ -47,9 +47,17 @@ tableextension 50019 "Activities Cue Ext." extends "Activities Cue"
         {
             // DataClassification = CustomerContent;
             CaptionML = ENU = 'Modify Order Entries In Work',
-                        RUS = 'Операциях изменения заказа в процессе';
+                        RUS = 'Операции изменения заказа в процессе';
             FieldClass = FlowField;
             CalcFormula = Count("Activity Entries" where("Table ID" = filter(50002), "Error Text" = filter(= '')));
+        }
+        field(50006; "UnSchedule Job Queue Entries"; Integer)
+        {
+            // DataClassification = CustomerContent;
+            CaptionML = ENU = 'UnSchedule Job Queue Entries',
+                        RUS = 'Завсшие операции очереди работ';
+            FieldClass = FlowField;
+            CalcFormula = Count("Activity Entries" where("Table ID" = filter(472), "Error Text" = filter(= '')));
         }
     }
 
