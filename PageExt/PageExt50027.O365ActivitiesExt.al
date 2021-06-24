@@ -30,6 +30,11 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
                     ApplicationArea = All;
                     Visible = EnableTools;
                 }
+                field("Modify Order Entries In Work"; "Modify Order Entries In Work")
+                {
+                    ApplicationArea = All;
+                    Visible = EnableTools;
+                }
                 field("Open Sales Order"; "Open Sales Order")
                 {
                     ApplicationArea = All;
@@ -75,7 +80,8 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
     begin
         if not EnableTools then exit;
         CaptionMgt.ErrorJobQueueEntries();
-        CaptionMgt.ErrorModifyOrderEntries();
+        // CaptionMgt.ErrorModifyOrderEntries();
+        CaptionMgt.TasksModifyOrderEntries();
         CaptionMgt.OpenSalesOrder();
     end;
 

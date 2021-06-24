@@ -109,6 +109,29 @@ codeunit 50003 "Caption Mgt."
             until CompIntegr.Next() = 0;
     end;
 
+    procedure TasksModifyOrderEntries()
+    var
+        CompIntegr: Record "Company Integration";
+        TaskModifyOrder: Record "Task Modify Order";
+    begin
+        ClearActivityEntries(Database::"Task Modify Order");
+
+        if CompIntegr.FindSet() then
+            repeat
+                if CompIntegr."Copy Items From" or CompIntegr."Copy Items To" then begin
+                    TaskModifyOrder.ChangeCompany(CompIntegr."Company Name");
+                    TaskModifyOrder.SetCurrentKey("Work Status");
+                    TaskModifyOrder.SetFilter("Work Status", '<>%1', TaskModifyOrder."Work Status"::Done);
+
+                    if TaskModifyOrder.FindSet() then
+                        repeat
+                            UpdateActivityEntries(CompIntegr."Company Name", Database::"Task Modify Order",
+                                TaskModifyOrder."Order No.", '', TaskModifyOrder."Error Text", TaskModifyOrder."Modify Date Time");
+                        until TaskModifyOrder.Next() = 0;
+                end;
+            until CompIntegr.Next() = 0;
+    end;
+
     local procedure ClearActivityEntries(TableID: Integer)
     var
         ActivityEntries: Record "Activity Entries";

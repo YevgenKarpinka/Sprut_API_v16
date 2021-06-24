@@ -43,6 +43,14 @@ tableextension 50019 "Activities Cue Ext." extends "Activities Cue"
             FieldClass = FlowField;
             CalcFormula = Count("Activity Entries" where("Table ID" = filter(36)));
         }
+        field(50005; "Modify Order Entries In Work"; Integer)
+        {
+            // DataClassification = CustomerContent;
+            CaptionML = ENU = 'Modify Order Entries In Work',
+                        RUS = 'Операциях изменения заказа в процессе';
+            FieldClass = FlowField;
+            CalcFormula = Count("Activity Entries" where("Table ID" = filter(50002), "Error Text" = filter(= '')));
+        }
     }
 
 }
