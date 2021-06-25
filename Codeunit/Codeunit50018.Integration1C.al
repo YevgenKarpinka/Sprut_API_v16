@@ -1578,6 +1578,7 @@ codeunit 50018 "Integration 1C"
         Clear(Body);
         Body.Add('Code', ItemNo);
         Body.Add('Description', Items.Description);
+        Body.Add('НаименованиеПолное', Items."Description Print");
         Body.Add('Услуга', Items.Type = Items.Type::"Non-Inventory");
         Body.Add('СтавкаНДС', GetVAT(Items."VAT Bus. Posting Gr. (Price)", Items."VAT Prod. Posting Group"));
         if Items."Base Unit of Measure" <> '' then

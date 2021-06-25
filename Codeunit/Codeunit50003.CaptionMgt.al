@@ -40,33 +40,36 @@ codeunit 50003 "Caption Mgt."
         exit(true);
     end;
 
-    procedure DelayedJobQueueEntries(): Integer
+    procedure DelayedJobQueueEntries()
     var
         CompIntegr: Record "Company Integration";
         JobQueueEntry: Record "Job Queue Entry";
-        TotalCountErrors: Integer;
     begin
-        Clear(TotalCountErrors);
         ClearActivityEntries(Database::"Job Queue Entry");
 
         if CompIntegr.FindSet() then
             repeat
                 if CompIntegr."Copy Items From" or CompIntegr."Copy Items To" then begin
                     JobQueueEntry.ChangeCompany(CompIntegr."Company Name");
-
+                    JobQueueEntry.SetRange(Scheduled, false);
                     if JobQueueEntry.FindSet() then
                         repeat
-                            if JobQueueEntry.Status in [JobQueueEntry.Status::Error, JobQueueEntry.Status::Ready] then
+                            if JobQueueEntry.Status in [JobQueueEntry.Status::Error, JobQueueEntry.Status::Ready] then begin
+                                if JobQueueEntry.Status = JobQueueEntry.Status::Ready then
+                                    JobQueueEntry."Error Message" := '';
                                 UpdateActivityEntries(CompIntegr."Company Name", Database::"Job Queue Entry",
-                                    Guid2Text(JobQueueEntry.ID), JobQueueEntry.Description, GetLastErrorTextFromJobQueueEntry(CompIntegr."Company Name", JobQueueEntry.ID),
+                                    Format(JobQueueEntry."Object ID to Run"),
+                                    Format(JobQueueEntry.Status) + ' ' + JobQueueEntry.Description,
+                                    JobQueueEntry."Error Message",
+                                    // GetLastErrorTextFromJobQueueEntry(JobQueueEntry.ID, CompIntegr."Company Name"),
                                     JobQueueEntry."Earliest Start Date/Time");
+                            end;
                         until JobQueueEntry.Next() = 0;
                 end;
             until CompIntegr.Next() = 0;
-        exit(TotalCountErrors);
     end;
 
-    local procedure GetLastErrorTextFromJobQueueEntry(_CompanyName: Text[30]; JobQueueEntryID: Guid): Text[2048]
+    local procedure GetLastErrorTextFromJobQueueEntry(JobQueueEntryID: Guid; _CompanyName: Text[30]): Text[2048]
     var
         JobQueueLogEntry: Record "Job Queue Log Entry";
     begin
@@ -210,25 +213,21 @@ codeunit 50003 "Caption Mgt."
         exit('');
     end;
 
-    procedure JobQueueRestart(_CompanyName: Text[30])
-    var
-        JobQueueEntry: Record "Job Queue Entry";
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::"Activities Mgt.", 'OnGetRefreshInterval', '', false, false)]
+    local procedure ActivitiesMgtOnGetRefreshInterval()
     begin
-        JobQueueEntry.ChangeCompany(_CompanyName);
-        JobQueueEntry.LockTable();
-        JobQueueEntry.Get(JobQueueEntry.ID);
-        JobQueueEntry."User Session Started" := 0DT;
-        JobQueueEntry."User Service Instance ID" := 0;
-        JobQueueEntry."User Session ID" := 0;
-
-        IF (JobQueueEntry.Status = JobQueueEntry.Status::"On Hold with Inactivity Timeout") AND (JobQueueEntry."Inactivity Timeout Period" > 0) THEN
-            JobQueueEntry."Earliest Start Date/Time" := CURRENTDATETIME;
-        JobQueueEntry.Status := JobQueueEntry.Status::"On Hold";
-        // SetDefaultValues(FALSE);
-        // JobQueueEntry."Earliest Start Date/Time" := JobQueueDispatcher.CalcInitialRunTime(Rec, CURRENTDATETIME);
-        // EnqueueTask;
-        JobQueueEntry.Status := JobQueueEntry.Status::Ready;
-        JobQueueEntry.MODIFY;
+        UpdateCueTool();
     end;
 
+    procedure UpdateCueTool()
+    var
+        UserSetup: Record "User Setup";
+        CaptionMgt: Codeunit "Caption Mgt.";
+    begin
+        if UserSetup.Get(UserId) and UserSetup."Admin. Holding" then begin
+            CaptionMgt.DelayedJobQueueEntries();
+            CaptionMgt.TasksModifyOrderEntries();
+            CaptionMgt.OpenSalesOrder();
+        end;
+    end;
 }

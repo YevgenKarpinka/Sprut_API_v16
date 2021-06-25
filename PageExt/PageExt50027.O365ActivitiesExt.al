@@ -25,6 +25,11 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
                     ApplicationArea = All;
                     Visible = EnableTools;
                 }
+                field("UnSchedule Job Queue Entries"; "UnSchedule Job Queue Entries")
+                {
+                    ApplicationArea = All;
+                    Visible = EnableTools;
+                }
                 field("Modify Order Entries"; "Modify Order Entries")
                 {
                     ApplicationArea = All;
@@ -49,6 +54,24 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
         // Add changes to page actions here
         addafter(RefreshData)
         {
+            action(newReFresh)
+            {
+                ApplicationArea = Basic, Suite;
+                Caption = 'ReFresh';
+                Image = Setup;
+                ToolTip = 'Re Fresh the cues (status tiles) related to the role.';
+                Visible = EnableTools;
+
+                trigger OnAction()
+                begin
+                    "Last Date/Time Modified" := 0DT;
+                    Modify();
+
+                    Codeunit.Run(Codeunit::"Activities Mgt.");
+                    CaptionMgt.UpdateCueTool();
+                    CurrPage.Update(false);
+                end;
+            }
             action(newSetUpCues)
             {
                 ApplicationArea = Basic, Suite;
@@ -74,15 +97,8 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
     begin
         if UserSetup.Get(UserId) then
             EnableTools := UserSetup."Admin. Holding";
-    end;
 
-    trigger OnAfterGetRecord()
-    begin
-        if not EnableTools then exit;
-        CaptionMgt.DelayedJobQueueEntries();
-        // CaptionMgt.ErrorModifyOrderEntries();
-        CaptionMgt.TasksModifyOrderEntries();
-        CaptionMgt.OpenSalesOrder();
+        CaptionMgt.UpdateCueTool();
     end;
 
     var

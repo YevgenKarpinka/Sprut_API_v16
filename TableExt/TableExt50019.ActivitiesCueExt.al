@@ -55,7 +55,7 @@ tableextension 50019 "Activities Cue Ext." extends "Activities Cue"
         {
             // DataClassification = CustomerContent;
             CaptionML = ENU = 'UnSchedule Job Queue Entries',
-                        RUS = 'Завсшие операции очереди работ';
+                        RUS = 'Зависшие операции очереди работ';
             FieldClass = FlowField;
             CalcFormula = Count("Activity Entries" where("Table ID" = filter(472), "Error Text" = filter(= '')));
         }

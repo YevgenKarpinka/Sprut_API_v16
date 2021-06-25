@@ -3,6 +3,14 @@ pageextension 50026 "Item Card Ext." extends "Item Card"
     layout
     {
         // Add changes to page layout here
+        addafter(Description)
+        {
+            field("Description Print"; "Description Print")
+            {
+                ApplicationArea = All;
+
+            }
+        }
         addlast(Item)
         {
             field("CRM Item Id"; "CRM Item Id")

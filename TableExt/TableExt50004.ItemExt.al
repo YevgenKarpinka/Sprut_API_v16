@@ -17,6 +17,13 @@ tableextension 50004 "Item Ext" extends Item
                         RUS = '1C Путь';
             // Editable = false;
         }
+        field(50002; "Description Print"; Text[350])
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'Description Print',
+                        RUS = 'Описание для печати';
+            // Editable = false;
+        }
     }
 
     trigger OnInsert()
