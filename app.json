@@ -1,8 +1,8 @@
 {
   "id": "0fb6c640-2664-4f23-82dc-b9139d06c45d",
-  "name": "Sprut_API_v16",
+  "name": "Sprut Base",
   "publisher": "TComTech",
-  "version": "1.0.0.0",
+  "version": "16.0.0.1",
   "brief": "",
   "description": "",
   "privacyStatement": "",
@@ -32,7 +32,7 @@
       "to": 50149
     }
   ],
-  "contextSensitiveHelpUrl": "https://Sprut_API_v16.com/help/",
+  "contextSensitiveHelpUrl": "https://Sprut_Base.com/help/",
   "showMyCode": true,
   "runtime": "5.0",
   "target": "OnPrem"

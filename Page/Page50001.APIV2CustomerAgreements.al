@@ -68,6 +68,16 @@ page 50001 "APIV2 - Customer Agreements"
                         RegisterFieldSet(Rec.FIELDNO("CRM ID"));
                     end;
                 }
+                field(print; Rec.Print)
+                {
+                    ApplicationArea = All;
+                    Caption = 'print', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO(Print));
+                    end;
+                }
                 field(active; Rec.Active)
                 {
                     ApplicationArea = All;

@@ -409,6 +409,16 @@ page 50002 "APIV2 - Customers"
                         RegisterFieldSet(Rec.FIELDNO("Post Code"));
                     end;
                 }
+                field(contactName; Contact)
+                {
+                    ApplicationArea = All;
+                    Caption = 'contactName', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO(Contact));
+                    end;
+                }
                 // <<
 
                 field(lastModifiedDateTime; Rec."Last Modified Date Time")

@@ -15,7 +15,7 @@ codeunit 50019 "Delete Entries From Logs"
     begin
         taskModifyOrder.DeleteEntries(7);
         taskPaymentSend.DeleteEntries(7);
-        integrationLog.DeleteEntries(7);
+        integrationLog.DeleteEntries(31);
         jobQueueLogEntry.DeleteEntries(7);
     end;
 

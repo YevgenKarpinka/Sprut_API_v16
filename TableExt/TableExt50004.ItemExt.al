@@ -40,6 +40,7 @@ tableextension 50004 "Item Ext" extends Item
 
     trigger OnDelete()
     begin
+        Error(errDeleteNotAllowed);
         // check Delete item allowed
         // CheckModifyItemAllowed();
         CheckDeleteItemAllowed();
@@ -49,6 +50,7 @@ tableextension 50004 "Item Ext" extends Item
         CompIntegr: Record "Company Integration";
         CopyItemFromMainCompany: Boolean;
         blankGuid: Guid;
+        errDeleteNotAllowed: Label 'Delete Not Allowed!';
 
     local procedure CheckModifyItemAllowed(): Boolean
     begin

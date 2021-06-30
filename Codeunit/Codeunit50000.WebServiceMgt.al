@@ -864,6 +864,7 @@ codeunit 50000 "Web Service Mgt."
             JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
             JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
             JSObjectLine.Add('statuscode', GetStatusCode(locItems."No."));
+            JSObjectLine.Add('tct_paymentpurpose', locItems."Description Print");
         end;
         exit(JSObjectLine);
     end;
@@ -888,6 +889,7 @@ codeunit 50000 "Web Service Mgt."
             JSObjectLine.Add('tct_bc_uomid', locItems."Sales Unit of Measure");
             JSObjectLine.Add('statecode', GetStateCode(locItems."No."));
             JSObjectLine.Add('statuscode', GetStatusCode(locItems."No."));
+            JSObjectLine.Add('tct_paymentpurpose', locItems."Description Print");
         end;
         exit(JSObjectLine);
     end;
