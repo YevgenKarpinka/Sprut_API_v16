@@ -13,10 +13,10 @@ codeunit 50019 "Delete Entries From Logs"
 
     local procedure Execute()
     begin
-        taskModifyOrder.DeleteEntries(7);
-        taskPaymentSend.DeleteEntries(7);
+        taskModifyOrder.DeleteEntries(31);
+        taskPaymentSend.DeleteEntries(31);
         integrationLog.DeleteEntries(31);
-        jobQueueLogEntry.DeleteEntries(7);
+        jobQueueLogEntry.DeleteEntries(31);
     end;
 
     [EventSubscriber(ObjectType::Table, 474, 'OnBeforeDeleteEntries', '', false, false)]
