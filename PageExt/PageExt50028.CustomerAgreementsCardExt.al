@@ -31,6 +31,12 @@ pageextension 50028 "Customer Agreements Card Ext" extends "Customer Agreement C
                 ToolTipML = ENU = 'Specifies the CRM ID of the customer agreement.',
                             RUS = 'Указывает CRM ID договора клиента.';
             }
+            field("Additional Date"; "Additional Date")
+            {
+                ApplicationArea = All;
+                ToolTipML = ENU = 'Specifies the Additional Date of the customer agreement.',
+                            RUS = 'Указывает дату дополнения к договору клиента.';
+            }
             field("BC Id"; "BC Id")
             {
                 ApplicationArea = All;

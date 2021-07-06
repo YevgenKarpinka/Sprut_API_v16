@@ -71,6 +71,13 @@ tableextension 50007 "Customer Agreement Ext" extends "Customer Agreement"
             // Editable = false;
 
         }
+        field(50008; "Additional Date"; Date)
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Additional Date',
+                        RUS = 'Дата Дополнения';
+            // Editable = false;
+        }
         field(50010; "BC Id"; Guid)
         {
             DataClassification = SystemMetadata;

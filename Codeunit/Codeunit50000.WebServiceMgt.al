@@ -103,17 +103,17 @@ codeunit 50000 "Web Service Mgt."
                 Clear(JSObjectLine);
                 JSObjectLine.Add('Line_No', Format(locSalesLine."Line No."));
                 JSObjectLine.Add('CRM_ID', LowerCase(DelChr(locSalesLine."CRM ID", '<>', '{}')));
-                // JSObjectLine.Add('VAT_Base_Amount', locSalesLine."VAT Base Amount");
-                // JSObjectLine.Add('Amount_Including_VAT', locSalesLine."Amount Including VAT");
-                // JSObjectLine.Add('VATPercent', MatchContragent.GetVATPercent(locSalesLine."VAT Bus. Posting Group", locSalesLine."VAT Prod. Posting Group"));
+                JSObjectLine.Add('VAT_Base_Amount', locSalesLine."VAT Base Amount");
+                JSObjectLine.Add('Amount_Including_VAT', locSalesLine."Amount Including VAT");
+                JSObjectLine.Add('VATPercent', MatchContragent.GetVATPercent(locSalesLine."VAT Bus. Posting Group", locSalesLine."VAT Prod. Posting Group"));
 
                 JSObjectBody.Add(JSObjectLine);
             until locSalesLine.Next() = 0;
 
             Clear(JSObjectLine);
-            // locSalesHeader.Get(locSalesHeader."Document Type"::Order, SalesOrderNo);
-            // JSObjectLine.Add('Document_No', locSalesHeader."No.");
-            // JSObjectLine.Add('CRM_Id', Guid2Text(locSalesHeader."CRM Header ID"));
+            locSalesHeader.Get(locSalesHeader."Document Type"::Order, SalesOrderNo);
+            JSObjectLine.Add('Document_No', locSalesHeader."No.");
+            JSObjectLine.Add('CRM_Id', Guid2Text(locSalesHeader."CRM Header ID"));
             JSObjectLine.Add('Lines', JSObjectBody);
             JSObjectLine.WriteTo(Body);
         end;

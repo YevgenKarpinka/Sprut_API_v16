@@ -108,6 +108,16 @@ page 50001 "APIV2 - Customer Agreements"
                         RegisterFieldSet(Rec.FIELDNO("Agreement Date"));
                     end;
                 }
+                field(additionalDate; Rec."Additional Date")
+                {
+                    ApplicationArea = All;
+                    Caption = 'aditionalDate', Locked = true;
+
+                    trigger OnValidate()
+                    begin
+                        RegisterFieldSet(Rec.FIELDNO("Additional Date"));
+                    end;
+                }
                 field(startingDate; Rec."Starting Date")
                 {
                     ApplicationArea = All;
