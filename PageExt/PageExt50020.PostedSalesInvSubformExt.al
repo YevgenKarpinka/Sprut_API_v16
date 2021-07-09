@@ -17,6 +17,10 @@ pageextension 50020 "Posted Sales Inv Subform Ext" extends "Posted Sales Invoice
             {
                 Visible = false;
             }
+            field("Description Extended"; "Description Extended")
+            {
+                Visible = false;
+            }
         }
     }
 
