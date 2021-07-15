@@ -11,24 +11,31 @@ codeunit 50017 "Match Contragent"
 
     [EventSubscriber(ObjectType::Report, 1497, 'OnBeforeGenJnlLineInsert', '', false, false)]
     procedure OnBeforeGenJnlLineInsert(var GenJournalLine: Record "Gen. Journal Line"; BankAccReconciliationLine: Record "Bank Acc. Reconciliation Line")
+    var
+        BankAcc: Record "Bank Account";
     begin
+        BankAcc.Get(BankAccReconciliationLine."Bank Account No.");
         if BankAccReconciliationLine."Statement Amount" > 0 then begin
             GenJournalLine.Validate("Account Type", GenJournalLine."Account Type"::Customer);
-            if BankAccReconciliationLine."Bank Account No." = 'ОСНОВНОЙ' then
-                GenJournalLine.Validate("Account No.", GetContragentByVATRegNo(GenJournalLine."Account Type"::Customer,
+            if BankAcc."Bank BIC" = '380805' then
+                GenJournalLine.Validate("Account No.", GetContragentByOKPO(GenJournalLine."Account Type"::Customer,
                                                         BankAccReconciliationLine."Recipient VAT Reg. No."))
             else
-                GenJournalLine.Validate("Account No.", GetContragentByVATRegNo(GenJournalLine."Account Type"::Customer,
+                GenJournalLine.Validate("Account No.", GetContragentByOKPO(GenJournalLine."Account Type"::Customer,
                                                         BankAccReconciliationLine."Sender VAT Reg. No."));
         end else begin
             GenJournalLine.Validate("Account Type", GenJournalLine."Account Type"::Vendor);
-            GenJournalLine.Validate("Account No.", GetContragentByVATRegNo(GenJournalLine."Account Type"::Vendor,
-                                                    BankAccReconciliationLine."Recipient VAT Reg. No."));
+            // if BankAcc."Bank BIC" = '380805' then
+            GenJournalLine.Validate("Account No.", GetContragentByOKPO(GenJournalLine."Account Type"::Vendor,
+                                                    BankAccReconciliationLine."Recipient VAT Reg. No."))
+            // else
+            //     GenJournalLine.Validate("Account No.", GetContragentByOKPO(GenJournalLine."Account Type"::Vendor,
+            //             BankAccReconciliationLine."Sender VAT Reg. No."));
         end;
         GenJournalLine.Validate("Document Type", GenJournalLine."Document Type"::Payment);
     end;
 
-    local procedure GetContragentByVATRegNo(AccountType: Enum "Gen. Journal Account Type"; VATRegNo: Text[20]): Code[20]
+    local procedure GetContragentByOKPO(AccountType: Enum "Gen. Journal Account Type"; OKPOCode: Text[20]): Code[20]
     var
         Customer: Record Customer;
         Vendor: Record Vendor;
@@ -37,14 +44,16 @@ codeunit 50017 "Match Contragent"
             AccountType::Customer:
                 begin
                     Customer.SetCurrentKey("OKPO Code");
-                    Customer.SetRange("OKPO Code", VATRegNo);
+                    Customer.SetRange("OKPO Code", OKPOCode);
+                    Customer.SetFilter(Blocked, '<>%1', Customer.Blocked::All);
                     if Customer.FindFirst() then
                         exit(Customer."No.");
                 end;
             AccountType::Vendor:
                 begin
                     Vendor.SetCurrentKey("OKPO Code");
-                    Vendor.SetRange("OKPO Code", VATRegNo);
+                    Vendor.SetRange("OKPO Code", OKPOCode);
+                    Vendor.SetFilter(Blocked, '<>%1', Vendor.Blocked::All);
                     if Vendor.FindFirst() then
                         exit(Vendor."No.");
                 end;
