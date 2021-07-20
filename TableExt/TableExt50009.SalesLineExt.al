@@ -10,19 +10,8 @@ tableextension 50009 "Sales Line Ext" extends "Sales Line"
                         RUS = 'CRM ID';
 
             trigger OnValidate()
-            var
-                locSL: Record "Sales Line";
-                locSIL: Record "Sales Invoice Line";
             begin
-                locSL.SetCurrentKey("CRM ID");
-                locSL.SetRange("CRM ID", "CRM ID");
-                if not locSL.IsEmpty then
-                    Error(errCRMIdInSalesLineAlreadyExist, "CRM ID");
-
-                locSIL.SetCurrentKey("CRM ID");
-                locSIL.SetRange("CRM ID", "CRM ID");
-                if not locSIL.IsEmpty then
-                    Error(errCRMIdInPostedSalesLineAlreadyExist, "CRM ID");
+                CheckCRMIdExist("CRM ID");
             end;
         }
         field(50003; "Create Date Time"; DateTime)
@@ -84,6 +73,10 @@ tableextension 50009 "Sales Line Ext" extends "Sales Line"
         UpdateLastDateTimeModified();
     end;
 
+    var
+        errCRMIdInSalesLineAlreadyExist: Label 'CRM ID %1 in sales line already exist';
+        errCRMIdInPostedSalesLineAlreadyExist: Label 'CRM ID %1 in posted sales line already exist';
+
     local procedure UpdateCreateDateTime()
     begin
         "Create Date Time" := CurrentDateTime;
@@ -96,7 +89,19 @@ tableextension 50009 "Sales Line Ext" extends "Sales Line"
         "Modify User ID" := UserId;
     end;
 
+    procedure CheckCRMIdExist(crmID: Guid)
     var
-        errCRMIdInSalesLineAlreadyExist: Label 'CRM ID %1 in sales line already exist';
-        errCRMIdInPostedSalesLineAlreadyExist: Label 'CRM ID %1 in posted sales line already exist';
+        locSL: Record "Sales Line";
+        locSIL: Record "Sales Invoice Line";
+    begin
+        locSL.SetCurrentKey("CRM ID");
+        locSL.SetRange("CRM ID", crmID);
+        if not locSL.IsEmpty then
+            Error(errCRMIdInSalesLineAlreadyExist, crmID);
+
+        locSIL.SetCurrentKey("CRM ID");
+        locSIL.SetRange("CRM ID", crmID);
+        if not locSIL.IsEmpty then
+            Error(errCRMIdInPostedSalesLineAlreadyExist, crmID);
+    end;
 }

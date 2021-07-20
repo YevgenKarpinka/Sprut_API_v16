@@ -1274,11 +1274,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             SalesLine."Shortcut Dimension 1 Code", SalesLine."Shortcut Dimension 2 Code", SalesLine."Dimension Set ID", DATABASE::Customer);
     end;
 
-    /// <summary> 
-    /// Description for PrepmtDocTypeToDocType.
-    /// </summary>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
-    /// <returns>Return variable "Integer".</returns>
     local procedure PrepmtDocTypeToDocType(DocumentType: Option Invoice,"Credit Memo"): Integer
     begin
         case DocumentType of
@@ -1290,11 +1285,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         exit(2);
     end;
 
-    /// <summary> 
-    /// Description for GetSalesLinesToDeduct.
-    /// </summary>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
-    /// <param name="SalesLines">Parameter of type Record "Sales Line".</param>
     procedure GetSalesLinesToDeduct(SalesHeader: Record "Sales Header"; var SalesLines: Record "Sales Line")
     var
         SalesLine: Record "Sales Line";
@@ -1309,12 +1299,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
             until SalesLine.Next = 0;
     end;
 
-    /// <summary> 
-    /// Description for PrepmtVATDiffAmount.
-    /// </summary>
-    /// <param name="SalesLine">Parameter of type Record "Sales Line".</param>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo",Statistic.</param>
-    /// <returns>Return variable "Decimal".</returns>
     local procedure PrepmtVATDiffAmount(SalesLine: Record "Sales Line"; DocumentType: Option Invoice,"Credit Memo",Statistic): Decimal
     begin
         case DocumentType of
@@ -1372,11 +1356,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
-    /// <summary> 
-    /// Description for UpdatePostedSalesDocument.
-    /// </summary>
-    /// <param name="DocumentType">Parameter of type Option Invoice,"Credit Memo".</param>
-    /// <param name="DocumentNo">Parameter of type Code[20].</param>
     local procedure UpdatePostedSalesDocument(DocumentType: Option Invoice,"Credit Memo"; DocumentNo: Code[20])
     var
         CustLedgerEntry: Record "Cust. Ledger Entry";
@@ -1512,13 +1491,6 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         CopyHeaderCommentLines(SalesHeader."No.", DATABASE::"Sales Cr.Memo Header", GenJnlLineDocNo);
     end;
 
-    /// <summary> 
-    /// Description for InsertSalesCrMemoLine.
-    /// </summary>
-    /// <param name="SalesCrMemoHeader">Parameter of type Record "Sales Cr.Memo Header".</param>
-    /// <param name="LineNo">Parameter of type Integer.</param>
-    /// <param name="PrepmtInvLineBuffer">Parameter of type Record "Prepayment Inv. Line Buffer".</param>
-    /// <param name="SalesHeader">Parameter of type Record "Sales Header".</param>
     local procedure InsertSalesCrMemoLine(SalesCrMemoHeader: Record "Sales Cr.Memo Header"; LineNo: Integer; PrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; SalesHeader: Record "Sales Header")
     var
         SalesCrMemoLine: Record "Sales Cr.Memo Line";

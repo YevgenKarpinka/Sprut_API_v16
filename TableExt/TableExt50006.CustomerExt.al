@@ -67,6 +67,7 @@ tableextension 50006 "Customer Ext" extends Customer
             begin
                 if xRec."Init 1C" <> Rec."Init 1C" then
                     CheckAgreementEntries();
+                UpdateBCID();
             end;
         }
         field(50009; "Modify User ID"; Code[50])
@@ -155,6 +156,12 @@ tableextension 50006 "Customer Ext" extends Customer
         if not CustLE.IsEmpty then
             // Error(errAgreementUsedInPostedSalesDocuments);
             Message(msgCustomerUsedInPostedSalesDocuments);
+    end;
+
+    procedure UpdateBCID()
+    begin
+        if IsNullGuid("BC Id") then
+            "BC Id" := SystemId;
     end;
 
     procedure CheckModifyAllowed(): Boolean

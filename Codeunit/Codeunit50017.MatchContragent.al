@@ -25,12 +25,8 @@ codeunit 50017 "Match Contragent"
                                                         BankAccReconciliationLine."Sender VAT Reg. No."));
         end else begin
             GenJournalLine.Validate("Account Type", GenJournalLine."Account Type"::Vendor);
-            // if BankAcc."Bank BIC" = '380805' then
             GenJournalLine.Validate("Account No.", GetContragentByOKPO(GenJournalLine."Account Type"::Vendor,
                                                     BankAccReconciliationLine."Recipient VAT Reg. No."))
-            // else
-            //     GenJournalLine.Validate("Account No.", GetContragentByOKPO(GenJournalLine."Account Type"::Vendor,
-            //             BankAccReconciliationLine."Sender VAT Reg. No."));
         end;
         GenJournalLine.Validate("Document Type", GenJournalLine."Document Type"::Payment);
     end;

@@ -535,6 +535,7 @@ codeunit 50000 "Web Service Mgt."
         LocationCode: Code[20];
         Location: Record Location;
         Description: Text[350];
+        crmID: Guid;
     begin
         SpecAmount := GetSpecificationAmount(ResponceToken);
         LocationCode := GetSpecificationLocationCode(ResponceToken);
@@ -563,6 +564,8 @@ codeunit 50000 "Web Service Mgt."
             Qty := Round(GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal(), 0.00001);
             UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
             SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
+            crmID := GetJSToken(LineToken.AsObject(), 'CRM_ID').AsValue().AsText();
+            SalesLine.CheckCRMIdExist(crmID);
 
             if not SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then exit(true);
             if SalesLine."No." <> ItemNo then exit(true);
