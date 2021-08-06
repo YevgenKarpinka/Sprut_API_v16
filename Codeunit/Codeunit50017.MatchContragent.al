@@ -6,8 +6,167 @@ codeunit 50017 "Match Contragent"
     end;
 
     var
-        BankAccReconLine: Record "Bank Acc. Reconciliation Line";
-        BankAccRecon: Record "Bank Acc. Reconciliation";
+        SalesSetup: Record "Sales & Receivables Setup";
+        SalesHeader: Record "Sales Header";
+        Currency: Record Currency;
+        CurrExchRate: Record "Currency Exchange Rate";
+        SalesTaxCalculate: Codeunit "Sales Tax Calculate";
+
+    [EventSubscriber(ObjectType::Table, 4, 'OnAfterInitRoundingPrecision', '', false, false)]
+    local procedure CurrencyOnAfterInitRoundingPrecision(var Currency: Record Currency; var GeneralLedgerSetup: Record "General Ledger Setup")
+    begin
+        Currency."VAT Order Rounding Precision" := GeneralLedgerSetup."VAT Order Rounding Precision";
+    end;
+
+    [EventSubscriber(ObjectType::Table, 37, 'OnUpdateVATAmountsOnBeforeCalcAmounts', '', false, false)]
+    local procedure SalesLineOnAfterInitRoundingPrecision(TotalAmountInclVAT: Decimal; var IsHandled: Boolean; var SalesLine2: Record "Sales Line";
+                        var SalesLine: Record "Sales Line"; var TotalAmount: Decimal; var TotalInvDiscAmount: Decimal; var TotalLineAmount: Decimal;
+                        var TotalQuantityBase: Decimal; var TotalVATBaseAmount: Decimal)
+    var
+        Totals: array[4] of Decimal;
+    begin
+        SalesSetup.Get();
+        GetSalesHeader(SalesLine);
+        IsHandled := true;
+
+        if SalesHeader."Prices Including VAT" then
+            case SalesLine."VAT Calculation Type" of
+                SalesLine."VAT Calculation Type"::"Normal VAT",
+                SalesLine."VAT Calculation Type"::"Reverse Charge VAT":
+                    begin
+                        if not SalesSetup."Calc. VAT per Line" then
+                            SalesLine.Amount :=
+                              Round(
+                                (TotalLineAmount - TotalInvDiscAmount + SalesLine.CalcLineAmount) / (1 + SalesLine."VAT %" / 100),
+                                Currency."Amount Rounding Precision") -
+                            TotalAmount
+                        else
+                            SalesLine.Amount :=
+                              Round(
+                                SalesLine.CalcLineAmount / (1 + SalesLine."VAT %" / 100), Currency."Amount Rounding Precision");
+                        SalesLine."VAT Base Amount" :=
+                          Round(
+                            SalesLine.Amount * (1 - SalesHeader."VAT Base Discount %" / 100),
+                            Currency."Amount Rounding Precision");
+                        SalesLine."Amount Including VAT" :=
+                          TotalLineAmount + SalesLine."Line Amount" -
+                          Round(
+                            (TotalAmount + SalesLine.Amount) * (SalesHeader."VAT Base Discount %" / 100) * SalesLine."VAT %" / 100,
+                            Currency."VAT Order Rounding Precision", Currency.VATRoundingDirection) -
+                          TotalAmountInclVAT - TotalInvDiscAmount - SalesLine."Inv. Discount Amount";
+                    end;
+                SalesLine."VAT Calculation Type"::"Full VAT":
+                    begin
+                        SalesLine.Amount := 0;
+                        SalesLine."VAT Base Amount" := 0;
+                    end;
+                SalesLine."VAT Calculation Type"::"Sales Tax":
+                    begin
+                        SalesHeader.TestField("VAT Base Discount %", 0);
+                        SalesLine.Amount :=
+                          SalesTaxCalculate.ReverseCalculateTax(
+                            SalesLine."Tax Area Code", SalesLine."Tax Group Code", SalesLine."Tax Liable", SalesHeader."Posting Date",
+                            TotalAmountInclVAT + SalesLine."Amount Including VAT", TotalQuantityBase + SalesLine."Quantity (Base)",
+                            SalesHeader."Currency Factor") -
+                          TotalAmount;
+                        UpdateVATPercent(SalesLine.Amount, SalesLine."Amount Including VAT" - SalesLine.Amount, SalesLine);
+                        SalesLine.Amount := Round(SalesLine.Amount, Currency."Amount Rounding Precision");
+                        SalesLine."VAT Base Amount" := SalesLine.Amount;
+                    end;
+            end
+        else
+            case SalesLine."VAT Calculation Type" of
+                SalesLine."VAT Calculation Type"::"Normal VAT",
+                SalesLine."VAT Calculation Type"::"Reverse Charge VAT":
+                    begin
+                        SalesLine.Amount := Round(SalesLine.CalcLineAmount, Currency."Amount Rounding Precision");
+                        SalesLine."VAT Base Amount" :=
+                          Round(SalesLine.Amount * (1 - SalesHeader."VAT Base Discount %" / 100), Currency."Amount Rounding Precision");
+                        if not SalesSetup."Calc. VAT per Line" then
+                            SalesLine."Amount Including VAT" :=
+                              TotalAmount + SalesLine.Amount +
+                              Round(
+                                (TotalAmount + SalesLine.Amount) * (1 - SalesHeader."VAT Base Discount %" / 100) * SalesLine."VAT %" / 100,
+                                Currency."VAT Order Rounding Precision", Currency.VATRoundingDirection) -
+                              TotalAmountInclVAT
+                        else
+                            if TotalAmount + SalesLine.Amount = 0 then
+                                SalesLine."Amount Including VAT" := 0
+                            else
+                                SalesLine."Amount Including VAT" :=
+                                  SalesLine.Amount +
+                                  Round(
+                                    (TotalAmount + SalesLine.Amount) * (1 - SalesHeader."VAT Base Discount %" / 100) * SalesLine."VAT %" / 100 *
+                                    SalesLine.Amount / (TotalAmount + SalesLine.Amount), Currency."Amount Rounding Precision");
+                    end;
+                SalesLine."VAT Calculation Type"::"Full VAT":
+                    begin
+                        SalesLine.Amount := 0;
+                        SalesLine."VAT Base Amount" := 0;
+                        SalesLine."Amount Including VAT" := SalesLine.CalcLineAmount;
+                    end;
+                SalesLine."VAT Calculation Type"::"Sales Tax":
+                    begin
+                        SalesLine.Amount := Round(SalesLine.CalcLineAmount, Currency."Amount Rounding Precision");
+                        SalesLine."VAT Base Amount" := SalesLine.Amount;
+                        SalesLine."Amount Including VAT" :=
+                          TotalAmount + SalesLine.Amount +
+                          Round(
+                            SalesTaxCalculate.CalculateTax(
+                              SalesLine."Tax Area Code", SalesLine."Tax Group Code", SalesLine."Tax Liable", SalesHeader."Posting Date",
+                              TotalAmount + SalesLine.Amount, TotalQuantityBase + SalesLine."Quantity (Base)",
+                              SalesHeader."Currency Factor"), Currency."Amount Rounding Precision") -
+                          TotalAmountInclVAT;
+                        UpdateVATPercent(SalesLine."VAT Base Amount", SalesLine."Amount Including VAT" - SalesLine."VAT Base Amount", SalesLine);
+                    end;
+            end;
+
+        Totals[1] := Totals[1] + SalesLine.Amount;
+        Totals[2] := Totals[2] + SalesLine."Amount Including VAT";
+        SalesLine."Amount (LCY)" :=
+          Round(
+            CurrExchRate.ExchangeAmtFCYToLCY(
+            SalesHeader."Posting Date", SalesHeader."Currency Code",
+            Totals[1], SalesHeader."Currency Factor")) - Totals[3];
+        SalesLine."Amount Including VAT (LCY)" :=
+          Round(
+            CurrExchRate.ExchangeAmtFCYToLCY(
+            SalesHeader."Posting Date", SalesHeader."Currency Code",
+            Totals[2], SalesHeader."Currency Factor")) - Totals[4];
+        Totals[3] := Totals[3] + SalesLine."Amount (LCY)";
+        Totals[4] := Totals[4] + SalesLine."Amount Including VAT (LCY)";
+    end;
+
+    local procedure UpdateVATPercent(BaseAmount: Decimal; VATAmount: Decimal; var SalesLine: Record "Sales Line")
+    begin
+        if BaseAmount <> 0 then
+            SalesLine."VAT %" := Round(100 * VATAmount / BaseAmount, 0.00001)
+        else
+            SalesLine."VAT %" := 0;
+    end;
+
+    procedure GetSalesHeader(SalesLine: Record "Sales Line")
+    begin
+        GetSalesHeader(SalesHeader, Currency, SalesLine);
+    end;
+
+    procedure GetSalesHeader(var OutSalesHeader: Record "Sales Header"; var OutCurrency: Record Currency; SalesLine: Record "Sales Line")
+    begin
+        SalesLine.TestField("Document No.");
+        if (SalesLine."Document Type" <> SalesHeader."Document Type") or (SalesLine."Document No." <> SalesHeader."No.") then begin
+            SalesHeader.Get(SalesLine."Document Type", SalesLine."Document No.");
+            if SalesHeader."Currency Code" = '' then
+                Currency.InitRoundingPrecision
+            else begin
+                SalesHeader.TestField("Currency Factor");
+                Currency.Get(SalesHeader."Currency Code");
+                Currency.TestField("Amount Rounding Precision");
+            end;
+        end;
+
+        OutSalesHeader := SalesHeader;
+        OutCurrency := Currency;
+    end;
 
     [EventSubscriber(ObjectType::Report, 1497, 'OnBeforeGenJnlLineInsert', '', false, false)]
     procedure OnBeforeGenJnlLineInsert(var GenJournalLine: Record "Gen. Journal Line"; BankAccReconciliationLine: Record "Bank Acc. Reconciliation Line")
@@ -29,6 +188,9 @@ codeunit 50017 "Match Contragent"
                                                     BankAccReconciliationLine."Recipient VAT Reg. No."))
         end;
         GenJournalLine.Validate("Document Type", GenJournalLine."Document Type"::Payment);
+
+        if BankAccReconciliationLine."Description Extended" <> '' then
+            GenJournalLine.Validate("Description Extended", BankAccReconciliationLine."Description Extended");
     end;
 
     local procedure GetContragentByOKPO(AccountType: Enum "Gen. Journal Account Type"; OKPOCode: Text[20]): Code[20]

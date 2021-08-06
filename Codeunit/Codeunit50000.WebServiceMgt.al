@@ -103,20 +103,20 @@ codeunit 50000 "Web Service Mgt."
                 Clear(JSObjectLine);
                 JSObjectLine.Add('Line_No', Format(locSalesLine."Line No."));
                 JSObjectLine.Add('CRM_ID', LowerCase(DelChr(locSalesLine."CRM ID", '<>', '{}')));
-                // >> test
+
                 JSObjectLine.Add('VAT_Base_Amount', locSalesLine."VAT Base Amount");
                 JSObjectLine.Add('Amount_Including_VAT', locSalesLine."Amount Including VAT");
                 JSObjectLine.Add('VATPercent', MatchContragent.GetVATPercent(locSalesLine."VAT Bus. Posting Group", locSalesLine."VAT Prod. Posting Group"));
-                // << test
+
                 JSObjectBody.Add(JSObjectLine);
             until locSalesLine.Next() = 0;
 
             Clear(JSObjectLine);
-            // >> test
+
             locSalesHeader.Get(locSalesHeader."Document Type"::Order, SalesOrderNo);
             JSObjectLine.Add('Document_No', locSalesHeader."No.");
             JSObjectLine.Add('CRM_Id', Guid2Text(locSalesHeader."CRM Header ID"));
-            // << test
+
             JSObjectLine.Add('Lines', JSObjectBody);
             JSObjectLine.WriteTo(Body);
         end;
@@ -565,7 +565,7 @@ codeunit 50000 "Web Service Mgt."
             UnitPrice := Round(GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal(), 0.01);
             SpecLineAmount := Round(GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal(), 0.01);
             crmID := GetJSToken(LineToken.AsObject(), 'CRM_ID').AsValue().AsText();
-            SalesLine.CheckCRMIdExist(crmID);
+            SalesLine.CheckPostedCRMIdExist(crmID);
 
             if not SalesLine.Get(SalesLine."Document Type"::Order, SalesOrderNo, LineNo) then exit(true);
             if SalesLine."No." <> ItemNo then exit(true);

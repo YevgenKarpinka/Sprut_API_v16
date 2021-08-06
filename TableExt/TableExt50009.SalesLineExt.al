@@ -104,4 +104,20 @@ tableextension 50009 "Sales Line Ext" extends "Sales Line"
         if not locSIL.IsEmpty then
             Error(errCRMIdInPostedSalesLineAlreadyExist, crmID);
     end;
+
+    procedure CheckPostedCRMIdExist(crmID: Guid)
+    var
+        locSL: Record "Sales Line";
+        locSIL: Record "Sales Invoice Line";
+    begin
+        // locSL.SetCurrentKey("CRM ID");
+        // locSL.SetRange("CRM ID", crmID);
+        // if not locSL.IsEmpty then
+        //     Error(errCRMIdInSalesLineAlreadyExist, crmID);
+
+        locSIL.SetCurrentKey("CRM ID");
+        locSIL.SetRange("CRM ID", crmID);
+        if not locSIL.IsEmpty then
+            Error(errCRMIdInPostedSalesLineAlreadyExist, crmID);
+    end;
 }

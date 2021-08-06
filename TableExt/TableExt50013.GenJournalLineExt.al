@@ -3,6 +3,25 @@ tableextension 50013 "Gen. Journal Line Ext." extends "Gen. Journal Line"
     fields
     {
         // Add changes to table fields here
+        field(50000; "Description Extended"; Text[350])
+        {
+            DataClassification = SystemMetadata;
+            CaptionML = ENU = 'Description Extended',
+                        RUS = 'Описание расширенное';
+
+            trigger OnValidate()
+            begin
+                if "Description Extended" <> '' then
+                    Description := CopyStr("Description Extended", 1, MaxStrLen(Description));
+            end;
+        }
+        // modify(Description)
+        // {
+        //     trigger OnAfterValidate()
+        //     begin
+        //         "Description Extended" := Description;
+        //     end;
+        // }
         modify("Account Type")
         {
 
