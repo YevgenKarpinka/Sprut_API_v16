@@ -93,7 +93,25 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         Message('Apply Invoice To Cr-Memo is Ok!')
                     end;
                 }
+                action(OnModifySalesOrderFromOrder)
+                {
+                    ApplicationArea = All;
+                    CaptionML = ENU = 'OnModifySalesOrderFromOrder',
+                                RUS = 'OnModifySalesOrderFromOrder';
+                    Image = MakeOrder;
 
+                    trigger OnAction()
+                    var
+                        SalesHeader: Record "Sales Header";
+                    begin
+                        CurrPage.SetSelectionFilter(SalesHeader);
+                        SalesHeader.FindSet(false, false);
+                        repeat
+                            CRMAction.OnAfterChangedSalesOrder('Invoice', SalesHeader."No.", SalesHeader."CRM Header ID");
+                        until SalesHeader.Next() = 0;
+                        Message('Task Modify Order Ok!')
+                    end;
+                }
                 action(OnModifySalesOrderInTask)
                 {
                     ApplicationArea = All;
@@ -383,6 +401,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
     }
 
     var
+        CRMAction: Codeunit "CRM Action API";
         SalesPostPrepaymentsSprut: Codeunit "Sales-Post Prepayments Sprut";
         PrepaymentMgt: Codeunit "Prepayment Management";
         WebServicesMgt: Codeunit "Web Service Mgt.";

@@ -9,13 +9,12 @@ codeunit 50000 "Web Service Mgt."
         IntegrationLog: Record "Integration Log";
         errHeaderAmountNotEqualSumsLinesAmount: Label 'Sales header amount %1 not equal sums sales lines amount %2';
         errSalesOrderAmountCanNotBeLessPrepaymentInvoicesAmount: Label 'Sales order amount %1 can not be less prepayment invoices amount %2';
-        errReportNotSavedToPDF: Label 'Report %1 not saved to PDF';
         errWrong_CRM_Id: Label 'Wrong CRM Id %1';
         WebServiceMgt: Codeunit "Web Service Mgt.";
         ModificationOrder: Codeunit "Modification Order";
         PrepmtMgt: Codeunit "Prepayment Management";
-        errDescriptionCannotBeEmpty: Label '''description'' cannot be empty';
         MatchContragent: Codeunit "Match Contragent";
+        errParameterIsNullNotAllowedInRequest: Label 'Parameter ''%1'' Is Null Not Allowed In Request %2';
 
 
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]; var Body: Text): Boolean
@@ -279,10 +278,24 @@ codeunit 50000 "Web Service Mgt."
         LineAmount: Decimal;
         crmLineID: Guid;
     begin
+        if GetJSToken(LineToken.AsObject(), 'no').AsValue().IsNull then
+            Error(StrSubstNo(errParameterIsNullNotAllowedInRequest, '''no''', LineToken));
         ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+
+        if GetJSToken(LineToken.AsObject(), 'quantity').AsValue().IsNull then
+            Error(StrSubstNo(errParameterIsNullNotAllowedInRequest, '''quantity''', LineToken));
         Qty := GetJSToken(LineToken.AsObject(), 'quantity').AsValue().AsDecimal();
+
+        if GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().IsNull then
+            Error(StrSubstNo(errParameterIsNullNotAllowedInRequest, '''unit_price''', LineToken));
         UnitPrice := GetJSToken(LineToken.AsObject(), 'unit_price').AsValue().AsDecimal();
+
+        if GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().IsNull then
+            Error(StrSubstNo(errParameterIsNullNotAllowedInRequest, '''total_amount''', LineToken));
         LineAmount := GetJSToken(LineToken.AsObject(), 'total_amount').AsValue().AsDecimal();
+
+        if GetJSToken(LineToken.AsObject(), 'CRM_ID').AsValue().IsNull then
+            Error(StrSubstNo(errParameterIsNullNotAllowedInRequest, '''CRM_ID''', LineToken));
         crmLineID := GetJSToken(LineToken.AsObject(), 'CRM_ID').AsValue().AsText();
     end;
 
@@ -841,6 +854,7 @@ codeunit 50000 "Web Service Mgt."
     begin
         if not _JSONObject.Get(TokenKey, _JSONToken) then
             Error('Could not find a token with key %1', TokenKey);
+
     end;
 
     local procedure SelectJSToken(_JSONObject: JsonObject; Path: Text) _JSONToken: JsonToken

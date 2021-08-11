@@ -10,5 +10,11 @@ tableextension 50026 "Currency Ext" extends Currency
                         RUS = 'Точность округления НДС заказа';
             DecimalPlaces = 2 : 5;
         }
+        field(50001; "Enable VAT Order Round"; Boolean)
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'Enable VAT Order Round',
+                        RUS = 'Включить округления НДС заказа';
+        }
     }
 }
