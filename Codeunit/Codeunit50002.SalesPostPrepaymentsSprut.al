@@ -1166,6 +1166,17 @@ codeunit 50002 "Sales-Post Prepayments Sprut"
         end;
     end;
 
+    [EventSubscriber(ObjectType::Table, 81, 'OnAfterCopyGenJnlLineFromPurchHeaderPrepmtPost', '', false, false)]
+    local procedure OnAfterCopyGJLFromPHPrepPost(PurchaseHeader: Record "Purchase Header"; var GenJournalLine: Record "Gen. Journal Line")
+    var
+        Vendor: Record Vendor;
+    begin
+        if Vendor.Get(PurchaseHeader."Buy-from Vendor No.")
+        and (Vendor."Agreement Posting" = Vendor."Agreement Posting"::Mandatory) then begin
+            GenJournalLine."Agreement No." := PurchaseHeader."Agreement No.";
+        end;
+    end;
+
     local procedure PostBalancingEntry(SalesHeader: Record "Sales Header"; TotalPrepmtInvLineBuffer: Record "Prepayment Inv. Line Buffer"; TotalPrepmtInvLineBufferLCY: Record "Prepayment Inv. Line Buffer"; CustLedgEntry: Record "Cust. Ledger Entry"; DocumentType: Option Invoice,"Credit Memo"; PostingDescription: Text[100]; DocType: Enum "Gen. Journal Document Type"; DocNo: Code[20]; ExtDocNo: Text[35]; SrcCode: Code[10]; PostingNoSeriesCode: Code[20])
     var
         GenJnlLine: Record "Gen. Journal Line";

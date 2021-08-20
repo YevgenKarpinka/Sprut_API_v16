@@ -341,7 +341,7 @@ codeunit 50018 "Integration 1C"
         Clear(Body);
         Body.Add('Номер', CustomerAgreement."External Agreement No.");
         Body.Add('Description', CustomerAgreement."No.");
-        Body.Add('Дата', CustomerAgreement."Starting Date");
+        Body.Add('Дата', CustomerAgreement."Agreement Date");
         Body.Add('СрокДействия', CustomerAgreement."Expire Date");
         Body.Add('ВедениеВзаиморасчетов', lblPaymentView);
         Body.Add('ВедениеВзаиморасчетовНУ', lblPaymentViewVAT);
@@ -1454,14 +1454,22 @@ codeunit 50018 "Integration 1C"
     begin
         if entityID = blankEntityID then exit;
 
+        if IntegrationEntity.Get(SystemCode, tableID, Code1, Code2) then begin
+            IntegrationEntity."Entity Id" := entityID;
+            IntegrationEntity."Entity Code" := entityCode;
+            IntegrationEntity."Company Name" := companyName;
+            IntegrationEntity.Modify(true);
+            exit;
+        end;
+
         IntegrationEntity.Init();
-        IntegrationEntity."System Code" := CopyStr(SystemCode, 1, MaxStrLen(IntegrationEntity."System Code"));
+        IntegrationEntity."System Code" := SystemCode;
         IntegrationEntity."Table ID" := tableID;
         IntegrationEntity."Code 1" := GuidToClearText(CopyStr(Code1, 1, MaxStrLen(IntegrationEntity."Code 1")));
-        IntegrationEntity."Code 2" := CopyStr(Code2, 1, MaxStrLen(IntegrationEntity."Code 2"));
+        IntegrationEntity."Code 2" := Code2;
         IntegrationEntity."Entity Id" := entityID;
-        IntegrationEntity."Entity Code" := CopyStr(entityCode, 1, MaxStrLen(IntegrationEntity."Entity Code"));
-        IntegrationEntity."Company Name" := CopyStr(companyName, 1, MaxStrLen(IntegrationEntity."Company Name"));
+        IntegrationEntity."Entity Code" := entityCode;
+        IntegrationEntity."Company Name" := companyName;
         IntegrationEntity.Insert(true);
         Commit();
     end;
