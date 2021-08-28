@@ -58,9 +58,6 @@ codeunit 50010 "Modification Order"
             // Applying Prepayment Entries
             PrepmMgt.CustPrepmtApply(SalesOrderNo);
 
-            // Get Specification From CRM
-            // WebServicesMgt.GetSpecificationFromCRM(SalesOrderNo, SpecEntityType, POSTrequestMethod, SpecificationResponseText);
-
             // Get Specification From Task
             SpecificationResponseText := GetSpecificationFromTask(SalesOrderNo);
 
@@ -76,21 +73,14 @@ codeunit 50010 "Modification Order"
             // insert sales line
             PrepmMgt.InsertSalesLineFromCRM(SalesOrderNo, SpecificationResponseText);
 
-            // Get Invoices From CRM
-            // WebServicesMgt.GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
-
             // Get Invoices From Task
             InvoicesResponseText := GetInvoicesFromTask(SalesOrderNo);
 
             // create prepayment invoice by amount
             PrepmMgt.CreatePrepaymentInvoicesFromCRM(SalesOrderNo, InvoicesResponseText);
-
         end else
             // create Added prepayment invoice by amount
             if WebServicesMgt.NeedCreatePrepmtInvoice(SalesOrderNo) then begin
-                // Get Invoices From CRM
-                // WebServicesMgt.GetInvoicesFromCRM(SalesOrderNo, InvEntityType, POSTrequestMethod, InvoicesResponseText);
-
                 // Get Invoices From Task
                 InvoicesResponseText := GetInvoicesFromTask(SalesOrderNo);
                 // create Added prepayment invoice by amount

@@ -31,7 +31,7 @@ codeunit 50017 "Match Contragent"
         GetGLSetup();
         SalesSetup.Get();
         GetSalesHeader(SalesLine);
-        if not Currency."Enable VAT Order Round" then exit;
+        if not (Currency."Enable VAT Order Round" and SalesSetup."Allow VAT Rounding Precision") then exit;
         IsHandled := true;
 
         if SalesHeader."Prices Including VAT" then
@@ -186,7 +186,8 @@ codeunit 50017 "Match Contragent"
                 SalesHeader.TestField("Currency Factor");
                 Currency.Get(SalesHeader."Currency Code");
                 Currency.TestField("Amount Rounding Precision");
-                Currency.TestField("VAT Order Rounding Precision");
+                if Currency."Enable VAT Order Round" then
+                    Currency.TestField("VAT Order Rounding Precision");
             end;
         end;
 

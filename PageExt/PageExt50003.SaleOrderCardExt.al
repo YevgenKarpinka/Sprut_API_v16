@@ -1,4 +1,4 @@
-pageextension 50003 "Sale Order Ext" extends "Sales Order"
+pageextension 50003 "Sale Order Card Ext" extends "Sales Order"
 {
     layout
     {
@@ -86,7 +86,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         SH: Record "Sales Header";
                     begin
                         CurrPage.SetSelectionFilter(SH);
-                        SH.FindSet(false, false);
+                        SH.FindSet();
                         repeat
                             PrepMgt.CustPrepmtApply(SH."No.");
                         until SH.Next() = 0;
@@ -105,7 +105,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         SalesHeader: Record "Sales Header";
                     begin
                         CurrPage.SetSelectionFilter(SalesHeader);
-                        SalesHeader.FindSet(false, false);
+                        SalesHeader.FindSet();
                         repeat
                             CRMAction.OnAfterChangedSalesOrder('Invoice', SalesHeader."No.", SalesHeader."CRM Header ID");
                         until SalesHeader.Next() = 0;
@@ -124,7 +124,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                         SalesHeader: Record "Sales Header";
                     begin
                         CurrPage.SetSelectionFilter(SalesHeader);
-                        SalesHeader.FindSet(false, false);
+                        SalesHeader.FindSet();
                         repeat
                             PrepaymentMgt.OnModifySalesOrderInTask(SalesHeader."No.")
                         until SalesHeader.Next() = 0;
@@ -385,7 +385,7 @@ pageextension 50003 "Sale Order Ext" extends "Sales Order"
                 begin
                     locSalesLine.SetRange("Document Type", locSalesLine."Document Type"::Order);
                     locSalesLine.SetRange("Document No.", "No.");
-                    if locSalesLine.FindSet(false, false) then
+                    if locSalesLine.FindSet() then
                         repeat
                             if locItem.Get(locSalesLine."No.")
                             and (locItem.Type in [locItem.Type::Inventory]) then begin

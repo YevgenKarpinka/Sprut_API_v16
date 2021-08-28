@@ -1,22 +1,14 @@
-pageextension 50032 "Posted Sales Invoices Ext" extends "Posted Sales Invoices"
+pageextension 50039 "Posted Sales Credit Memos Ext" extends "Posted Sales Credit Memos"
 {
     layout
     {
         // Add changes to page layout here
-        addafter(Corrective)
-        {
-            field("Invoice No. 1C"; "Invoice No. 1C")
-            {
-                ApplicationArea = All;
-                Visible = false;
-            }
-        }
     }
 
     actions
     {
         // Add changes to page actions here
-        addafter(Invoice)
+        addafter(Send)
         {
             group(SprutAdmin)
             {
@@ -33,13 +25,13 @@ pageextension 50032 "Posted Sales Invoices Ext" extends "Posted Sales Invoices"
                     trigger OnAction()
                     var
                         PrepMgt: Codeunit "Prepayment Management";
-                        SIH: Record "Sales Invoice Header";
+                        SCrMH: Record "Sales Cr.Memo Header";
                     begin
-                        CurrPage.SetSelectionFilter(SIH);
-                        SIH.FindSet();
+                        CurrPage.SetSelectionFilter(SCrMH);
+                        SCrMH.FindSet();
                         repeat
-                            PrepMgt.PostedPrepmtInvoiceApply(SIH."No.");
-                        until SIH.Next() = 0;
+                            PrepMgt.PostedPrepmtCrMApply(SCrMH."No.");
+                        until SCrMH.Next() = 0;
                         Message('Apply Invoice To Cr-Memo is Ok!')
                     end;
                 }

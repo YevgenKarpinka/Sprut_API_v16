@@ -273,7 +273,7 @@ codeunit 50001 "Prepayment Management"
         SalesInvoiceHeader.SetCurrentKey("Prepayment Order No.");
         SalesInvoiceHeader.SetRange("Prepayment Order No.", PrepaymentOrderNo);
         // SalesInvoiceHeader.SetFilter("CRM Invoice No.", '<>%1', '');
-        if SalesInvoiceHeader.FindSet(false, false) then
+        if SalesInvoiceHeader.FindSet() then
             repeat
                 SalesInvoiceHeader.CalcFields("Remaining Amount", "Amount Including VAT");
                 if SalesInvoiceHeader."Remaining Amount" < SalesInvoiceHeader."Amount Including VAT" then begin
@@ -333,7 +333,7 @@ codeunit 50001 "Prepayment Management"
                     DtldCustLedgEntry2.SetRange("Applied Cust. Ledger Entry No.", DtldCustLedgEntry."Applied Cust. Ledger Entry No.");
                     DtldCustLedgEntry2.SetRange("Entry Type", DtldCustLedgEntry2."Entry Type"::Application);
                     DtldCustLedgEntry2.SetRange(Unapplied, false);
-                    if DtldCustLedgEntry2.FindSet(false, false) then
+                    if DtldCustLedgEntry2.FindSet() then
                         repeat
                             if DtldCustLedgEntry2."Cust. Ledger Entry No." <> DtldCustLedgEntry2."Applied Cust. Ledger Entry No." then begin
                                 tempDtldCustLedgEntry := DtldCustLedgEntry2;
@@ -585,13 +585,13 @@ codeunit 50001 "Prepayment Management"
         SCrMNo: Code[20];
         endOfTable: Integer;
     begin
-        // isSuccess := false;
-
-        SalesInvHeader.SetCurrentKey("Prepayment Order No.");
-        SalesCrMemoHeader.SetCurrentKey("Prepayment Order No.");
+        InvCustLedgEntry.SetCurrentKey("Document No.", "Posting Date", "Agreement No.", Prepayment, Open);
+        CrMCustLedgEntry.SetCurrentKey("Document No.", "Posting Date", "Agreement No.", Prepayment, Open);
+        SalesInvHeader.SetCurrentKey("Cust. Ledger Entry No.", "Prepayment Order No.");
         SalesInvHeader.SetRange("Prepayment Order No.", SalesOrderNo);
-        // SalesInvHeader.SetFilter("CRM Invoice No.", '=%1', '');
-        if SalesInvHeader.FindSet(false, false) then
+        SalesCrMemoHeader.SetCurrentKey("Cust. Ledger Entry No.", "Prepayment Order No.");
+        SalesCrMemoHeader.SetRange("Prepayment Order No.", SalesOrderNo);
+        if SalesInvHeader.FindSet() then
             repeat
                 SalesInvHeader.CalcFields("Remaining Amount");
                 if SalesInvHeader."Remaining Amount" > 0 then begin
@@ -601,9 +601,7 @@ codeunit 50001 "Prepayment Management"
                     InvCustLedgEntry.SetRange(Prepayment, true);
                     InvCustLedgEntry.SetRange(Open, true);
                     if InvCustLedgEntry.FindFirst() then begin
-
-                        SalesCrMemoHeader.SetRange("Prepayment Order No.", SalesOrderNo);
-                        if SalesCrMemoHeader.FindSet(false, false) then begin
+                        if SalesCrMemoHeader.FindSet() then begin
                             repeat
                                 SalesCrMemoHeader.CalcFields("Remaining Amount");
                                 if SalesCrMemoHeader."Remaining Amount" < 0 then
@@ -631,7 +629,12 @@ codeunit 50001 "Prepayment Management"
                                 getCrMCustLedgEntry."Applies-to ID" := SalesOrderNo;
                                 getCrMCustLedgEntry.Modify();
 
-                                CustEntryApplyPostedEntries.Apply(getInvCustLedgEntry, getInvCustLedgEntry."Document No.", getInvCustLedgEntry."Posting Date");
+                                if getInvCustLedgEntry."Posting Date" > getCrMCustLedgEntry."Posting Date" then
+                                    ApplicationDate := getInvCustLedgEntry."Posting Date"
+                                else
+                                    ApplicationDate := getCrMCustLedgEntry."Posting Date";
+
+                                CustEntryApplyPostedEntries.Apply(getInvCustLedgEntry, getInvCustLedgEntry."Document No.", ApplicationDate);
                             end;
                         end;
                     end;
@@ -639,6 +642,22 @@ codeunit 50001 "Prepayment Management"
             until SalesInvHeader.Next() = 0;
 
         exit(true);
+    end;
+
+    procedure PostedPrepmtInvoiceApply(SalesInvNo: Code[20]): Boolean
+    var
+        SalesInvHeader: Record "Sales Invoice Header";
+    begin
+        if not SalesInvHeader.Get(SalesInvNo) then exit;
+        CustPrepmtApply(SalesInvHeader."Prepayment Order No.");
+    end;
+
+    procedure PostedPrepmtCrMApply(SalesCrMNo: Code[20]): Boolean
+    var
+        SalesCrMHeader: Record "Sales Cr.Memo Header";
+    begin
+        if not SalesCrMHeader.Get(SalesCrMNo) then exit;
+        CustPrepmtApply(SalesCrMHeader."Prepayment Order No.");
     end;
 
     [EventSubscriber(ObjectType::Codeunit, Codeunit::"Sales-Post", 'OnBeforePostSalesDoc', '', false, false)]
