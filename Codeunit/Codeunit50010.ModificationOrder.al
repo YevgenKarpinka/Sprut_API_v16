@@ -28,6 +28,9 @@ codeunit 50010 "Modification Order"
         if SalesPostPrepm.CheckOpenPrepaymentLines(SalesHeader, 1) then
             SalesPostPrepm.PostPrepaymentCreditMemoSprut(SalesHeader);
 
+        // Applying Prepayment Entries
+        PrepmMgt.CustPrepmtApply(SalesOrderNo);
+
         // Open Sales Order
         OpenSalesOrder(SalesHeader, SalesOrderNo);
 
