@@ -59,6 +59,14 @@ tableextension 50019 "Activities Cue Ext." extends "Activities Cue"
             FieldClass = FlowField;
             CalcFormula = Count("Activity Entries" where("Table ID" = filter(472), "Error Text" = filter(= '')));
         }
+        field(50007; "UnApply Credit Memo"; Integer)
+        {
+            // DataClassification = CustomerContent;
+            CaptionML = ENU = 'UnApply Credit Memo',
+                        RUS = 'Непримен. Кредит-ноты предоплаты';
+            FieldClass = FlowField;
+            CalcFormula = Count("Activity Entries" where("Table ID" = filter(114)));
+        }
     }
 
 }

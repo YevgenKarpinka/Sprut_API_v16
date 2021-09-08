@@ -1101,9 +1101,10 @@ codeunit 50018 "Integration 1C"
         if CompanyName <> _CompanyName then
             CustomerBankAccount.ChangeCompany(_CompanyName);
 
-        CustomerBankAccount.SetCurrentKey(IBAN);
+        CustomerBankAccount.SetCurrentKey("Customer No.", IBAN);
         CustomerBankAccount.SetRange(IBAN, CustBankAccIBAN);
-        CustomerBankAccount.FindSet(true);
+        CustomerBankAccount.SetFilter("Customer No.", '<>%1', '');
+        CustomerBankAccount.FindSet();
         Clear(Body);
         Body.Add('НомерСчета', CustomerBankAccount.IBAN);
         Body.Add('НомерСчетаУстаревший', CustomerBankAccount."Bank Account No.");

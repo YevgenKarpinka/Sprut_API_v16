@@ -10,15 +10,25 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
                 CaptionML = ENU = 'Sprut',
                             RUS = 'Спрут';
 
-                field("UnApply Prepm. Doc."; "UnApply Prepm. Doc.")
-                {
-                    ApplicationArea = All;
-
-                }
                 field("Deduplicated Customers"; "Deduplicated Customers")
                 {
                     ApplicationArea = All;
                     Visible = EnableTools;
+                }
+                field("Open Sales Order"; "Open Sales Order")
+                {
+                    ApplicationArea = All;
+                    Visible = EnableTools;
+                }
+                field("UnApply Credit Memo"; "UnApply Credit Memo")
+                {
+                    ApplicationArea = All;
+                    Visible = EnableTools;
+                }
+                field("UnApply Prepm. Doc."; "UnApply Prepm. Doc.")
+                {
+                    ApplicationArea = All;
+
                 }
                 field("Error Job Queue Entries"; "Error Job Queue Entries")
                 {
@@ -40,11 +50,7 @@ pageextension 50027 "O365 Activities Ext." extends "O365 Activities"
                     ApplicationArea = All;
                     Visible = EnableTools;
                 }
-                field("Open Sales Order"; "Open Sales Order")
-                {
-                    ApplicationArea = All;
-                    Visible = EnableTools;
-                }
+
             }
         }
     }

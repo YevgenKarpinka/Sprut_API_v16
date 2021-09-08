@@ -2,8 +2,6 @@ codeunit 50003 "Caption Mgt."
 {
 
     trigger OnRun()
-    var
-        myInt: Integer;
     begin
 
     end;
@@ -61,7 +59,6 @@ codeunit 50003 "Caption Mgt."
                                     Format(JobQueueEntry."Object ID to Run"),
                                     Format(JobQueueEntry.Status) + ' ' + JobQueueEntry.Description,
                                     JobQueueEntry."Error Message",
-                                    // GetLastErrorTextFromJobQueueEntry(JobQueueEntry.ID, CompIntegr."Company Name"),
                                     JobQueueEntry."Earliest Start Date/Time");
                             end;
                         until JobQueueEntry.Next() = 0;
@@ -186,6 +183,32 @@ codeunit 50003 "Caption Mgt."
             until CompIntegr.Next() = 0;
     end;
 
+    procedure UnApplyCreditMemo()
+    var
+        CompIntegr: Record "Company Integration";
+        SalesCrMemoHeader: Record "Sales Cr.Memo Header";
+    begin
+        ClearActivityEntries(Database::"Sales Cr.Memo Header");
+
+        if CompIntegr.FindSet() then
+            repeat
+                if CompIntegr."Copy Items From" or CompIntegr."Copy Items To" then begin
+                    SalesCrMemoHeader.ChangeCompany(CompIntegr."Company Name");
+                    SalesCrMemoHeader.SetCurrentKey("Prepayment Order No.");
+                    SalesCrMemoHeader.SetFilter("Prepayment Order No.", '<>%1', '');
+                    if SalesCrMemoHeader.FindSet() then
+                        repeat
+                            SalesCrMemoHeader.CalcFields("Remaining Amount");
+                            if SalesCrMemoHeader."Remaining Amount" <> 0 then
+                                UpdateActivityEntries(CompIntegr."Company Name", Database::"Sales Cr.Memo Header",
+                                    SalesCrMemoHeader."No.", GetDescriptionFromSalesCrMHeader(CompIntegr."Company Name", SalesCrMemoHeader."No."),
+                                    '', // Error Text
+                                    0DT);
+                        until SalesCrMemoHeader.Next() = 0;
+                end;
+            until CompIntegr.Next() = 0;
+    end;
+
     local procedure GetDescriptionFromSalesHeader(_CompanyName: Text[30]; SalesHeaderNo: Code[20]): Text[2048]
     var
         SalesHeader: Record "Sales Header";
@@ -194,6 +217,18 @@ codeunit 50003 "Caption Mgt."
 
         if SalesHeader.Get(SalesHeader."Document Type"::Order, SalesHeaderNo) then
             exit(StrSubstNo(descriptionSalesHeader, SalesHeader."Sell-to Customer No.", SalesHeader."Sell-to Customer Name"));
+
+        exit('');
+    end;
+
+    local procedure GetDescriptionFromSalesCrMHeader(_CompanyName: Text[30]; SalesCrMHeaderNo: Code[20]): Text[2048]
+    var
+        SalesCrMHeader: Record "Sales Cr.Memo Header";
+    begin
+        SalesCrMHeader.ChangeCompany(_CompanyName);
+
+        if SalesCrMHeader.Get(SalesCrMHeaderNo) then
+            exit(StrSubstNo(descriptionSalesHeader, SalesCrMHeader."Sell-to Customer No.", SalesCrMHeader."Sell-to Customer Name"));
 
         exit('');
     end;
@@ -228,6 +263,7 @@ codeunit 50003 "Caption Mgt."
             CaptionMgt.DelayedJobQueueEntries();
             CaptionMgt.TasksModifyOrderEntries();
             CaptionMgt.OpenSalesOrder();
+            CaptionMgt.UnApplyCreditMemo();
         end;
     end;
 }

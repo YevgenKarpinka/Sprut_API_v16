@@ -21,7 +21,6 @@ codeunit 50005 "CRM Action API"
         ModifyOrder.OnDeleteSalesOrder(salesOrderId);
         // mark delete in 1C
 
-
         exit(StrSubstNo(msgSalesOrderDeleted, salesOrderId));
     end;
 
