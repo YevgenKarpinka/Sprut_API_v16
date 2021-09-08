@@ -543,7 +543,9 @@ page 50002 "APIV2 - Customers"
         CustBankAccount: Record "Customer Bank Account";
         GLSetup: Record "General Ledger Setup";
     begin
-        if txtIBAN = "Default Bank Code" then exit;
+        if (txtIBAN = "Default Bank Code")
+        or ("No." = '') then
+            exit;
 
         if txtIBAN = '' then begin
             CustBankAccount.Get("Default Bank Code");
