@@ -33,7 +33,7 @@ tableextension 50019 "Activities Cue Ext." extends "Activities Cue"
             CaptionML = ENU = 'Error Modify Order Entries',
                         RUS = 'Ошибки в операциях изменения заказа';
             FieldClass = FlowField;
-            CalcFormula = Count("Activity Entries" where("Table ID" = filter(50002), "Error Text" = filter(= '')));
+            CalcFormula = Count("Activity Entries" where("Table ID" = filter(50002)));
         }
         field(50004; "Open Sales Order"; Integer)
         {
@@ -49,7 +49,7 @@ tableextension 50019 "Activities Cue Ext." extends "Activities Cue"
             CaptionML = ENU = 'Modify Order Entries In Work',
                         RUS = 'Операции изменения заказа в процессе';
             FieldClass = FlowField;
-            CalcFormula = Count("Activity Entries" where("Table ID" = filter(50002), "Error Text" = filter(= '')));
+            CalcFormula = Count("Activity Entries" where("Table ID" = filter(472)));
         }
         field(50006; "UnSchedule Job Queue Entries"; Integer)
         {

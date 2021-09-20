@@ -15,6 +15,7 @@ codeunit 50000 "Web Service Mgt."
         PrepmtMgt: Codeunit "Prepayment Management";
         MatchContragent: Codeunit "Match Contragent";
         errParameterIsNullNotAllowedInRequest: Label 'Parameter ''%1'' Is Null Not Allowed In Request %2';
+        errItemBlockedForSales: Label 'Item %1 blocked for sales';
 
 
     procedure ConnectToCRM(connectorCode: Code[20]; entityType: Text[20]; requestMethod: Code[20]; var Body: Text): Boolean
@@ -565,11 +566,14 @@ codeunit 50000 "Web Service Mgt."
         ResponceTokenLine := GetSpecificationLinesArray(ResponceToken);
         jsonLines.ReadFrom(ResponceTokenLine);
         foreach LineToken in jsonLines do begin
+            ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+            // CheckItemBloked(ItemNo);
+
             if GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then
                 exit(true);
 
             LineNo := GetJSToken(LineToken.AsObject(), 'line_no').AsValue().AsInteger();
-            ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
+            // ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
 
             Description := GetJSToken(LineToken.AsObject(), 'description').AsValue().AsText();
             // if Description = '' then Error(errDescriptionCannotBeEmpty);
@@ -1032,6 +1036,15 @@ codeunit 50000 "Web Service Mgt."
         if Item.Blocked or Item."Sales Blocked" then
             exit(2);
         exit(1);
+    end;
+
+    local procedure CheckItemBloked(ItemNo: Code[20])
+    var
+        Item: Record Item;
+    begin
+        Item.Get(ItemNo);
+        if Item.Blocked or Item."Sales Blocked" then
+            Error(errItemBlockedForSales, ItemNo);
     end;
 
     local procedure Guid2Text(_Guid: Guid): Text
