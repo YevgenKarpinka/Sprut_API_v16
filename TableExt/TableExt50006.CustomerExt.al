@@ -68,6 +68,7 @@ tableextension 50006 "Customer Ext" extends Customer
                 if xRec."Init 1C" <> Rec."Init 1C" then
                     CheckAgreementEntries();
                 UpdateBCID();
+                UpdateInegrationCode1();
             end;
         }
         field(50009; "Modify User ID"; Code[50])
@@ -115,6 +116,7 @@ tableextension 50006 "Customer Ext" extends Customer
     end;
 
     var
+        Integration1C: Codeunit "Integration 1C";
         errCustomerUsedInUnPostedSalesDocuments: TextConst ENU = 'Customer Used In UnPosted Sales Documents',
                                                             RUS = 'Клиент используется в неучтенных документах продажи';
 
@@ -127,6 +129,7 @@ tableextension 50006 "Customer Ext" extends Customer
 
         errCustomerWithCRMIDAlreadyExist: TextConst ENU = 'Customer %1 with CRM_ID %2 already exist!',
                                                     RUS = 'Клиент %1 с CRM ID %2 уже существует!';
+        lblSystemCode1C: Label '1C';
 
     local procedure UpdateCreateDateTime()
     begin
@@ -160,8 +163,40 @@ tableextension 50006 "Customer Ext" extends Customer
 
     procedure UpdateBCID()
     begin
-        if IsNullGuid("BC Id") then
-            "BC Id" := SystemId;
+        // if IsNullGuid("BC Id") then
+        "BC Id" := SystemId;
+    end;
+
+    procedure UpdateInegrationCode1()
+    var
+        FindIntEntity: Record "Integration Entity";
+        UpdIntEntity: Record "Integration Entity";
+    begin
+        FindIntEntity.SetCurrentKey("System Code", "Table ID", "Company Name", "Entity Code");
+        FindIntEntity.SetRange("System Code", lblSystemCode1C);
+        FindIntEntity.SetRange("Table ID", Database::Customer);
+        FindIntEntity.SetRange("Company Name", CompanyName);
+        FindIntEntity.SetRange("Entity Code", "No.");
+        if FindIntEntity.FindFirst() then begin
+            if "Init 1C" then begin
+                if (FindIntEntity."Code 1" = Integration1C.Guid2APIStr("BC Id"))
+                or IsNullGuid("BC Id") then
+                    exit;
+
+                UpdIntEntity.TransferFields(FindIntEntity, false);
+                UpdIntEntity."Code 1" := Integration1C.Guid2APIStr("BC Id");
+            end else begin
+                if (FindIntEntity."Code 1" = Integration1C.Guid2APIStr("CRM ID"))
+                or IsNullGuid("CRM ID") then
+                    exit;
+
+                UpdIntEntity.TransferFields(FindIntEntity, false);
+                UpdIntEntity."Code 1" := Integration1C.Guid2APIStr("CRM ID");
+            end;
+            UpdIntEntity.Insert();
+            FindIntEntity.Delete();
+        end;
+
     end;
 
     procedure CheckModifyAllowed(): Boolean

@@ -125,7 +125,7 @@ codeunit 50021 "Copy Customers"
         CustomerBankAccountFrom: Record "Customer Bank Account";
         CustomerBankAccountTo: Record "Customer Bank Account";
         DaleteAllFlag: Boolean;
-        blankGuid: Guid;
+        currentGuid: Guid;
     begin
         ItemToCopy.SetRange(Type, ItemToCopy.Type::Customer);
         if ItemToCopy.IsEmpty then exit;
@@ -157,9 +157,15 @@ codeunit 50021 "Copy Customers"
                         CustomerTo.SetRange("BC Id", CustomerFrom."BC Id");
                         // CustomerTo.SetCurrentKey(Name);
                         // CustomerTo.SetRange(Name, CustomerFrom.Name);
+                        Clear(currentGuid);
                         if CustomerTo.FindFirst() then begin
+                            if not IsNullGuid(CustomerTo."BC Id") then
+                                currentGuid := CustomerTo."BC Id";
                             CustomerTo.TransferFields(CustomerFrom, false);
-                            CustomerTo."BC Id" := CustomerFrom.SystemId;
+                            if not IsNullGuid(currentGuid) then
+                                CustomerTo."BC Id" := currentGuid
+                            else
+                                CustomerTo."BC Id" := CustomerFrom.SystemId;
                             CustomerTo.Modify();
                         end else begin
                             CustomerTo.Init();

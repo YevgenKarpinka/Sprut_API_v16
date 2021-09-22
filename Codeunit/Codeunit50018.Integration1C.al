@@ -34,6 +34,7 @@ codeunit 50018 "Integration 1C"
         glCustAgreement: Record "Customer Agreement";
         glVendAgreement: Record "Vendor Agreement";
         glCompanyPrefix: Code[10];
+        TestMode: Boolean;
 
     procedure GetCompanyIdFrom1C(): Boolean
     var
@@ -420,7 +421,7 @@ codeunit 50018 "Integration 1C"
                     end;
                 end;
 
-            until Customer.Next() = 0;
+            until (Customer.Next() = 0) or TestMode;
 
         // link between 1C and BC
         // create entity in 1C or get it
@@ -498,7 +499,7 @@ codeunit 50018 "Integration 1C"
                         tempCustomer.Insert();
                     end;
                 end;
-            until Customer.Next() = 0;
+            until (Customer.Next() = 0) or TestMode;
 
         if tempCustomer.FindSet(true) then
             repeat
@@ -2135,5 +2136,25 @@ codeunit 50018 "Integration 1C"
     begin
         IntegrEntity.Get(lblSystemCode, Database::Vendor, VendorNo, '');
         exit(LowerCase(DelChr(IntegrEntity."Entity Id", '<>', '{}')));
+    end;
+
+    procedure InitTest(initTest: Boolean)
+    begin
+        TestMode := initTest;
+    end;
+
+    procedure Guid2APIStr(_Guid: Guid): Text
+    begin
+        exit(Format(_Guid, 36, 4));
+    end;
+
+    procedure Date2APIStr(_Date: Date): Text
+    begin
+        exit(Format(_Date, 10, 9));
+    end;
+
+    procedure DateTime2APIStr(_Date: DateTime): Text
+    begin
+        exit(Format(_Date, 24, 9));
     end;
 }
