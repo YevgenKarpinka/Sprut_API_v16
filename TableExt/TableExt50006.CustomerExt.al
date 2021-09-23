@@ -84,6 +84,12 @@ tableextension 50006 "Customer Ext" extends Customer
             CaptionML = ENU = 'BC Id',
                         RUS = 'Идентификатор БЦ';
             // Editable = false;
+
+            trigger OnValidate()
+            begin
+                if "Init 1C" then
+                    TestField("BC Id");
+            end;
         }
 
     }

@@ -21,5 +21,11 @@ tableextension 50010 "User Setup Ext" extends "User Setup"
             CaptionML = ENU = 'Send Email Error Tasks',
                         RUS = 'Отослать почтой ошибки задач';
         }
+        field(50003; "Enable Today as Work Date"; Boolean)
+        {
+            DataClassification = CustomerContent;
+            CaptionML = ENU = 'Enable Today as Work Date',
+                        RUS = 'Включить Сегодня как Рабочую дату';
+        }
     }
 }

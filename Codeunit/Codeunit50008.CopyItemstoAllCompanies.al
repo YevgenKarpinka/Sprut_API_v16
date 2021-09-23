@@ -26,7 +26,7 @@ codeunit 50008 "Copy Items to All Companies"
     local procedure OnAfterInsertEventCustomer(var Rec: Record Customer)
     begin
         // check main company
-        if CheckMainCompany() then exit;
+        if CheckMainCompany() or not IsNullGuid(Rec."CRM ID") then exit;
         if Rec.IsTemporary then exit;
         if CheckCustomerFieldsFilled(Rec) then
             AddEntityToCopy(entityType::Customer, Rec."No.");
@@ -36,7 +36,7 @@ codeunit 50008 "Copy Items to All Companies"
     local procedure OnAfterModifyEventCustomer(var Rec: Record Customer)
     begin
         // check main company
-        if CheckMainCompany() then exit;
+        if CheckMainCompany() or not IsNullGuid(Rec."CRM ID") then exit;
         if Rec.IsTemporary then exit;
         if CheckCustomerFieldsFilled(Rec) then
             AddEntityToCopy(entityType::Customer, Rec."No.");

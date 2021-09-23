@@ -427,7 +427,8 @@ codeunit 50018 "Integration 1C"
         // create entity in 1C or get it
         if tempCustomer.FindSet(true) then
             repeat
-                filterValue := StrSubstNo(lblfilter, 'ID_CRM', GuidToClearText(tempCustomer."CRM ID"));
+                // filterValue := StrSubstNo(lblfilter, 'ID_CRM', GuidToClearText(tempCustomer."CRM ID"));
+                filterValue := StrSubstNo(lblfilter, 'Code', glCompanyPrefix + tempCustomer."No.");
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
                 jsonBody.ReadFrom(Body);
                 jsonLines := WebServiceMgt.GetJSToken(jsonBody, 'value').AsArray();

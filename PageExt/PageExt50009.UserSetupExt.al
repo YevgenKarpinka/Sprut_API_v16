@@ -23,6 +23,10 @@ pageextension 50009 "User Setup Ext" extends "User Setup"
                 ToolTipML = ENU = 'Specifies Send Email Error Tasks modification sales order',
                             RUS = 'Указывает что нужно отослать письмо с ошбками очереди работ изменения заказа продажи.';
             }
+            field("Enable Today as Work Date"; "Enable Today as Work Date")
+            {
+                ApplicationArea = All;
+            }
         }
     }
 }

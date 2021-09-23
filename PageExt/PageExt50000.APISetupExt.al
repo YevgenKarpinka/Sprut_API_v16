@@ -179,6 +179,7 @@ pageextension 50000 "API Setup Ext" extends "API Setup"
 
                 trigger OnAction()
                 begin
+                    Integration1C.InitTest(true);
                     if Integration1C.GetCustomerIdFrom1C(CompanyName) then
                         Message('Ok!')
                     else
