@@ -567,7 +567,7 @@ codeunit 50000 "Web Service Mgt."
         jsonLines.ReadFrom(ResponceTokenLine);
         foreach LineToken in jsonLines do begin
             ItemNo := GetJSToken(LineToken.AsObject(), 'no').AsValue().AsText();
-            // CheckItemBloked(ItemNo);
+            CheckItemBlocked(ItemNo);
 
             if GetJSToken(LineToken.AsObject(), 'line_no').AsValue().IsNull then
                 exit(true);
@@ -1038,13 +1038,15 @@ codeunit 50000 "Web Service Mgt."
         exit(1);
     end;
 
-    local procedure CheckItemBloked(ItemNo: Code[20])
+    local procedure CheckItemBlocked(ItemNo: Code[20])
     var
         Item: Record Item;
     begin
         Item.Get(ItemNo);
-        if Item.Blocked or Item."Sales Blocked" then
-            Error(errItemBlockedForSales, ItemNo);
+        Item.TestField(Blocked, false);
+        Item.TestField("Sales Blocked", false);
+        // if Item.Blocked or Item."Sales Blocked" then
+        //     Error(errItemBlockedForSales, ItemNo);
     end;
 
     local procedure Guid2Text(_Guid: Guid): Text
@@ -1101,10 +1103,10 @@ codeunit 50000 "Web Service Mgt."
     begin
 
         // >> init for test
-        custAgreementId := '446e2ca1-35a6-ea11-a812-000d3aba77ea';
-        crmId := '93dd43f3-e5a3-ea11-a812-000d3abaae50';
-        payerDetails := 'test payment from BC';
-        paymentAmount := 155;
+        // custAgreementId := '446e2ca1-35a6-ea11-a812-000d3aba77ea';
+        // crmId := '93dd43f3-e5a3-ea11-a812-000d3abaae50';
+        // payerDetails := 'test payment from BC';
+        // paymentAmount := 155;
         // <<
 
         Counter := 0;

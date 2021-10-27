@@ -17,38 +17,39 @@ codeunit 50012 "Task Payment To CRM"
         case recTaskPaymentSend.Status of
             recTaskPaymentSend.Status::OnPaymentSend:
                 begin
-                    if recTaskPaymentSend."Work Status" = recTaskPaymentSend."Work Status"::WaitingForWork then begin
+                    case recTaskPaymentSend."Work Status" of
+                        recTaskPaymentSend."Work Status"::WaitingForWork:
+                            begin
+                                UpdateWorkStatus(recTaskPaymentSend."Work Status"::InWork);
 
-                        UpdateWorkStatus(recTaskPaymentSend."Work Status"::InWork);
+                                if not PaymentMgt.OnProcessPaymentSendToCRM(recTaskPaymentSend."Entry Type", recTaskPaymentSend."Invoice Entry No.",
+                                                                recTaskPaymentSend."Payment Entry No.", recTaskPaymentSend."Payment Amount") then begin
+                                    if recTaskPaymentSend."Attempts Send" >= GetJobQueueMaxAttempts then begin
+                                        UpdateWorkStatus(recTaskPaymentSend."Work Status"::Error)
+                                    end else begin
+                                        IncTaskModifyOrderAttempt();
+                                        UpdateWorkStatus(recTaskPaymentSend."Work Status"::WaitingForWork);
+                                    end;
+                                    exit;
+                                end;
 
-                        if not PaymentMgt.OnProcessPaymentSendToCRM(recTaskPaymentSend."Entry Type", recTaskPaymentSend."Invoice Entry No.",
-                                                        recTaskPaymentSend."Payment Entry No.", recTaskPaymentSend."Payment Amount") then begin
-                            if recTaskPaymentSend."Attempts Send" >= GetJobQueueMaxAttempts then begin
-                                UpdateWorkStatus(recTaskPaymentSend."Work Status"::Error)
-                            end else begin
-                                IncTaskModifyOrderAttempt();
-                                UpdateWorkStatus(recTaskPaymentSend."Work Status"::WaitingForWork);
+                                // modify task statuses to next level
+                                ModifyTaskStatusToNextLevel(recTaskPaymentSend.Status::Done);
+                                // exit;
                             end;
-                            exit;
-                        end;
 
-                        // modify task statuses to next level
-                        ModifyTaskStatusToNextLevel(recTaskPaymentSend.Status::Done);
-                        exit;
-                    end;
+                        recTaskPaymentSend."Work Status"::Error:
+                            begin
+                                if not PDFToEmail.ErrorTasksPaymentSendToAdministrator() then begin
+                                    IncTaskModifyOrderAttempt();
+                                    exit;
+                                end;
 
-                    if recTaskPaymentSend."Work Status" = recTaskPaymentSend."Work Status"::Error then begin
-                        UpdateWorkStatus(recTaskPaymentSend."Work Status"::InWork);
-
-                        if not PDFToEmail.ErrorTasksPaymentSendToAdministrator() then begin
-                            UpdateWorkStatus(recTaskPaymentSend."Work Status"::Error);
-                            IncTaskModifyOrderAttempt();
-                            exit;
-                        end;
-
-                        // modify task status to next level
-                        ModifyTaskStatusToNextLevel(recTaskPaymentSend.Status::Error);
-                        UpdateWorkStatus(recTaskPaymentSend."Work Status"::Done);
+                                // modify task status to next level
+                                ModifyTaskStatusToNextLevel(recTaskPaymentSend.Status::Error);
+                                UpdateWorkStatus(recTaskPaymentSend."Work Status"::Done);
+                                // exit;
+                            end;
                     end;
                 end;
         end;

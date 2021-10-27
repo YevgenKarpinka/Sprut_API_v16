@@ -13,7 +13,7 @@ codeunit 50023 "User Entry Management"
         if UserSetup.Get(UserId) then;
     end;
 
-    [EventSubscriber(ObjectType::Codeunit, Codeunit::LogInManagement, 'OnAfterLogInEnd', '', false, false)]
+    // [EventSubscriber(ObjectType::Codeunit, Codeunit::LogInManagement, 'OnAfterLogInEnd', '', false, false)]
     local procedure HandleOnAfterLogInEnd()
     begin
         GetUserSetup();

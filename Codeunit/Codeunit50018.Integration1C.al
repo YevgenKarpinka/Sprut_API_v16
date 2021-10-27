@@ -218,8 +218,8 @@ codeunit 50018 "Integration 1C"
         end;
         tempCustomerAgreement.DeleteAll();
 
-        // create Currency list for getting id from 1C
-        if locCustomerAgreement.FindSet(true) then
+        // create Agreement list for getting id from 1C
+        if locCustomerAgreement.FindSet() then
             repeat
                 if Customer.Get(locCustomerAgreement."Customer No.")
                 and (IntegrationEntity.Get(lblSystemCode, Database::Customer, GuidToClearText(Customer."CRM ID"), '')
@@ -243,7 +243,7 @@ codeunit 50018 "Integration 1C"
 
         // link between 1C and BC
         // create entity in 1C or get it
-        if tempCustomerAgreement.FindSet(true) then
+        if tempCustomerAgreement.FindSet() then
             repeat
                 filterValue := StrSubstNo(lblfilter, 'CRM_ID', GuidToClearText(tempCustomerAgreement."CRM ID"));
                 if not ConnectTo1C(entityType, requestMethodGET, Body, filterValue) then exit(false);
@@ -273,28 +273,28 @@ codeunit 50018 "Integration 1C"
         // update entity in 1C
         // create list for updating in 1C
         tempCustomerAgreement.DeleteAll();
-        if locCustomerAgreement.FindSet(true) then
+        if locCustomerAgreement.FindSet() then
             repeat
-                if Customer."Init 1C" then begin
-                    if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(locCustomerAgreement.SystemId), '')
-                                    and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified")
-                                    then begin
-                        tempCustomerAgreement := locCustomerAgreement;
-                        tempCustomerAgreement."CRM ID" := locCustomerAgreement.SystemId;
-                        tempCustomerAgreement.Insert();
+                if Customer.Get(locCustomerAgreement."Customer No.") then
+                    if Customer."Init 1C" then begin
+                        if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(locCustomerAgreement.SystemId), '')
+                                        and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified")
+                                        then begin
+                            tempCustomerAgreement := locCustomerAgreement;
+                            tempCustomerAgreement."CRM ID" := locCustomerAgreement.SystemId;
+                            tempCustomerAgreement.Insert();
+                        end;
+                    end else begin
+                        if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(locCustomerAgreement."CRM ID"), '')
+                                        and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified")
+                                        then begin
+                            tempCustomerAgreement := locCustomerAgreement;
+                            tempCustomerAgreement.Insert();
+                        end;
                     end;
-                end else begin
-                    if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(locCustomerAgreement."CRM ID"), '')
-                                    and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified")
-                                    then begin
-                        tempCustomerAgreement := locCustomerAgreement;
-                        tempCustomerAgreement.Insert();
-                    end;
-                end;
-
             until locCustomerAgreement.Next() = 0;
 
-        if tempCustomerAgreement.FindSet(true) then
+        if tempCustomerAgreement.FindSet() then
             repeat
                 // create request body
                 CreateRequestBodyToCustomerAgreement(tempCustomerAgreement."Customer No.", tempCustomerAgreement."No.", jsonBody, requestMethodPATCH, _CompanyName);
@@ -359,7 +359,7 @@ codeunit 50018 "Integration 1C"
             Body.Add('CRM_ID', GuidToClearText(CustomerAgreement.SystemId))
         else
             Body.Add('CRM_ID', GuidToClearText(CustomerAgreement."CRM ID"));
-        // Body.Add('ХХХХ', CustomerAgreement.Print);
+        Body.Add('ПризнакПечати', CustomerAgreement.Print);
 
     end;
 
@@ -713,7 +713,7 @@ codeunit 50018 "Integration 1C"
                     foreach LineToken in jsonLines do
                         AddIDToIntegrationEntity(lblSystemCode, Database::Vendor, tempVendor."No.", '',
                                                     WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText(),
-                                                    '', CompanyName);
+                                                    tempVendor."No.", CompanyName);
                 end else begin
                     // create request body
                     CreateRequestBodyToVendor(tempVendor."No.", jsonBody, requestMethodPOST);
@@ -723,7 +723,7 @@ codeunit 50018 "Integration 1C"
                     jsonBody.ReadFrom(Body);
                     AddIDToIntegrationEntity(lblSystemCode, Database::Vendor, tempVendor."No.", '',
                                                 WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText(),
-                                                '', CompanyName);
+                                                tempVendor."No.", CompanyName);
                 end;
 
                 // patch when bank account exist
@@ -1529,7 +1529,7 @@ codeunit 50018 "Integration 1C"
                     foreach LineToken in jsonLines do
                         AddIDToIntegrationEntity(lblSystemCode, Database::Item, tempItem."No.", '',
                                                     WebServiceMgt.GetJSToken(LineToken.AsObject(), 'Ref_Key').AsValue().AsText(),
-                                                    '', CompanyName);
+                                                    tempItem."No.", CompanyName);
 
                     // patch item in 1C
                     CreateRequestBodyToItems(tempItem."No.", jsonBody);
@@ -1548,7 +1548,7 @@ codeunit 50018 "Integration 1C"
                     jsonBody.ReadFrom(Body);
                     AddIDToIntegrationEntity(lblSystemCode, Database::Item, tempItem."No.", '',
                                                 WebServiceMgt.GetJSToken(jsonBody, 'Ref_Key').AsValue().AsText(),
-                                                '', CompanyName);
+                                                tempItem."No.", CompanyName);
                 end;
             // Commit();
             until tempItem.Next() = 0;

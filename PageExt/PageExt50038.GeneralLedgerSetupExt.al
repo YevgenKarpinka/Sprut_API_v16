@@ -13,7 +13,14 @@ pageextension 50038 "General Ledger Setup Ext" extends "General Ledger Setup"
             {
                 ApplicationArea = All;
             }
+            field("Disable Check Cust. Prep."; "Disable Check Cust. Prep.")
+            {
+                ApplicationArea = All;
+            }
+            field("Disable Check Vend. Prep."; "Disable Check Vend. Prep.")
+            {
+                ApplicationArea = All;
+            }
         }
     }
-
 }

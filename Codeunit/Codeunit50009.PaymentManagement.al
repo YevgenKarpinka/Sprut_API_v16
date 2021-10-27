@@ -11,6 +11,7 @@ codeunit 50009 "Payment Management"
         UnApplyInvoiceEntryNo: Integer;
         UnApplyPaymentEntryNo: Integer;
         UnApplyPaymentAmount: Decimal;
+        GLSetup: Record "General Ledger Setup";
 
 
     [EventSubscriber(ObjectType::Codeunit, Codeunit::"Payment Registration Mgt.", 'OnBeforeGenJnlLineInsert', '', false, false)]
@@ -127,6 +128,8 @@ codeunit 50009 "Payment Management"
     var
         TaskPaymentSend: Record "Task Payment Send";
     begin
+        if IsNullGuid(GetAgreementIdByDocumentNo(InvoiceEntryNo)) then exit;
+
         TaskPaymentSend.SetRange("Entry Type", TaskPaymentSend."Entry Type"::Apply);
         TaskPaymentSend.SetRange("Invoice Entry No.", InvoiceEntryNo);
         TaskPaymentSend.SetRange("Payment Entry No.", PaymentEntryNo);
@@ -154,6 +157,8 @@ codeunit 50009 "Payment Management"
     var
         TaskPaymentSend: Record "Task Payment Send";
     begin
+        if IsNullGuid(GetAgreementIdByDocumentNo(InvoiceEntryNo)) then exit;
+
         TaskPaymentSend.SetRange("Entry Type", TaskPaymentSend."Entry Type"::UnApply);
         TaskPaymentSend.SetRange("Invoice Entry No.", InvoiceEntryNo);
         TaskPaymentSend.SetRange("Payment Entry No.", PaymentEntryNo);
@@ -310,9 +315,9 @@ codeunit 50009 "Payment Management"
     begin
         if CustLedgEntry.Get(InvoiceEntryNo)
         and SalesInvHeader.Get(CustLedgEntry."Document No.")
-        and CustAgreement.Get(SalesInvHeader."Sell-to Customer No.", SalesInvHeader."Agreement No.") then
-            ;
-        exit(CustAgreement."CRM ID");
+        and CustAgreement.Get(SalesInvHeader."Sell-to Customer No.", SalesInvHeader."Agreement No.")
+        and not CustAgreement."Init 1C" then
+            exit(CustAgreement."CRM ID");
     end;
 
     local procedure GetCRMInvoiceIdByDocumentNo(InvoiceEntryNo: Integer): Guid
@@ -321,9 +326,54 @@ codeunit 50009 "Payment Management"
         SalesInvHeader: Record "Sales Invoice Header";
         CustAgreement: Record "Customer Agreement";
     begin
-        if CustLedgEntry.Get(InvoiceEntryNo)
-        and SalesInvHeader.Get(CustLedgEntry."Document No.") then
-            ;
+        if CustLedgEntry.Get(InvoiceEntryNo) and SalesInvHeader.Get(CustLedgEntry."Document No.") then;
         exit(SalesInvHeader."CRM ID");
+    end;
+
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::"Gen. Jnl.-Post Line", 'OnApplyCustLedgEntryOnBeforePrepareTempCustLedgEntry', '', false, false)]
+    local procedure CustApply(var NewCVLedgerEntryBuffer: Record "CV Ledger Entry Buffer")
+    begin
+        GetGLSetup();
+        if GLSetup."Enable Russian Accounting" and GLSetup."Disable Check Cust. Prep."
+        and NewCVLedgerEntryBuffer.Prepayment then
+            NewCVLedgerEntryBuffer.Prepayment := false;
+    end;
+
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::"Gen. Jnl.-Post Line", 'OnPrepareTempVendLedgEntryOnBeforeExit', '', false, false)]
+    local procedure VendApply(var CVLedgerEntryBuffer: Record "CV Ledger Entry Buffer")
+    begin
+        GetGLSetup();
+        if GLSetup."Enable Russian Accounting" and GLSetup."Disable Check Vend. Prep."
+        and CVLedgerEntryBuffer.Prepayment then
+            CVLedgerEntryBuffer.Prepayment := false;
+    end;
+
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::"Gen. Jnl.-Post Line", 'OnBeforePostApply', '', false, false)]
+    local procedure PostApply(GenJnlLine: Record "Gen. Journal Line"; var NewCVLedgEntryBuf: Record "CV Ledger Entry Buffer"; var NewCVLedgEntryBuf2: Record "CV Ledger Entry Buffer")
+    begin
+        GetGLSetup();
+        if GLSetup."Enable Russian Accounting" then
+            case GenJnlLine."Account Type" of
+                GenJnlLine."Account Type"::Customer:
+                    begin
+                        if GLSetup."Disable Check Cust. Prep."
+                                and (NewCVLedgEntryBuf.Prepayment <> NewCVLedgEntryBuf2.Prepayment) then
+                            NewCVLedgEntryBuf.Prepayment := NewCVLedgEntryBuf2.Prepayment;
+                    end;
+                GenJnlLine."Account Type"::Vendor:
+                    begin
+                        if GLSetup."Disable Check Vend. Prep."
+                                and (NewCVLedgEntryBuf.Prepayment <> NewCVLedgEntryBuf2.Prepayment) then
+                            NewCVLedgEntryBuf.Prepayment := NewCVLedgEntryBuf2.Prepayment;
+                    end;
+            end;
+    end;
+
+    local procedure GetGLSetup()
+    begin
+        if not GLSetup.Get() then begin
+            GLSetup.Init;
+            GLSetup.Insert();
+        end;
     end;
 }
