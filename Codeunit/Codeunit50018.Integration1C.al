@@ -276,7 +276,7 @@ codeunit 50018 "Integration 1C"
         if locCustomerAgreement.FindSet() then
             repeat
                 if Customer.Get(locCustomerAgreement."Customer No.") then
-                    if Customer."Init 1C" then begin
+                    if locCustomerAgreement."Init 1C" then begin
                         if IntegrationEntity.Get(lblSystemCode, Database::"Customer Agreement", GuidToClearText(locCustomerAgreement.SystemId), '')
                                         and (IntegrationEntity."Last Modify Date Time" < locCustomerAgreement."Last DateTime Modified")
                                         then begin
