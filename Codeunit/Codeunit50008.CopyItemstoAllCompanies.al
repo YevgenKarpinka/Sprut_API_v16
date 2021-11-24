@@ -76,7 +76,7 @@ codeunit 50008 "Copy Items to All Companies"
         exit(true);
     end;
 
-    local procedure CheckCustomerFieldsFilled(Rec: Record Customer): Boolean
+    procedure CheckCustomerFieldsFilled(Rec: Record Customer): Boolean
     begin
         if not IsNullGuid(Rec."CRM ID") then exit(false);
 
@@ -100,7 +100,7 @@ codeunit 50008 "Copy Items to All Companies"
         ItemToCopy.Init();
         ItemToCopy.Type := Type;
         ItemToCopy.Validate("No.", EntityNo);
-        ItemToCopy.Insert();
+        if ItemToCopy.Insert() then;
     end;
 
     [EventSubscriber(ObjectType::Table, 27, 'OnAfterInsertEvent', '', false, false)]

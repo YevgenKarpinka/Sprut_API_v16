@@ -12,39 +12,35 @@ codeunit 50021 "Copy Customers"
         DeleteItemsAfterCopy();
     end;
 
-    [EventSubscriber(ObjectType::Table, 23, 'OnAfterInsertEvent', '', false, false)]
-    local procedure OnAfterInsertEventVendor(var Rec: Record Vendor)
+    [EventSubscriber(ObjectType::Codeunit, 5150, 'OnGetIntegrationDisabled', '', false, false)]
+    local procedure OnGetIntegrationDisabled(var IsSyncDisabled: Boolean)
     begin
-        // check main company
-        if CheckMainCompany() then exit;
-        if Rec.IsTemporary then exit;
-        if CheckVendorFieldsFilled(Rec) then
-            AddEntityToCopy(entityType::Vendor, Rec."No.");
+        IsSyncDisabled := true;
     end;
 
-    [EventSubscriber(ObjectType::Table, 23, 'OnAfterModifyEvent', '', false, false)]
-    local procedure OnAfterModifyEventVendor(var Rec: Record Vendor)
-    begin
-        // check main company
-        if CheckMainCompany() then exit;
-        if Rec.IsTemporary then exit;
-        if CheckVendorFieldsFilled(Rec) then
-            AddEntityToCopy(entityType::Vendor, Rec."No.");
-    end;
+    // [EventSubscriber(ObjectType::Table, 23, 'OnAfterModifyEvent', '', false, false)]
+    // local procedure OnAfterModifyEventVendor(var Rec: Record Vendor)
+    // begin
+    //     // check main company
+    //     if CheckMainCompany() then exit;
+    //     if Rec.IsTemporary then exit;
+    //     if CheckVendorFieldsFilled(Rec) then
+    //         AddEntityToCopy(entityType::Vendor, Rec."No.");
+    // end;
 
-    local procedure CheckVendorFieldsFilled(Rec: Record Vendor): Boolean
-    begin
-        if Rec."No." = '' then exit(false);
-        if Rec.Name = '' then exit(false);
-        if Rec."OKPO Code" = '' then exit(false);
-        if Rec."Prices Including VAT" = false then exit(false);
-        if Rec."Gen. Bus. Posting Group" = '' then exit(false);
-        if Rec."Vendor Posting Group" = '' then exit(false);
-        if Rec."VAT Bus. Posting Group" = '' then exit(false);
-        if Rec."Currency Code" = '' then exit(false);
+    // local procedure CheckVendorFieldsFilled(Rec: Record Vendor): Boolean
+    // begin
+    //     if Rec."No." = '' then exit(false);
+    //     if Rec.Name = '' then exit(false);
+    //     if Rec."OKPO Code" = '' then exit(false);
+    //     if Rec."Prices Including VAT" = false then exit(false);
+    //     if Rec."Gen. Bus. Posting Group" = '' then exit(false);
+    //     if Rec."Vendor Posting Group" = '' then exit(false);
+    //     if Rec."VAT Bus. Posting Group" = '' then exit(false);
+    //     if Rec."Currency Code" = '' then exit(false);
 
-        exit(true);
-    end;
+    //     exit(true);
+    // end;
 
     local procedure AddEntityToCopy(Type: Enum EntityType; EntityNo: Code[20])
     var
@@ -57,54 +53,54 @@ codeunit 50021 "Copy Customers"
         ItemToCopy.Insert();
     end;
 
-    [EventSubscriber(ObjectType::Table, 27, 'OnAfterInsertEvent', '', false, false)]
-    local procedure OnAfterInsertEventItem(var Rec: Record Item)
-    begin
-        // check main company
-        if CheckMainCompany() then exit;
-        if Rec.IsTemporary then exit;
-        if CheckItemFieldsFilled(Rec) then
-            AddEntityToCopy(entityType::Item, Rec."No.");
-    end;
+    // [EventSubscriber(ObjectType::Table, 27, 'OnAfterInsertEvent', '', false, false)]
+    // local procedure OnAfterInsertEventItem(var Rec: Record Item)
+    // begin
+    //     // check main company
+    //     if CheckMainCompany() then exit;
+    //     if Rec.IsTemporary then exit;
+    //     if CheckItemFieldsFilled(Rec) then
+    //         AddEntityToCopy(entityType::Item, Rec."No.");
+    // end;
 
-    [EventSubscriber(ObjectType::Table, 27, 'OnAfterModifyEvent', '', false, false)]
-    local procedure OnAfterModifyEventItem(var Rec: Record Item)
-    begin
-        // check main company
-        if CheckMainCompany() then exit;
-        if Rec.IsTemporary then exit;
-        if CheckItemFieldsFilled(Rec) then
-            AddEntityToCopy(entityType::Item, Rec."No.");
-    end;
+    // [EventSubscriber(ObjectType::Table, 27, 'OnAfterModifyEvent', '', false, false)]
+    // local procedure OnAfterModifyEventItem(var Rec: Record Item)
+    // begin
+    //     // check main company
+    //     if CheckMainCompany() then exit;
+    //     if Rec.IsTemporary then exit;
+    //     if CheckItemFieldsFilled(Rec) then
+    //         AddEntityToCopy(entityType::Item, Rec."No.");
+    // end;
 
-    procedure CheckItemFieldsFilled(Rec: Record Item): Boolean
-    begin
-        if Rec."No." = '' then exit(false);
-        if Rec.Description = '' then exit(false);
-        if Rec."Base Unit of Measure" = '' then exit(false);
-        // if Rec."CRM Item Id" = blankGuid then exit(false);
-        if Rec.IsInventoriableType() then
-            if Rec."Inventory Posting Group" = '' then exit(false);
-        if Rec."VAT Prod. Posting Group" = '' then exit(false);
-        if Rec."Gen. Prod. Posting Group" = '' then exit(false);
-        if Rec."Sales Unit of Measure" = '' then exit(false);
-        if Rec."Purch. Unit of Measure" = '' then exit(false);
+    // procedure CheckItemFieldsFilled(Rec: Record Item): Boolean
+    // begin
+    //     if Rec."No." = '' then exit(false);
+    //     if Rec.Description = '' then exit(false);
+    //     if Rec."Base Unit of Measure" = '' then exit(false);
+    //     // if Rec."CRM Item Id" = blankGuid then exit(false);
+    //     if Rec.IsInventoriableType() then
+    //         if Rec."Inventory Posting Group" = '' then exit(false);
+    //     if Rec."VAT Prod. Posting Group" = '' then exit(false);
+    //     if Rec."Gen. Prod. Posting Group" = '' then exit(false);
+    //     if Rec."Sales Unit of Measure" = '' then exit(false);
+    //     if Rec."Purch. Unit of Measure" = '' then exit(false);
 
-        exit(true);
-    end;
+    //     exit(true);
+    // end;
 
-    procedure GetErrorFillingItem(Rec: Record Item)
-    begin
-        Rec.TestField("No.");
-        Rec.TestField(Description);
-        Rec.TestField("Base Unit of Measure");
-        if Rec.IsInventoriableType() then
-            Rec.TestField("Inventory Posting Group");
-        Rec.TestField("VAT Prod. Posting Group");
-        Rec.TestField("Gen. Prod. Posting Group");
-        Rec.TestField("Sales Unit of Measure");
-        Rec.TestField("Purch. Unit of Measure");
-    end;
+    // procedure GetErrorFillingItem(Rec: Record Item)
+    // begin
+    //     Rec.TestField("No.");
+    //     Rec.TestField(Description);
+    //     Rec.TestField("Base Unit of Measure");
+    //     if Rec.IsInventoriableType() then
+    //         Rec.TestField("Inventory Posting Group");
+    //     Rec.TestField("VAT Prod. Posting Group");
+    //     Rec.TestField("Gen. Prod. Posting Group");
+    //     Rec.TestField("Sales Unit of Measure");
+    //     Rec.TestField("Purch. Unit of Measure");
+    // end;
 
     local procedure CheckMainCompany(): Boolean
     begin
@@ -131,8 +127,11 @@ codeunit 50021 "Copy Customers"
         if ItemToCopy.IsEmpty then exit;
         ItemToCopy.FindSet();
         repeat
-            tempItemToCopy := ItemToCopy;
-            tempItemToCopy.Insert();
+            if CustomerFrom.Get(ItemToCopy."No.")
+            and CopyItemsToAllCompanies.CheckCustomerFieldsFilled(CustomerFrom) then begin
+                tempItemToCopy := ItemToCopy;
+                tempItemToCopy.Insert();
+            end;
         until ItemToCopy.Next() = 0;
 
 
@@ -150,7 +149,6 @@ codeunit 50021 "Copy Customers"
 
                 if tempItemToCopy.FindSet() then
                     repeat
-                        CustomerFrom.Get(tempItemToCopy."No.");
                         ConfProgressBar.Update(StrSubstNo(txtProcessHeader, CustomerFrom."No."));
 
                         CustomerTo.SetCurrentKey("BC Id");
@@ -180,7 +178,6 @@ codeunit 50021 "Copy Customers"
                                 CustomerBankAccountTo := CustomerBankAccountFrom;
                                 if CustomerBankAccountTo.Insert() then CustomerBankAccountTo.Modify();
                             until CustomerBankAccountFrom.Next() = 0;
-
                     until tempItemToCopy.Next() = 0;
                 Commit();
             until CompIntegrTo.Next() = 0;
@@ -290,17 +287,17 @@ codeunit 50021 "Copy Customers"
         end;
     end;
 
-    procedure CopyAllItemsToClone()
-    var
-        Item: Record Item;
-    begin
-        if UserId <> 'EKAR' then exit;
-        if Item.FindSet() then
-            repeat
-                if CheckItemFieldsFilled(Item) then
-                    AddEntityToCopy(entityType::Item, Item."No.");
-            until Item.Next() = 0;
-    end;
+    // procedure CopyAllItemsToClone()
+    // var
+    //     Item: Record Item;
+    // begin
+    //     if UserId <> 'EKAR' then exit;
+    //     if Item.FindSet() then
+    //         repeat
+    //             if CheckItemFieldsFilled(Item) then
+    //                 AddEntityToCopy(entityType::Item, Item."No.");
+    //         until Item.Next() = 0;
+    // end;
 
     procedure InitSentToCRM(newSentToCRM: Boolean)
     begin
@@ -380,4 +377,5 @@ codeunit 50021 "Copy Customers"
         sentToCRM: Boolean;
         ConfigProgressBarRecord: Codeunit "Config Progress Bar";
         Text007: Label 'You cannot assign numbers greater than %1 from the number series %2.';
+        CopyItemsToAllCompanies: Codeunit "Copy Items to All Companies";
 }

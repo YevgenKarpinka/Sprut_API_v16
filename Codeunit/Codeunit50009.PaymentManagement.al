@@ -376,4 +376,12 @@ codeunit 50009 "Payment Management"
             GLSetup.Insert();
         end;
     end;
+
+    [EventSubscriber(ObjectType::Table, 81, 'OnBeforeCheckIfPostingDateIsEarlier', '', false, false)]
+    local procedure OnBeforeCheckIfPostingDateIsEarlier(var IsHandled: Boolean)
+    begin
+        GetGLSetup();
+        if GLSetup."Disable Check Cust. Prep." then
+            IsHandled := true;
+    end;
 }
