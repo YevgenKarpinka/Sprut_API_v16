@@ -12,95 +12,40 @@ codeunit 50021 "Copy Customers"
         DeleteItemsAfterCopy();
     end;
 
+    var
+        glCustomerAgr: Record "Customer Agreement";
+        CaptionMgt: Codeunit "Caption Mgt.";
+        CompIntegrFrom: Record "Company Integration";
+        ConfProgressBar: Codeunit "Config Progress Bar";
+        WebServiceMgt: Codeunit "Web Service Mgt.";
+        txtCopyItemToCompany: TextConst ENU = 'From Company %1 To Company %2',
+                                        RUS = 'С Организации %1 в Организацию %2';
+        txtProcessHeader: TextConst ENU = 'Copy CustomerTo %1',
+                                    RUS = 'Копирование клиента %1';
+        blankGuid: Guid;
+        entityType: Enum EntityType;
+        Base64Convert: Codeunit "Base64 Convert";
+
+        qstSendItemsToCRM: TextConst ENU = 'Send Items To CRM?', RUS = 'Отправлять товары в CRM?';
+        ApplyingURLMsg: TextConst ENU = 'Sending Table %1',
+                                RUS = 'Пересылается таблица %1';
+        RecordsXofYMsg: TextConst ENU = 'Records: %1 of %2',
+                                RUS = 'Запись: %1 из %2';
+        sentToCRM: Boolean;
+        ConfigProgressBarRecord: Codeunit "Config Progress Bar";
+        Text007: Label 'You cannot assign numbers greater than %1 from the number series %2.';
+        CopyItemsToAllCompanies: Codeunit "Copy Items to All Companies";
+
     [EventSubscriber(ObjectType::Codeunit, 5150, 'OnGetIntegrationDisabled', '', false, false)]
     local procedure OnGetIntegrationDisabled(var IsSyncDisabled: Boolean)
-    begin
-        IsSyncDisabled := true;
-    end;
-
-    // [EventSubscriber(ObjectType::Table, 23, 'OnAfterModifyEvent', '', false, false)]
-    // local procedure OnAfterModifyEventVendor(var Rec: Record Vendor)
-    // begin
-    //     // check main company
-    //     if CheckMainCompany() then exit;
-    //     if Rec.IsTemporary then exit;
-    //     if CheckVendorFieldsFilled(Rec) then
-    //         AddEntityToCopy(entityType::Vendor, Rec."No.");
-    // end;
-
-    // local procedure CheckVendorFieldsFilled(Rec: Record Vendor): Boolean
-    // begin
-    //     if Rec."No." = '' then exit(false);
-    //     if Rec.Name = '' then exit(false);
-    //     if Rec."OKPO Code" = '' then exit(false);
-    //     if Rec."Prices Including VAT" = false then exit(false);
-    //     if Rec."Gen. Bus. Posting Group" = '' then exit(false);
-    //     if Rec."Vendor Posting Group" = '' then exit(false);
-    //     if Rec."VAT Bus. Posting Group" = '' then exit(false);
-    //     if Rec."Currency Code" = '' then exit(false);
-
-    //     exit(true);
-    // end;
-
-    local procedure AddEntityToCopy(Type: Enum EntityType; EntityNo: Code[20])
     var
-        ItemToCopy: Record "Entity To Copy";
+        locCompIntegr: Record "Company Integration";
     begin
-        if ItemToCopy.Get(Type, EntityNo) then exit;
-        ItemToCopy.Init();
-        ItemToCopy.Type := Type;
-        ItemToCopy.Validate("No.", EntityNo);
-        ItemToCopy.Insert();
+        locCompIntegr.SetCurrentKey("Company Name");
+        locCompIntegr.SetRange("Company Name", CompanyName);
+        if locCompIntegr.FindFirst() then
+            IsSyncDisabled := locCompIntegr."Copy Items From";
     end;
-
-    // [EventSubscriber(ObjectType::Table, 27, 'OnAfterInsertEvent', '', false, false)]
-    // local procedure OnAfterInsertEventItem(var Rec: Record Item)
-    // begin
-    //     // check main company
-    //     if CheckMainCompany() then exit;
-    //     if Rec.IsTemporary then exit;
-    //     if CheckItemFieldsFilled(Rec) then
-    //         AddEntityToCopy(entityType::Item, Rec."No.");
-    // end;
-
-    // [EventSubscriber(ObjectType::Table, 27, 'OnAfterModifyEvent', '', false, false)]
-    // local procedure OnAfterModifyEventItem(var Rec: Record Item)
-    // begin
-    //     // check main company
-    //     if CheckMainCompany() then exit;
-    //     if Rec.IsTemporary then exit;
-    //     if CheckItemFieldsFilled(Rec) then
-    //         AddEntityToCopy(entityType::Item, Rec."No.");
-    // end;
-
-    // procedure CheckItemFieldsFilled(Rec: Record Item): Boolean
-    // begin
-    //     if Rec."No." = '' then exit(false);
-    //     if Rec.Description = '' then exit(false);
-    //     if Rec."Base Unit of Measure" = '' then exit(false);
-    //     // if Rec."CRM Item Id" = blankGuid then exit(false);
-    //     if Rec.IsInventoriableType() then
-    //         if Rec."Inventory Posting Group" = '' then exit(false);
-    //     if Rec."VAT Prod. Posting Group" = '' then exit(false);
-    //     if Rec."Gen. Prod. Posting Group" = '' then exit(false);
-    //     if Rec."Sales Unit of Measure" = '' then exit(false);
-    //     if Rec."Purch. Unit of Measure" = '' then exit(false);
-
-    //     exit(true);
-    // end;
-
-    // procedure GetErrorFillingItem(Rec: Record Item)
-    // begin
-    //     Rec.TestField("No.");
-    //     Rec.TestField(Description);
-    //     Rec.TestField("Base Unit of Measure");
-    //     if Rec.IsInventoriableType() then
-    //         Rec.TestField("Inventory Posting Group");
-    //     Rec.TestField("VAT Prod. Posting Group");
-    //     Rec.TestField("Gen. Prod. Posting Group");
-    //     Rec.TestField("Sales Unit of Measure");
-    //     Rec.TestField("Purch. Unit of Measure");
-    // end;
 
     local procedure CheckMainCompany(): Boolean
     begin
@@ -354,28 +299,4 @@ codeunit 50021 "Copy Customers"
 
         exit(txtCustAgr);
     end;
-
-    var
-        glCustomerAgr: Record "Customer Agreement";
-        CaptionMgt: Codeunit "Caption Mgt.";
-        CompIntegrFrom: Record "Company Integration";
-        ConfProgressBar: Codeunit "Config Progress Bar";
-        WebServiceMgt: Codeunit "Web Service Mgt.";
-        txtCopyItemToCompany: TextConst ENU = 'From Company %1 To Company %2',
-                                        RUS = 'С Организации %1 в Организацию %2';
-        txtProcessHeader: TextConst ENU = 'Copy CustomerTo %1',
-                                    RUS = 'Копирование клиента %1';
-        blankGuid: Guid;
-        entityType: Enum EntityType;
-        Base64Convert: Codeunit "Base64 Convert";
-
-        qstSendItemsToCRM: TextConst ENU = 'Send Items To CRM?', RUS = 'Отправлять товары в CRM?';
-        ApplyingURLMsg: TextConst ENU = 'Sending Table %1',
-                                RUS = 'Пересылается таблица %1';
-        RecordsXofYMsg: TextConst ENU = 'Records: %1 of %2',
-                                RUS = 'Запись: %1 из %2';
-        sentToCRM: Boolean;
-        ConfigProgressBarRecord: Codeunit "Config Progress Bar";
-        Text007: Label 'You cannot assign numbers greater than %1 from the number series %2.';
-        CopyItemsToAllCompanies: Codeunit "Copy Items to All Companies";
 }

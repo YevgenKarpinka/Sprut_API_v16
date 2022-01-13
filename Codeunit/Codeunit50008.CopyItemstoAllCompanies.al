@@ -34,12 +34,16 @@ codeunit 50008 "Copy Items to All Companies"
 
     [EventSubscriber(ObjectType::Table, 18, 'OnAfterModifyEvent', '', false, false)]
     local procedure OnAfterModifyEventCustomer(var Rec: Record Customer)
+    var
+        locCust: Record Customer;
     begin
-        // check main company
-        if CheckMainCompany() or not IsNullGuid(Rec."CRM ID") then exit;
-        if Rec.IsTemporary then exit;
-        if CheckCustomerFieldsFilled(Rec) then
-            AddEntityToCopy(entityType::Customer, Rec."No.");
+        if locCust.Get(Rec."No.") and (locCust.Name = Rec.Name) then begin
+            // check main company
+            if CheckMainCompany() or not IsNullGuid(Rec."CRM ID") then exit;
+            if Rec.IsTemporary then exit;
+            if CheckCustomerFieldsFilled(Rec) then
+                AddEntityToCopy(entityType::Customer, Rec."No.");
+        end;
     end;
 
     [EventSubscriber(ObjectType::Table, 23, 'OnAfterInsertEvent', '', false, false)]
@@ -63,31 +67,39 @@ codeunit 50008 "Copy Items to All Companies"
     end;
 
     local procedure CheckVendorFieldsFilled(Rec: Record Vendor): Boolean
+    var
+        locVendor: Record Vendor;
     begin
-        if Rec."No." = '' then exit(false);
-        if Rec.Name = '' then exit(false);
-        if Rec."OKPO Code" = '' then exit(false);
+        if not locVendor.Get(Rec."No.") then exit(false);
+
+        if locVendor."No." = '' then exit(false);
+        if locVendor.Name = '' then exit(false);
+        if locVendor."OKPO Code" = '' then exit(false);
         // if Rec."Prices Including VAT" then exit(false);
-        if Rec."Gen. Bus. Posting Group" = '' then exit(false);
-        if Rec."Vendor Posting Group" = '' then exit(false);
-        if Rec."VAT Bus. Posting Group" = '' then exit(false);
-        if Rec."Currency Code" = '' then exit(false);
+        if locVendor."Gen. Bus. Posting Group" = '' then exit(false);
+        if locVendor."Vendor Posting Group" = '' then exit(false);
+        if locVendor."VAT Bus. Posting Group" = '' then exit(false);
+        if locVendor."Currency Code" = '' then exit(false);
 
         exit(true);
     end;
 
     procedure CheckCustomerFieldsFilled(Rec: Record Customer): Boolean
+    var
+        locCustomer: Record Customer;
     begin
-        if not IsNullGuid(Rec."CRM ID") then exit(false);
+        if not locCustomer.Get(Rec."No.") then exit(false);
 
-        if Rec."No." = '' then exit(false);
-        if Rec.Name = '' then exit(false);
-        if Rec."OKPO Code" = '' then exit(false);
-        if not Rec."Prices Including VAT" then exit(false);
-        if Rec."Gen. Bus. Posting Group" = '' then exit(false);
-        if Rec."Customer Posting Group" = '' then exit(false);
-        if Rec."VAT Bus. Posting Group" = '' then exit(false);
-        if Rec."Currency Code" = '' then exit(false);
+        if not IsNullGuid(locCustomer."CRM ID") then exit(false);
+
+        if locCustomer."No." = '' then exit(false);
+        if locCustomer.Name = '' then exit(false);
+        if locCustomer."OKPO Code" = '' then exit(false);
+        if not locCustomer."Prices Including VAT" then exit(false);
+        if locCustomer."Gen. Bus. Posting Group" = '' then exit(false);
+        if locCustomer."Customer Posting Group" = '' then exit(false);
+        if locCustomer."VAT Bus. Posting Group" = '' then exit(false);
+        if locCustomer."Currency Code" = '' then exit(false);
 
         exit(true);
     end;
@@ -124,17 +136,21 @@ codeunit 50008 "Copy Items to All Companies"
     end;
 
     procedure CheckItemFieldsFilled(Rec: Record Item): Boolean
+    var
+        locItem: Record Item;
     begin
-        if Rec."No." = '' then exit(false);
-        if Rec.Description = '' then exit(false);
-        if Rec."Base Unit of Measure" = '' then exit(false);
+        if not locItem.Get(Rec."No.") then exit(false);
+
+        if locItem."No." = '' then exit(false);
+        if locItem.Description = '' then exit(false);
+        if locItem."Base Unit of Measure" = '' then exit(false);
         // if Rec."CRM Item Id" = blankGuid then exit(false);
-        if Rec.IsInventoriableType() then
-            if Rec."Inventory Posting Group" = '' then exit(false);
-        if Rec."VAT Prod. Posting Group" = '' then exit(false);
-        if Rec."Gen. Prod. Posting Group" = '' then exit(false);
-        if Rec."Sales Unit of Measure" = '' then exit(false);
-        if Rec."Purch. Unit of Measure" = '' then exit(false);
+        if locItem.IsInventoriableType() then
+            if locItem."Inventory Posting Group" = '' then exit(false);
+        if locItem."VAT Prod. Posting Group" = '' then exit(false);
+        if locItem."Gen. Prod. Posting Group" = '' then exit(false);
+        if locItem."Sales Unit of Measure" = '' then exit(false);
+        if locItem."Purch. Unit of Measure" = '' then exit(false);
 
         exit(true);
     end;
