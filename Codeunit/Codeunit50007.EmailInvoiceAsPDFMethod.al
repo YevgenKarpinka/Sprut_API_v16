@@ -156,7 +156,7 @@ codeunit 50007 "Email Invoice As PDF Method"
     var
         SalesHeader: Record "Sales Header";
     begin
-        if SendEmailUnApplyDocNotAllowed() then exit;
+        if SendEmailUnApplyDocNotAllowed() then exit(true);
 
         SalesHeader.SetRange("Document Type", SalesHeader."Document Type"::Order);
         SalesHeader.SetRange("No.", SalesOrderNo);
