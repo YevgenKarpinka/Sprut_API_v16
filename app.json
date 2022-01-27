@@ -33,7 +33,7 @@
     }
   ],
   "contextSensitiveHelpUrl": "https://Sprut_Base.com/help/",
-  "showMyCode": true,
+  "showMyCode": false,
   "runtime": "5.0",
   "target": "OnPrem"
 }
