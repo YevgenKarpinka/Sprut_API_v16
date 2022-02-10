@@ -53,8 +53,8 @@ tableextension 50006 "Customer Ext" extends Customer
         field(50007; "Create User ID"; Code[50])
         {
             DataClassification = SystemMetadata;
-            CaptionML = ENU = 'Create Date Time',
-                        RUS = 'Дата и время создания';
+            CaptionML = ENU = 'Create User ID',
+                        RUS = 'ИД пользователя создания';
             Editable = false;
         }
         field(50008; "Init 1C"; Boolean)
@@ -74,8 +74,8 @@ tableextension 50006 "Customer Ext" extends Customer
         field(50009; "Modify User ID"; Code[50])
         {
             DataClassification = SystemMetadata;
-            CaptionML = ENU = 'Create Date Time',
-                        RUS = 'Дата и время создания';
+            CaptionML = ENU = 'Modify Date Time',
+                        RUS = 'Дата и время изменения';
             Editable = false;
         }
         field(50010; "BC Id"; Guid)
@@ -109,6 +109,8 @@ tableextension 50006 "Customer Ext" extends Customer
         if IsNullGuid("BC Id") and IsNullGuid("CRM ID") then begin
             "BC Id" := SystemId;
         end;
+
+        UpdateCreateDateTime();
     end;
 
     trigger OnModify()
