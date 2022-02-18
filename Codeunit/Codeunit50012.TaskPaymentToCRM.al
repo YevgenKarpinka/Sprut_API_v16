@@ -25,11 +25,11 @@ codeunit 50012 "Task Payment To CRM"
                                 if not PaymentMgt.OnProcessPaymentSendToCRM(recTaskPaymentSend."Entry Type", recTaskPaymentSend."Invoice Entry No.",
                                                                 recTaskPaymentSend."Payment Entry No.", recTaskPaymentSend."Payment Amount") then begin
                                     if recTaskPaymentSend."Attempts Send" >= GetJobQueueMaxAttempts then begin
-                                        UpdateWorkStatus(recTaskPaymentSend."Work Status"::Error)
-                                    end else begin
-                                        IncTaskModifyOrderAttempt();
-                                        UpdateWorkStatus(recTaskPaymentSend."Work Status"::WaitingForWork);
+                                        UpdateWorkStatus(recTaskPaymentSend."Work Status"::Error);
+                                        exit;
                                     end;
+                                    IncTaskModifyOrderAttempt();
+                                    UpdateWorkStatus(recTaskPaymentSend."Work Status"::WaitingForWork);
                                     exit;
                                 end;
 

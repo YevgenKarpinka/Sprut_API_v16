@@ -8,6 +8,7 @@ codeunit 50007 "Email Invoice As PDF Method"
     var
         TxtEmailSubject: TextConst RUS = '%1 - Не Примененные Документы - %2', ENU = '%1 - UnApply Documents - %2';
         TxtEmailErrorTasksSubject: TextConst RUS = '%1 - Ошибка(и) в очереди задач модификации заказа!', ENU = '%1 - Error(s) in Tasks Modification Order!';
+        TxtEmailErrorTasksSubjectPay: TextConst RUS = '%1 - Ошибка(и) в очереди задач передачи платежей!', ENU = '%1 - Error(s) in Tasks Payment To CRM!';
         TxtAttachmentName: TextConst RUS = 'НеПримененныеДокументы-%1.pdf', ENU = 'UnApplyDocuments-%1.pdf';
         TxtCouldNotSaveReport: TextConst RUS = 'Could not save report, Report Id %1.', ENU = 'Could not save report, Report Id %1.';
         errReportNotSavedToPDF: Label 'Report %1 not saved to PDF';
@@ -86,7 +87,7 @@ codeunit 50007 "Email Invoice As PDF Method"
         Body := GetBodyErrorTasksPaymentSend();
         if StrLen(Body) = 0 then exit(false);
 
-        EmailSubject := StrSubstNo(TxtEmailErrorTasksSubject, CompanyInformation.Name);
+        EmailSubject := StrSubstNo(TxtEmailErrorTasksSubjectPay, CompanyInformation.Name);
         SMTPMail.CreateMessage(CompanyInformation.Name, SmtpConf."User ID", ToAddr, EmailSubject, Body);
 
         exit(SMTPMail.Send);

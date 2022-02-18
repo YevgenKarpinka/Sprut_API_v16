@@ -768,10 +768,10 @@ codeunit 50000 "Web Service Mgt."
 
         // Insert Operation to Log
         IntegrationLog.InsertOperationToLog('STANDART_CRM_API', requestMethod, BaseURL, '', RequestBody, Body, ResponseMessage.IsSuccessStatusCode());
-        if ResponseMessage.IsSuccessStatusCode then
-            exit(ResponseMessage.IsSuccessStatusCode);
+        // if ResponseMessage.IsSuccessStatusCode then
+        exit(ResponseMessage.IsSuccessStatusCode);
 
-        Error(Body);
+        // Error(Body);
     end;
 
     procedure GetOauthToken(var TokenType: Text; var AccessToken: Text; var APIResult: Text): Boolean
