@@ -1,1 +1,1 @@
-﻿{"Added":[],"Modified":[],"Removed":[]}
+﻿{"Added":[{"Id":50028,"Kind":17,"Name":"Sales CrMemo Header Ext","PackagePath":"/src/TableExt/TableExt50028.SalesCrMemoHeaderExt.al"}],"Modified":[{"Id":50002,"Kind":17,"Name":"Sales Header Ext","PackagePath":"/src/TableExt/TableExt50002.SalesHeaderExt.al"},{"Id":50022,"Kind":17,"Name":"Vendor Agreement Ext","PackagePath":"/src/TableExt/TableExt50022.VendorAgreementExt.al"}],"Removed":[{"Id":50003,"Kind":17,"Name":"Sales Invoice Header Ext","PackagePath":"/src/TableExt/TableExt50003.SalesInvoiceHeaderExt.al"}]}

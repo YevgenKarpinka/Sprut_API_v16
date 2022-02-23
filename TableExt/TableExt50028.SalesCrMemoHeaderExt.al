@@ -1,4 +1,4 @@
-tableextension 50002 "Sales Header Ext" extends "Sales Header"
+tableextension 50028 "Sales CrMemo Header Ext" extends "Sales Cr.Memo Header"
 {
     fields
     {
@@ -11,7 +11,7 @@ tableextension 50002 "Sales Header Ext" extends "Sales Header"
         }
         field(50001; "Last Modified Date Time"; DateTime)
         {
-            DataClassification = SystemMetadata;
+            DataClassification = CustomerContent;
             CaptionML = ENU = 'Last Modified Date Time',
                         RUS = 'Дата и время последнего изменения';
             Editable = false;
@@ -27,22 +27,6 @@ tableextension 50002 "Sales Header Ext" extends "Sales Header"
             DataClassification = CustomerContent;
             CaptionML = ENU = 'CRM Header ID',
                         RUS = 'CRM Заголовок ID';
-
-            trigger OnValidate()
-            var
-                locSH: Record "Sales Header";
-                locSIH: Record "Sales Invoice Header";
-            begin
-                locSH.SetCurrentKey("CRM Header ID");
-                locSH.SetRange("CRM Header ID", "CRM Header ID");
-                if not locSH.IsEmpty then
-                    Error(errCRMIdInSalesLineAlreadyExist, "CRM Header ID");
-
-                locSIH.SetCurrentKey("CRM Header ID");
-                locSIH.SetRange("CRM Header ID", "CRM Header ID");
-                if not locSIH.IsEmpty then
-                    Error(errCRMIdInPostedSalesLineAlreadyExist, "CRM Header ID");
-            end;
         }
         field(50004; "CRM Source Type"; Text[20])
         {
@@ -61,14 +45,14 @@ tableextension 50002 "Sales Header Ext" extends "Sales Header"
         {
             DataClassification = SystemMetadata;
             CaptionML = ENU = 'Create User ID',
-                        RUS = 'Создал ИД пользователя';
+                        RUS = 'Создание пользователь ИД';
             Editable = false;
         }
         field(50007; "Modify User ID"; Code[50])
         {
             DataClassification = SystemMetadata;
             CaptionML = ENU = 'Modify User ID',
-                        RUS = 'Модифицировал ИД пользователя';
+                        RUS = 'Модификация пользователь ИД';
             Editable = false;
         }
         field(50008; "Invoice No. 1C"; Code[50])
@@ -94,10 +78,6 @@ tableextension 50002 "Sales Header Ext" extends "Sales Header"
     begin
         UpdateLastModifyDateTime();
     end;
-
-    var
-        errCRMIdInSalesLineAlreadyExist: Label 'CRM ID %1 in sales header already exist';
-        errCRMIdInPostedSalesLineAlreadyExist: Label 'CRM ID %1 in posted sales header already exist';
 
     local procedure UpdateCreateDateTime()
     begin
